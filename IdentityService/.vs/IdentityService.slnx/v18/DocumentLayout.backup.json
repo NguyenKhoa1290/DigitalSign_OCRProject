@@ -1,0 +1,464 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "F:\\DigitalSign_OCRProject\\IdentityService\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\entities\\department.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\entities\\department.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\entities\\appuserrole.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\entities\\appuserrole.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\entities\\appuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\entities\\appuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\entities\\approle.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\entities\\approle.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\exceptions\\identityserviceexception.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\exceptions\\identityserviceexception.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.infrastructure\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|solutionrelative:src\\identityservice.infrastructure\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{92DE67D2-C0D5-9EBD-C59B-416083B71248}|src\\IdentityService.API\\IdentityService.API.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{92DE67D2-C0D5-9EBD-C59B-416083B71248}|src\\IdentityService.API\\IdentityService.API.csproj|solutionrelative:src\\identityservice.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{92DE67D2-C0D5-9EBD-C59B-416083B71248}|src\\IdentityService.API\\IdentityService.API.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.api\\identityservice.api.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}",
+      "RelativeMoniker": "D:0:0:{92DE67D2-C0D5-9EBD-C59B-416083B71248}|src\\IdentityService.API\\IdentityService.API.csproj|solutionrelative:src\\identityservice.api\\identityservice.api.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\services\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\services\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{92DE67D2-C0D5-9EBD-C59B-416083B71248}|src\\IdentityService.API\\IdentityService.API.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92DE67D2-C0D5-9EBD-C59B-416083B71248}|src\\IdentityService.API\\IdentityService.API.csproj|solutionrelative:src\\identityservice.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|f:\\digitalsign_ocrproject\\identityservice\\tests\\identityservice.tests\\services\\userservicetests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|solutionrelative:tests\\identityservice.tests\\services\\userservicetests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|f:\\digitalsign_ocrproject\\identityservice\\tests\\identityservice.tests\\services\\authservicetests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|solutionrelative:tests\\identityservice.tests\\services\\authservicetests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|f:\\digitalsign_ocrproject\\identityservice\\tests\\identityservice.tests\\unittest1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|solutionrelative:tests\\identityservice.tests\\unittest1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|f:\\digitalsign_ocrproject\\identityservice\\tests\\identityservice.tests\\identityservice.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{2687C8EA-9B08-58E0-7EC7-5293A29E3B95}|tests\\IdentityService.Tests\\IdentityService.Tests.csproj|solutionrelative:tests\\identityservice.tests\\identityservice.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.infrastructure\\extensions\\servicecollectionextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|solutionrelative:src\\identityservice.infrastructure\\extensions\\servicecollectionextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\dtos\\auth\\validatetokenresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\dtos\\auth\\validatetokenresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\dtos\\auth\\validatetokenrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\dtos\\auth\\validatetokenrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\dtos\\auth\\refreshtokenrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\dtos\\auth\\refreshtokenrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\dtos\\auth\\loginresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\dtos\\auth\\loginresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\dtos\\auth\\loginrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\dtos\\auth\\loginrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\common\\pagedresult.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\common\\pagedresult.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.core\\common\\apiresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{206DB1E3-3A64-008C-C981-5A48F6A2A8AA}|src\\IdentityService.Core\\IdentityService.Core.csproj|solutionrelative:src\\identityservice.core\\common\\apiresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.infrastructure\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|solutionrelative:src\\identityservice.infrastructure\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.infrastructure\\repositories\\userrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|solutionrelative:src\\identityservice.infrastructure\\repositories\\userrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.infrastructure\\repositories\\rolerepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|solutionrelative:src\\identityservice.infrastructure\\repositories\\rolerepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|f:\\digitalsign_ocrproject\\identityservice\\src\\identityservice.infrastructure\\repositories\\departmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9C921A14-3DAD-29ED-BE51-9B5702382AD3}|src\\IdentityService.Infrastructure\\IdentityService.Infrastructure.csproj|solutionrelative:src\\identityservice.infrastructure\\repositories\\departmentrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "UserRepository.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Repositories\\UserRepository.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Infrastructure\\Repositories\\UserRepository.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Repositories\\UserRepository.cs",
+              "RelativeToolTip": "src\\IdentityService.Infrastructure\\Repositories\\UserRepository.cs",
+              "ViewState": "AgIAAGoAAAAAAAAAAAAzwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:11:44.61Z",
+              "IsPinned": true
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{6d4078d1-5951-4ed1-ac0e-0a8099c1cce5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Department.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\Department.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Entities\\Department.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\Department.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Entities\\Department.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAABCAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-26T02:33:20.755Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AppUserRole.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\AppUserRole.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Entities\\AppUserRole.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\AppUserRole.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Entities\\AppUserRole.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAA/wAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-26T02:33:17.085Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "IdentityServiceException.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Exceptions\\IdentityServiceException.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Exceptions\\IdentityServiceException.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Exceptions\\IdentityServiceException.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Exceptions\\IdentityServiceException.cs",
+              "ViewState": "AgIAAIsAAAAAAAAAAAA2wAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-26T02:32:51.593Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "IdentityService.API.http",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.API\\IdentityService.API.http",
+              "RelativeDocumentMoniker": "src\\IdentityService.API\\IdentityService.API.http",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.API\\IdentityService.API.http",
+              "RelativeToolTip": "src\\IdentityService.API\\IdentityService.API.http",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003502|",
+              "WhenOpened": "2026-06-25T13:26:43.514Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "IAuthService.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Services\\IAuthService.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Services\\IAuthService.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Services\\IAuthService.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Services\\IAuthService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T13:24:20.661Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "AppUser.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\AppUser.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Entities\\AppUser.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\AppUser.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Entities\\AppUser.cs",
+              "ViewState": "AgIAACEAAAAAAAAAAAAIwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T13:24:14.312Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "AppRole.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\AppRole.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Entities\\AppRole.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Entities\\AppRole.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Entities\\AppRole.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T13:24:13.642Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Program.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.API\\Program.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.API\\Program.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.API\\Program.cs",
+              "RelativeToolTip": "src\\IdentityService.API\\Program.cs",
+              "ViewState": "AgIAAJ8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T13:23:56.262Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.API\\appsettings.json",
+              "RelativeDocumentMoniker": "src\\IdentityService.API\\appsettings.json",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.API\\appsettings.json",
+              "RelativeToolTip": "src\\IdentityService.API\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-06-25T10:53:00.619Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "UserServiceTests.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\Services\\UserServiceTests.cs",
+              "RelativeDocumentMoniker": "tests\\IdentityService.Tests\\Services\\UserServiceTests.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\Services\\UserServiceTests.cs",
+              "RelativeToolTip": "tests\\IdentityService.Tests\\Services\\UserServiceTests.cs",
+              "ViewState": "AgIAAH4AAAAAAAAAAAA2wAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:16:47.832Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "AuthServiceTests.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\Services\\AuthServiceTests.cs",
+              "RelativeDocumentMoniker": "tests\\IdentityService.Tests\\Services\\AuthServiceTests.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\Services\\AuthServiceTests.cs",
+              "RelativeToolTip": "tests\\IdentityService.Tests\\Services\\AuthServiceTests.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:16:46.93Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "UnitTest1.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\UnitTest1.cs",
+              "RelativeDocumentMoniker": "tests\\IdentityService.Tests\\UnitTest1.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\UnitTest1.cs",
+              "RelativeToolTip": "tests\\IdentityService.Tests\\UnitTest1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:16:44.074Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "IdentityService.Tests.csproj",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\IdentityService.Tests.csproj",
+              "RelativeDocumentMoniker": "tests\\IdentityService.Tests\\IdentityService.Tests.csproj",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\tests\\IdentityService.Tests\\IdentityService.Tests.csproj",
+              "RelativeToolTip": "tests\\IdentityService.Tests\\IdentityService.Tests.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-06-25T10:16:42.335Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "ValidateTokenResponseDto.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenResponseDto.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenResponseDto.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenResponseDto.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:12:16.132Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "ValidateTokenRequestDto.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenRequestDto.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenRequestDto.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenRequestDto.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\DTOs\\Auth\\ValidateTokenRequestDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:12:15.67Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "RefreshTokenRequestDto.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\RefreshTokenRequestDto.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\DTOs\\Auth\\RefreshTokenRequestDto.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\RefreshTokenRequestDto.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\DTOs\\Auth\\RefreshTokenRequestDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:12:15.191Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "LoginResponseDto.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\LoginResponseDto.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\DTOs\\Auth\\LoginResponseDto.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\LoginResponseDto.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\DTOs\\Auth\\LoginResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:12:14.709Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "LoginRequestDto.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\LoginRequestDto.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\DTOs\\Auth\\LoginRequestDto.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\DTOs\\Auth\\LoginRequestDto.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\DTOs\\Auth\\LoginRequestDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:12:14.107Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "PagedResult.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Common\\PagedResult.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Common\\PagedResult.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Common\\PagedResult.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Common\\PagedResult.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:12:02.931Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "ApiResponse.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Common\\ApiResponse.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Core\\Common\\ApiResponse.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core\\Common\\ApiResponse.cs",
+              "RelativeToolTip": "src\\IdentityService.Core\\Common\\ApiResponse.cs",
+              "ViewState": "AgIAAEIAAAAAAAAAAAAywAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:11:59.574Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Services\\AuthService.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Infrastructure\\Services\\AuthService.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Services\\AuthService.cs",
+              "RelativeToolTip": "src\\IdentityService.Infrastructure\\Services\\AuthService.cs",
+              "ViewState": "AgIAAIAAAAAAAAAAAAAxwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:11:48.691Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "RoleRepository.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Repositories\\RoleRepository.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Infrastructure\\Repositories\\RoleRepository.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Repositories\\RoleRepository.cs",
+              "RelativeToolTip": "src\\IdentityService.Infrastructure\\Repositories\\RoleRepository.cs",
+              "ViewState": "AgIAACgAAAAAAAAAAAAkwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:11:41.584Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "DepartmentRepository.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Repositories\\DepartmentRepository.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Infrastructure\\Repositories\\DepartmentRepository.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Repositories\\DepartmentRepository.cs",
+              "RelativeToolTip": "src\\IdentityService.Infrastructure\\Repositories\\DepartmentRepository.cs",
+              "ViewState": "AgIAACkAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:11:35.665Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "ServiceCollectionExtensions.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "RelativeToolTip": "src\\IdentityService.Infrastructure\\Extensions\\ServiceCollectionExtensions.cs",
+              "ViewState": "AgIAAC4AAAAAAAAAAAAwwB4AAABMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:11:30.992Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "src\\IdentityService.Infrastructure\\Data\\AppDbContext.cs",
+              "ToolTip": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "src\\IdentityService.Infrastructure\\Data\\AppDbContext.cs",
+              "ViewState": "AgIAAN0AAAAAAAAAAAAmwOQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-25T10:10:56.764Z"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 103,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{a80febb4-e7e0-4147-b476-21aaf2453969}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>IdentityService.API</name>
+    </assembly>
+    <members>
+        <member name="T:IdentityService.API.Controllers.AuthController">
+            <summary>
+            Authentication endpoints: Login, Logout, Refresh Token, Validate Token
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.Login(IdentityService.Core.DTOs.Auth.LoginRequestDto)">
+            <summary>
+            Đăng nhập hệ thống. Trả về JWT Access Token và Refresh Token.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.RefreshToken(IdentityService.Core.DTOs.Auth.RefreshTokenRequestDto)">
+            <summary>
+            Làm mới Access Token bằng Refresh Token.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.ValidateToken(IdentityService.Core.DTOs.Auth.ValidateTokenRequestDto)">
+            <summary>
+            Kiểm tra tính hợp lệ của Token (được dùng bởi API Gateway).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.Logout">
+            <summary>
+            Đăng xuất - vô hiệu hóa phiên làm việc hiện tại.
+            </summary>
+        </member>
+        <member name="T:IdentityService.API.Controllers.DepartmentsController">
+            <summary>
+            Quản lý sơ đồ tổ chức Phòng/Ban/Khoa của Trường.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.DepartmentsController.GetAll">
+            <summary>
+            Lấy danh sách tất cả đơn vị (danh sách phẳng).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.DepartmentsController.GetTree">
+            <summary>
+            Lấy cấu trúc cây phân cấp của tổ chức.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.DepartmentsController.GetById(System.Guid)">
+            <summary>
+            Lấy thông tin đơn vị theo ID.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.DepartmentsController.Create(IdentityService.Core.DTOs.Departments.CreateDepartmentDto)">
+            <summary>
+            Tạo mới đơn vị tổ chức (chỉ Admin).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.DepartmentsController.Update(System.Guid,IdentityService.Core.DTOs.Departments.CreateDepartmentDto)">
+            <summary>
+            Cập nhật thông tin đơn vị (chỉ Admin).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.DepartmentsController.Delete(System.Guid)">
+            <summary>
+            Xóa đơn vị (chỉ Admin, không có đơn vị con hoặc người dùng).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.DepartmentsController.GetChildren(System.Guid)">
+            <summary>
+            Lấy danh sách đơn vị con trực tiếp của một đơn vị cha.
+            </summary>
+        </member>
+        <member name="T:IdentityService.API.Controllers.RolesController">
+            <summary>
+            Quản lý vai trò trong hệ thống RBAC.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.RolesController.GetAll">
+            <summary>
+            Lấy danh sách tất cả vai trò trong hệ thống.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.RolesController.GetById(System.Guid)">
+            <summary>
+            Lấy thông tin vai trò theo ID.
+            </summary>
+        </member>
+        <member name="T:IdentityService.API.Controllers.UsersController">
+            <summary>
+            Quản lý người dùng (CRUD). Chỉ Admin có quyền thêm/sửa/xóa.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.GetAll(System.Int32,System.Int32,System.String)">
+            <summary>
+            Lấy danh sách người dùng có phân trang và tìm kiếm.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.GetById(System.Guid)">
+            <summary>
+            Lấy thông tin người dùng theo ID.
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.Create(IdentityService.Core.DTOs.Users.CreateUserDto)">
+            <summary>
+            Tạo tài khoản người dùng mới (chỉ Admin).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.Update(System.Guid,IdentityService.Core.DTOs.Users.UpdateUserDto)">
+            <summary>
+            Cập nhật thông tin người dùng (Admin hoặc chính người dùng đó).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.Delete(System.Guid)">
+            <summary>
+            Xóa tài khoản người dùng (chỉ Admin).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.AssignRole(System.Guid,System.Guid)">
+            <summary>
+            Gán vai trò cho người dùng (chỉ Admin).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.RemoveRole(System.Guid,System.Guid)">
+            <summary>
+            Thu hồi vai trò của người dùng (chỉ Admin).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.GetCurrentUser">
+            <summary>
+            Lấy thông tin người dùng hiện tại (từ JWT).
+            </summary>
+        </member>
+        <member name="T:IdentityService.API.Middleware.ExceptionHandlingMiddleware">
+            <summary>
+            Global exception handler middleware - bắt tất cả exception và trả về response chuẩn
+            </summary>
+        </member>
+    </members>
+</doc>

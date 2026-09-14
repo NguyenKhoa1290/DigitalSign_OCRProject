@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SignService.API/SignService.API.csproj" />
+    <Project Path="src/SignService.Core/SignService.Core.csproj" />
+    <Project Path="src/SignService.Infrastructure/SignService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SignService.Tests/SignService.Tests.csproj" />
+  </Folder>
+</Solution>

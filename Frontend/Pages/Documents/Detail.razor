@@ -1,0 +1,405 @@
+@page "/documents/{Id:guid}"
+@attribute [Authorize]
+@inject DocumentService DocumentService
+@inject AuthService AuthService
+@inject NavigationManager NavManager
+@inject IToastService Toast
+
+<PageTitle>@(_document?.Title ?? "Chi tiết Công văn") - HAU</PageTitle>
+
+@if (_isLoading)
+{
+    <LoadingSpinner Message="Đang tải thông tin công văn..." />
+}
+else if (_document == null)
+{
+    <div class="empty-state">
+        <p class="empty-state-title">Không tìm thấy công văn</p>
+        <a href="/documents" class="btn btn-primary" style="margin-top:12px">Quay lại danh sách</a>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" style="max-width:600px;white-space:normal;line-height:1.4">@_document.Title</h1>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                <StatusBadge Status="@_document.Status" />
+                @if (!string.IsNullOrEmpty(_document.DocumentNumber))
+                {
+                    <span style="font-size:13px;color:var(--color-text-secondary)">Số: @_document.DocumentNumber</span>
+                }
+            </div>
+        </div>
+        <div class="page-actions">
+            <a href="/documents" class="btn btn-outline">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Action Buttons by Role/Status -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+        @if (_document.Status == "Draft" && (_role == "Clerk" || _role == "Specialist"))
+        {
+            <button class="btn btn-primary" @onclick='() => ShowActionModal("submit")'>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                Nộp trình duyệt
+            </button>
+            <label class="btn btn-outline" style="cursor:pointer">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Tải lên PDF
+                <InputFile OnChange="OnFileUpload" accept=".pdf" style="display:none" />
+            </label>
+            <button class="btn btn-outline" @onclick="RunOcr" disabled="@_isActionLoading">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+                </svg>
+                Chạy OCR
+            </button>
+        }
+
+        @if (_document.Status == "PendingDeptReview" && _role == "Manager")
+        {
+            <button class="btn btn-success" @onclick='() => ShowActionModal("dept-sign")'>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Ký nháy
+            </button>
+            <button class="btn btn-danger" @onclick='() => ShowActionModal("reject")'>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Từ chối
+            </button>
+        }
+
+        @if (_document.Status == "DeptSigned" && _role == "Manager")
+        {
+            <button class="btn btn-primary" @onclick='() => ShowActionModal("submit-director")'>
+                Trình BGH ký
+            </button>
+        }
+
+        @if ((_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned") && _role == "BoardOfDirectors")
+        {
+            <button class="btn btn-success" @onclick='() => ShowActionModal("director-sign")'>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                Ký số pháp nhân
+            </button>
+            <button class="btn btn-danger" @onclick='() => ShowActionModal("reject")'>Từ chối</button>
+        }
+
+        @if (_document.Status == "DirectorSigned" && (_role == "Clerk" || _role == "Admin"))
+        {
+            <button class="btn btn-success" @onclick="() => PublishDocument()">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Ban hành
+            </button>
+        }
+
+        @if ((_role == "Manager" || _role == "BoardOfDirectors") && _document.Status != "Draft")
+        {
+            <a href="/signatures/@_document.Id" class="btn btn-outline">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Xem Chữ ký
+            </a>
+        }
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
+        <div style="display:flex;flex-direction:column;gap:20px;">
+            <!-- Document Info -->
+            <div class="card">
+                <div class="card-header"><span class="card-title">Thông tin Công văn</span></div>
+                <div class="card-body">
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Loại văn bản</div>
+                            <div class="detail-value">@(_document.DocumentTypeName ?? "—")</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Số hiệu</div>
+                            <div class="detail-value">@(_document.DocumentNumber ?? "—")</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Ngày ban hành</div>
+                            <div class="detail-value">@(_document.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Phòng ban</div>
+                            <div class="detail-value">@(_document.DepartmentName ?? "—")</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Người tạo</div>
+                            <div class="detail-value">@(_document.CreatedByName ?? "—")</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Ngày tạo</div>
+                            <div class="detail-value">@_document.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDF Viewer -->
+            @if (!string.IsNullOrEmpty(_presignedUrl))
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Xem File PDF</span>
+                        <a href="@_presignedUrl" target="_blank" class="btn btn-outline btn-sm">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Mở trong tab mới
+                        </a>
+                    </div>
+                    <div class="card-body" style="padding:0">
+                        <iframe class="pdf-frame" src="@_presignedUrl"></iframe>
+                    </div>
+                </div>
+            }
+
+            <!-- OCR Text -->
+            @if (!string.IsNullOrEmpty(_document.OcrText))
+            {
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Nội dung OCR</span></div>
+                    <div class="card-body">
+                        <pre style="font-size:13px;white-space:pre-wrap;font-family:var(--font);color:var(--color-text-secondary);max-height:300px;overflow-y:auto;">@_document.OcrText</pre>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:20px;">
+            <!-- Signatures -->
+            @if (_document.Signatures.Any())
+            {
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Chữ ký (@_document.Signatures.Count)</span></div>
+                    <div class="card-body">
+                        @foreach (var sig in _document.Signatures)
+                        {
+                            <div class="sig-item">
+                                <div class="sig-icon">
+                                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </div>
+                                <div class="sig-info">
+                                    <div class="sig-name">@sig.SignerName</div>
+                                    <div class="sig-meta">@sig.SignatureType • @sig.SignedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                    @if (sig.IsValid) { <span class="sig-valid">✓ Hợp lệ</span> }
+                                    else { <span class="sig-invalid">✗ Không hợp lệ</span> }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Process History -->
+            @if (_document.ProcessHistory.Any())
+            {
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Lịch sử xử lý</span></div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            @foreach (var proc in _document.ProcessHistory.OrderByDescending(p => p.ProcessedAt))
+                            {
+                                <div class="timeline-item">
+                                    <div class="timeline-dot"></div>
+                                    <div class="timeline-time">@proc.ProcessedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="timeline-title">@GetActionLabel(proc.Action)</div>
+                                    <div class="timeline-desc">
+                                        @proc.ProcessedByName
+                                        @if (!string.IsNullOrEmpty(proc.Comment))
+                                        {
+                                            <span>: "@proc.Comment"</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- Action Modal -->
+@if (_showActionModal)
+{
+    <div class="modal-overlay" @onclick="CloseActionModal">
+        <div class="modal" @onclick:stopPropagation>
+            <div class="modal-header">
+                <span class="modal-title">@GetActionModalTitle()</span>
+                <button class="modal-close" @onclick="CloseActionModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Ghi chú (tùy chọn)</label>
+                    <textarea class="form-control" placeholder="Nhập ghi chú..." @bind="_actionComment" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="CloseActionModal">Hủy</button>
+                <button class="btn @GetActionButtonClass()" @onclick="ExecuteAction" disabled="@_isActionLoading">
+                    @if (_isActionLoading)
+                    {
+                        <div class="spinner spinner-sm" style="border-top-color:white"></div>
+                        <span>Đang xử lý...</span>
+                    }
+                    else
+                    {
+                        <span>@GetActionModalTitle()</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private DocumentDto? _document;
+    private bool _isLoading = true;
+    private bool _isActionLoading;
+    private string? _role;
+    private string? _presignedUrl;
+
+    private bool _showActionModal;
+    private string _currentAction = "";
+    private string _actionComment = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _role = await AuthService.GetRoleAsync();
+        await LoadDocument();
+    }
+
+    private async Task LoadDocument()
+    {
+        _isLoading = true;
+        _document = await DocumentService.GetDocumentAsync(Id);
+        if (_document?.FileUrl != null)
+        {
+            try { _presignedUrl = await DocumentService.GetPresignedUrlAsync(Id); }
+            catch { _presignedUrl = _document.FileUrl; }
+        }
+        _isLoading = false;
+    }
+
+    private void ShowActionModal(string action)
+    {
+        _currentAction = action;
+        _actionComment = "";
+        _showActionModal = true;
+    }
+    private void CloseActionModal() => _showActionModal = false;
+
+    private async Task ExecuteAction()
+    {
+        _isActionLoading = true;
+        bool success = false;
+
+        success = _currentAction switch
+        {
+            "submit" => await DocumentService.SubmitDocumentAsync(Id, _actionComment),
+            "dept-sign" => await DocumentService.DeptSignDocumentAsync(Id, _actionComment),
+            "director-sign" => await DocumentService.DirectorSignDocumentAsync(Id, _actionComment),
+            "reject" => await DocumentService.RejectDocumentAsync(Id, _actionComment),
+            _ => false
+        };
+
+        _isActionLoading = false;
+        _showActionModal = false;
+
+        if (success)
+        {
+            Toast.ShowSuccess("Thực hiện thành công!");
+            await LoadDocument();
+        }
+        else
+        {
+            Toast.ShowError("Thao tác thất bại. Vui lòng thử lại.");
+        }
+    }
+
+    private async Task PublishDocument()
+    {
+        _isActionLoading = true;
+        var success = await DocumentService.PublishDocumentAsync(Id);
+        _isActionLoading = false;
+        if (success) { Toast.ShowSuccess("Đã ban hành công văn!"); await LoadDocument(); }
+        else Toast.ShowError("Ban hành thất bại.");
+    }
+
+    private async Task RunOcr()
+    {
+        _isActionLoading = true;
+        var success = await DocumentService.RunOcrAsync(Id);
+        _isActionLoading = false;
+        if (success) { Toast.ShowSuccess("OCR hoàn tất!"); await LoadDocument(); }
+        else Toast.ShowError("OCR thất bại.");
+    }
+
+    private async Task OnFileUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        _isActionLoading = true;
+        using var stream = file.OpenReadStream(maxAllowedSize: 52428800);
+        var result = await DocumentService.UploadFileAsync(Id, stream, file.Name);
+        _isActionLoading = false;
+        if (result != null) { Toast.ShowSuccess("Tải file thành công!"); await LoadDocument(); }
+        else Toast.ShowError("Tải file thất bại.");
+    }
+
+    private string GetActionModalTitle() => _currentAction switch
+    {
+        "submit" => "Nộp trình duyệt",
+        "dept-sign" => "Ký nháy",
+        "submit-director" => "Trình BGH ký",
+        "director-sign" => "Ký số pháp nhân",
+        "reject" => "Từ chối",
+        _ => "Xác nhận"
+    };
+
+    private string GetActionButtonClass() => _currentAction switch
+    {
+        "reject" => "btn-danger",
+        "submit" or "dept-sign" or "director-sign" => "btn-success",
+        _ => "btn-primary"
+    };
+
+    private static string GetActionLabel(string action) => action switch
+    {
+        "Submit" => "Nộp trình duyệt",
+        "DeptSign" => "Ký nháy",
+        "DirectorSign" => "Ký số pháp nhân",
+        "Reject" => "Từ chối",
+        "Publish" => "Ban hành",
+        "Assign" => "Phân công",
+        "OCR" => "Chạy OCR",
+        "Upload" => "Tải lên file",
+        _ => action
+    };
+}

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DocumentService.API/DocumentService.API.csproj" />
+    <Project Path="src/DocumentService.Core/DocumentService.Core.csproj" />
+    <Project Path="src/DocumentService.Infrastructure/DocumentService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DocumentService.Tests/DocumentService.Tests.csproj" />
+  </Folder>
+</Solution>

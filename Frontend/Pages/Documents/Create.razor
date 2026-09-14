@@ -1,0 +1,189 @@
+@page "/documents/create"
+@attribute [Authorize(Roles = "Clerk,Specialist")]
+@inject DocumentService DocumentService
+@inject NavigationManager NavManager
+@inject IToastService Toast
+
+<PageTitle>Tạo Công văn mới - HAU</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Tạo Công văn mới</h1>
+        <p class="page-subtitle">Điền đầy đủ thông tin và tải lên file PDF</p>
+    </div>
+    <div class="page-actions">
+        <a href="/documents" class="btn btn-outline">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Quay lại
+        </a>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Thông tin Công văn</span>
+        </div>
+        <div class="card-body">
+            <EditForm Model="_model" OnValidSubmit="HandleCreate">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label class="form-label required">Tiêu đề</label>
+                    <input type="text" class="form-control" placeholder="Nhập tiêu đề công văn..."
+                           @bind="_model.Title" @bind:event="oninput" />
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Số hiệu văn bản</label>
+                        <input type="text" class="form-control" placeholder="VD: 01/2024/QĐ-HAU"
+                               @bind="_model.DocumentNumber" @bind:event="oninput" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ngày ban hành</label>
+                        <input type="date" class="form-control"
+                               @bind="_issuedDate" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Loại văn bản</label>
+                    <select class="form-control" @bind="_selectedTypeId">
+                        <option value="">-- Chọn loại văn bản --</option>
+                        @if (_documentTypes != null)
+                        {
+                            @foreach (var t in _documentTypes)
+                            {
+                                <option value="@t.Id">@t.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger">@_errorMessage</div>
+                }
+
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+                    <a href="/documents" class="btn btn-outline">Hủy</a>
+                    <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+                        @if (_isSubmitting)
+                        {
+                            <div class="spinner spinner-sm" style="border-top-color:white"></div>
+                            <span>Đang tạo...</span>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Tạo Công văn</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Tải lên File PDF</span>
+        </div>
+        <div class="card-body">
+            <div class="file-upload-area" @onclick="TriggerFileInput">
+                <div class="file-upload-icon">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+                <div class="file-upload-text">
+                    @if (_selectedFile != null)
+                    {
+                        <strong style="color:var(--color-primary)">@_selectedFile.Name</strong>
+                        <br /><small>@(_selectedFile.Size / 1024) KB</small>
+                    }
+                    else
+                    {
+                        <span>Kéo thả hoặc <strong style="color:var(--color-primary)">chọn file</strong></span>
+                    }
+                </div>
+                <div class="file-upload-hint">Chấp nhận file PDF (tối đa 50MB)</div>
+            </div>
+            <InputFile id="fileInput" OnChange="OnFileSelected" accept=".pdf" style="display:none" />
+
+            @if (_selectedFile != null)
+            {
+                <div style="margin-top:12px;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--color-success-light);border-radius:var(--radius-sm);border:1px solid #a7f3d0;">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span style="font-size:13px;color:#065f46">File sẵn sàng tải lên</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly CreateDocumentDto _model = new();
+    private List<DocumentTypeDto>? _documentTypes;
+    private string _selectedTypeId = "";
+    private DateTime? _issuedDate;
+    private IBrowserFile? _selectedFile;
+    private bool _isSubmitting;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _documentTypes = await DocumentService.GetDocumentTypesAsync();
+    }
+
+    private async Task HandleCreate()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Title))
+        {
+            _errorMessage = "Vui lòng nhập tiêu đề công văn.";
+            return;
+        }
+
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        if (Guid.TryParse(_selectedTypeId, out var typeId))
+            _model.DocumentTypeId = typeId;
+        _model.IssuedDate = _issuedDate;
+
+        try
+        {
+            var created = await DocumentService.CreateDocumentAsync(_model);
+            if (created == null)
+            {
+                _errorMessage = "Tạo công văn thất bại.";
+                _isSubmitting = false;
+                return;
+            }
+
+            // Upload file if selected
+            if (_selectedFile != null)
+            {
+                using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 52428800);
+                await DocumentService.UploadFileAsync(created.Id, stream, _selectedFile.Name);
+            }
+
+            Toast.ShowSuccess("Tạo công văn thành công!");
+            NavManager.NavigateTo($"/documents/{created.Id}");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Lỗi: {ex.Message}";
+            _isSubmitting = false;
+        }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e) => _selectedFile = e.File;
+    private void TriggerFileInput() { }
+}

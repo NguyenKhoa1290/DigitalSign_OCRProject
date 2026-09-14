@@ -1,0 +1,15 @@
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.csproj.AssemblyReference.cache
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.AssemblyInfoInputs.cache
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.AssemblyInfo.cs
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.csproj.CoreCompileInputs.cache
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\bin\Debug\net9.0\SignService.Infrastructure.deps.json
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\bin\Debug\net9.0\SignService.Infrastructure.dll
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\bin\Debug\net9.0\SignService.Infrastructure.pdb
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\bin\Debug\net9.0\SignService.Core.dll
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\bin\Debug\net9.0\SignService.Core.pdb
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignServ.FA24500D.Up2Date
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.dll
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\refint\SignService.Infrastructure.dll
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.pdb
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\ref\SignService.Infrastructure.dll

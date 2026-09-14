@@ -1,0 +1,314 @@
+@page "/admin/departments"
+@attribute [Authorize(Roles = "Admin")]
+@inject AdminService AdminService
+@inject IToastService Toast
+
+<PageTitle>Quản lý Phòng ban - HAU Admin</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Quản lý Phòng ban</h1>
+        <p class="page-subtitle">Cơ cấu tổ chức và phòng ban</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-primary" @onclick="ShowCreateModal">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Thêm phòng ban
+        </button>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <LoadingSpinner />
+}
+else
+{
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <!-- Tree View -->
+        <div class="card">
+            <div class="card-header"><span class="card-title">Cơ cấu tổ chức</span></div>
+            <div class="card-body">
+                @if (_departments == null || !_departments.Any())
+                {
+                    <div class="empty-state" style="padding:40px 20px">
+                        <p class="empty-state-title">Chưa có phòng ban nào</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var dept in _rootDepartments)
+                    {
+                        <DepartmentTreeNode Dept="@dept" SelectedId="@_selectedId"
+                            OnSelect="SelectDepartment" OnEdit="ShowEditModal" OnDelete="ShowDeleteConfirm" />
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- Detail Panel -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">@(_selectedDept != null ? _selectedDept.Name : "Thông tin Phòng ban")</span>
+                @if (_selectedDept != null)
+                {
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-outline btn-sm" @onclick="() => ShowEditModal(_selectedDept)">Sửa</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteConfirm(_selectedDept)">Xóa</button>
+                    </div>
+                }
+            </div>
+            <div class="card-body">
+                @if (_selectedDept == null)
+                {
+                    <p style="color:var(--color-text-muted);font-size:14px;">Chọn một phòng ban để xem chi tiết.</p>
+                }
+                else
+                {
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Tên phòng ban</div>
+                            <div class="detail-value">@_selectedDept.Name</div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_selectedDept.Code))
+                        {
+                            <div class="detail-item">
+                                <div class="detail-label">Mã phòng ban</div>
+                                <div class="detail-value">@_selectedDept.Code</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_selectedDept.ParentName))
+                        {
+                            <div class="detail-item">
+                                <div class="detail-label">Phòng ban cha</div>
+                                <div class="detail-value">@_selectedDept.ParentName</div>
+                            </div>
+                        }
+                        <div class="detail-item">
+                            <div class="detail-label">Số thành viên</div>
+                            <div class="detail-value">@_selectedDept.MemberCount người</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Trạng thái</div>
+                            <div class="detail-value">
+                                @if (_selectedDept.IsActive) { <span class="badge badge-green">Hoạt động</span> }
+                                else { <span class="badge badge-gray">Vô hiệu</span> }
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_selectedDept.Description))
+                    {
+                        <div style="margin-top:14px;padding:14px;background:var(--color-bg);border-radius:var(--radius-md);">
+                            <div class="detail-label">Mô tả</div>
+                            <p style="margin-top:4px;font-size:13.5px;color:var(--color-text-secondary);">@_selectedDept.Description</p>
+                        </div>
+                    }
+                    @if (_selectedDept.Children.Any())
+                    {
+                        <div style="margin-top:14px;">
+                            <div class="detail-label" style="margin-bottom:8px;">Phòng ban trực thuộc (@_selectedDept.Children.Count)</div>
+                            @foreach (var child in _selectedDept.Children)
+                            {
+                                <div style="padding:8px 12px;border:1px solid var(--color-border-light);border-radius:var(--radius-sm);margin-bottom:6px;font-size:13.5px;">
+                                    @child.Name
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Create/Edit Modal -->
+@if (_showFormModal)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal" @onclick:stopPropagation>
+            <div class="modal-header">
+                <span class="modal-title">@(_editingDept == null ? "Thêm phòng ban" : "Chỉnh sửa phòng ban")</span>
+                <button class="modal-close" @onclick="CloseModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Tên phòng ban</label>
+                    <input type="text" class="form-control" placeholder="VD: Phòng Đào tạo" @bind="_formName" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mã phòng ban</label>
+                    <input type="text" class="form-control" placeholder="VD: DAO-TAO" @bind="_formCode" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phòng ban cha</label>
+                    <select class="form-control" @bind="_formParentId">
+                        <option value="">-- Không có (đơn vị gốc) --</option>
+                        @if (_departments != null)
+                        {
+                            // Loại trừ chính nó và toàn bộ con cháu để tránh circular reference
+                            var excluded = _editingDept != null ? GetDescendantIds(_editingDept) : new HashSet<Guid>();
+                            @foreach (var d in _departments.Where(x => !excluded.Contains(x.Id)))
+                            {
+                                <option value="@d.Id">@d.Name (@(d.DeptCode ?? "?"))</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mô tả</label>
+                    <textarea class="form-control" placeholder="Mô tả phòng ban..." @bind="_formDescription" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="CloseModal">Hủy</button>
+                <button class="btn btn-primary" @onclick="SaveDepartment" disabled="@_isSaving">
+                    @if (_isSaving)
+                    { <div class="spinner spinner-sm" style="border-top-color:white"></div><span>Đang lưu...</span> }
+                    else { <span>@(_editingDept == null ? "Thêm" : "Lưu")</span> }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog @bind-IsVisible="_showDeleteConfirm" Title="Xóa phòng ban"
+    Message="@($"Xóa phòng ban '{_deletingDept?.Name}'?")"
+    OnConfirm="DeleteDepartment" ConfirmText="Xóa" />
+
+@code {
+    private bool _isLoading = true;
+    private List<DepartmentDto>? _departments;
+    private List<DepartmentDto> _rootDepartments = new();
+    private DepartmentDto? _selectedDept;
+    private Guid? _selectedId;
+
+    private bool _showFormModal;
+    private bool _isSaving;
+    private DepartmentDto? _editingDept;
+    private string _formName = "", _formCode = "", _formParentId = "", _formDescription = "";
+
+    private bool _showDeleteConfirm;
+    private DepartmentDto? _deletingDept;
+
+    protected override async Task OnInitializedAsync() => await LoadDepartments();
+
+    private async Task LoadDepartments()
+    {
+        _isLoading = true;
+        // Lấy cây phân cấp (có children) để hiển thị tree view
+        _rootDepartments = await AdminService.GetDepartmentTreeAsync() ?? new();
+        // Lấy flat list để dùng trong dropdown chọn phòng ban cha
+        _departments = await AdminService.GetDepartmentsAsync();
+
+        // Fallback: nếu tree rỗng (ví dụ do circular reference trong DB)
+        // thì xây cây tạm từ flat list để vẫn hiển thị được
+        if (!_rootDepartments.Any() && _departments?.Any() == true)
+        {
+            _rootDepartments = BuildTreeFromFlatList(_departments);
+        }
+        _isLoading = false;
+    }
+
+    /// Xây cây từ flat list — xử lý cả trường hợp circular reference
+    private List<DepartmentDto> BuildTreeFromFlatList(List<DepartmentDto> flat)
+    {
+        var map = flat.ToDictionary(d => d.Id);
+        var roots = new List<DepartmentDto>();
+        var visited = new HashSet<Guid>();
+
+        foreach (var dept in flat)
+        {
+            // Nếu không có cha, hoặc cha không tồn tại, hoặc tạo vòng lặp → làm root
+            if (dept.ParentId == null || !map.ContainsKey(dept.ParentId.Value)
+                || IsCircular(dept.Id, dept.ParentId.Value, map))
+            {
+                if (!visited.Contains(dept.Id))
+                {
+                    roots.Add(dept);
+                    visited.Add(dept.Id);
+                }
+            }
+        }
+        // Nếu vẫn rỗng → hiện tất cả như root
+        if (!roots.Any()) roots = flat.ToList();
+        return roots;
+    }
+
+    private bool IsCircular(Guid startId, Guid currentParentId, Dictionary<Guid, DepartmentDto> map)
+    {
+        var seen = new HashSet<Guid> { startId };
+        var cur = currentParentId;
+        while (true)
+        {
+            if (seen.Contains(cur)) return true;
+            seen.Add(cur);
+            if (!map.TryGetValue(cur, out var parent) || parent.ParentId == null) return false;
+            cur = parent.ParentId.Value;
+        }
+    }
+
+    /// Lấy tất cả ID của dept này và con cháu (để loại khỏi dropdown cha)
+    private HashSet<Guid> GetDescendantIds(DepartmentDto dept)
+    {
+        var ids = new HashSet<Guid> { dept.Id };
+        foreach (var child in dept.Children)
+            foreach (var id in GetDescendantIds(child))
+                ids.Add(id);
+        return ids;
+    }
+
+    private void SelectDepartment(DepartmentDto dept) { _selectedDept = dept; _selectedId = dept.Id; }
+
+    private void ShowCreateModal()
+    {
+        _editingDept = null;
+        _formName = _formCode = _formParentId = _formDescription = "";
+        _showFormModal = true;
+    }
+
+    private void ShowEditModal(DepartmentDto dept)
+    {
+        _editingDept = dept;
+        _formName = dept.Name;
+        _formCode = dept.Code ?? "";
+        _formParentId = dept.ParentId?.ToString() ?? "";
+        _formDescription = dept.Description ?? "";
+        _showFormModal = true;
+    }
+
+    private void CloseModal() => _showFormModal = false;
+
+    private async Task SaveDepartment()
+    {
+        if (string.IsNullOrWhiteSpace(_formName)) { Toast.ShowWarning("Vui lòng nhập tên phòng ban."); return; }
+        _isSaving = true;
+        var dto = new CreateDepartmentDto
+        {
+            Name = _formName, Code = _formCode, Description = _formDescription,
+            ParentId = Guid.TryParse(_formParentId, out var pid) ? pid : null
+        };
+        try
+        {
+            DepartmentDto? result;
+            if (_editingDept == null) result = await AdminService.CreateDepartmentAsync(dto);
+            else result = await AdminService.UpdateDepartmentAsync(_editingDept.Id, dto);
+
+            if (result != null) { Toast.ShowSuccess("Lưu thành công!"); _showFormModal = false; await LoadDepartments(); }
+            else Toast.ShowError("Lưu thất bại.");
+        }
+        catch (Exception ex) { Toast.ShowError($"Lỗi: {ex.Message}"); }
+        _isSaving = false;
+    }
+
+    private void ShowDeleteConfirm(DepartmentDto dept) { _deletingDept = dept; _showDeleteConfirm = true; }
+
+    private async Task DeleteDepartment()
+    {
+        if (_deletingDept == null) return;
+        var ok = await AdminService.DeleteDepartmentAsync(_deletingDept.Id);
+        if (ok) { Toast.ShowSuccess("Xóa thành công!"); _selectedDept = null; await LoadDepartments(); }
+        else Toast.ShowError("Xóa thất bại.");
+    }
+}

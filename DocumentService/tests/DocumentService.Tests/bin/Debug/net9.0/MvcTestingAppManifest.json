@@ -1,0 +1,5 @@
+{
+  "DocumentService.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.API",
+  "DocumentService.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core",
+  "DocumentService.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Infrastructure"
+}

@@ -1,0 +1,218 @@
+@page "/admin/certificates"
+@attribute [Authorize(Roles = "Admin")]
+@inject AdminService AdminService
+@inject IToastService Toast
+
+<PageTitle>Quản lý Chứng thư số - HAU Admin</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Chứng thư số</h1>
+        <p class="page-subtitle">Cấp và quản lý chứng thư số cho người dùng</p>
+    </div>
+    <div class="page-actions">
+        <button class="btn btn-primary" @onclick="ShowIssueModal">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Cấp chứng thư
+        </button>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <LoadingSpinner />
+}
+else if (_certificates == null || !_certificates.Any())
+{
+    <div class="table-wrapper">
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+            </div>
+            <p class="empty-state-title">Chưa có chứng thư số nào</p>
+            <p class="empty-state-desc">Hãy cấp chứng thư số đầu tiên cho người dùng.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Người dùng</th>
+                    <th>Subject</th>
+                    <th>Loại</th>
+                    <th>Hiệu lực từ</th>
+                    <th>Hết hạn</th>
+                    <th>Trạng thái</th>
+                    <th style="text-align:right">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cert in _certificates)
+                {
+                    <tr>
+                        <td>
+                            <div style="font-weight:500">@cert.UserFullName</div>
+                            <div style="font-size:12px;color:var(--color-text-muted)">@cert.UserName</div>
+                        </td>
+                        <td style="font-size:12px;font-family:monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@cert.Subject">@cert.Subject</td>
+                        <td>
+                            <span class="badge @(cert.CertificateType == "Organization" ? "badge-purple" : "badge-blue")">
+                                @(cert.CertificateType == "Organization" ? "Pháp nhân" : "Cá nhân")
+                            </span>
+                        </td>
+                        <td>@cert.ValidFrom.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @{
+                                var isExpiring = cert.ValidTo < DateTime.Now.AddDays(30);
+                                var isExpired = cert.ValidTo < DateTime.Now;
+                            }
+                            <span style="color: @(isExpired ? "var(--color-danger)" : isExpiring ? "var(--color-warning)" : "inherit")">
+                                @cert.ValidTo.ToString("dd/MM/yyyy")
+                            </span>
+                        </td>
+                        <td>
+                            @if (cert.IsRevoked) { <span class="badge badge-red">Đã thu hồi</span> }
+                            else if (!cert.IsActive) { <span class="badge badge-gray">Vô hiệu</span> }
+                            else if (cert.ValidTo < DateTime.Now) { <span class="badge badge-orange">Hết hạn</span> }
+                            else { <span class="badge badge-green">Đang hoạt động</span> }
+                        </td>
+                        <td>
+                            <div style="display:flex;justify-content:flex-end;">
+                                @if (!cert.IsRevoked && cert.IsActive)
+                                {
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ShowRevokeConfirm(cert)">Thu hồi</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<!-- Issue Certificate Modal -->
+@if (_showIssueModal)
+{
+    <div class="modal-overlay" @onclick="CloseModal">
+        <div class="modal" @onclick:stopPropagation>
+            <div class="modal-header">
+                <span class="modal-title">Cấp Chứng thư số</span>
+                <button class="modal-close" @onclick="CloseModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Hệ thống sẽ tự động tạo cặp khóa RSA và chứng thư X.509.</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">ID Người dùng</label>
+                    <input type="text" class="form-control" placeholder="Nhập User ID (GUID)..."
+                           @bind="_issueUserId" />
+                    <div class="form-hint">Lấy từ trang Quản lý Người dùng</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Loại chứng thư</label>
+                    <select class="form-control" @bind="_issueCertType">
+                        <option value="Personal">Cá nhân (Personal)</option>
+                        <option value="Organization">Pháp nhân (Organization)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Thời hạn (ngày)</label>
+                    <input type="number" class="form-control" @bind="_issueValidityDays" min="30" max="1825" />
+                    <div class="form-hint">Mặc định 365 ngày (1 năm)</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu khóa (tùy chọn)</label>
+                    <input type="password" class="form-control" placeholder="Để trống nếu không cần mật khẩu"
+                           @bind="_issueKeyPassword" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="CloseModal">Hủy</button>
+                <button class="btn btn-primary" @onclick="IssueCertificate" disabled="@_isSaving">
+                    @if (_isSaving)
+                    { <div class="spinner spinner-sm" style="border-top-color:white"></div><span>Đang cấp...</span> }
+                    else
+                    {
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                        <span>Cấp chứng thư</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog @bind-IsVisible="_showRevokeConfirm" Title="Thu hồi chứng thư"
+    Message="@($"Thu hồi chứng thư của '{_revokingCert?.UserFullName}'? Người dùng sẽ không thể ký số sau khi thu hồi.")"
+    OnConfirm="RevokeCertificate" ConfirmText="Thu hồi" />
+
+@code {
+    private bool _isLoading = true;
+    private List<CertificateDto>? _certificates;
+
+    private bool _showIssueModal;
+    private bool _isSaving;
+    private string _issueUserId = "";
+    private string _issueCertType = "Personal";
+    private int _issueValidityDays = 365;
+    private string? _issueKeyPassword;
+
+    private bool _showRevokeConfirm;
+    private CertificateDto? _revokingCert;
+
+    protected override async Task OnInitializedAsync() => await LoadCertificates();
+
+    private async Task LoadCertificates()
+    {
+        _isLoading = true;
+        try { _certificates = await AdminService.GetCertificatesAsync(); }
+        catch { Toast.ShowError("Lỗi tải danh sách chứng thư."); }
+        _isLoading = false;
+    }
+
+    private void ShowIssueModal()
+    {
+        _issueUserId = ""; _issueCertType = "Personal"; _issueValidityDays = 365; _issueKeyPassword = null;
+        _showIssueModal = true;
+    }
+    private void CloseModal() => _showIssueModal = false;
+
+    private async Task IssueCertificate()
+    {
+        if (!Guid.TryParse(_issueUserId, out var uid)) { Toast.ShowWarning("ID người dùng không hợp lệ."); return; }
+        _isSaving = true;
+        var dto = new IssueCertificateDto { UserId = uid, CertificateType = _issueCertType, ValidityDays = _issueValidityDays, KeyPassword = _issueKeyPassword };
+        try
+        {
+            var result = await AdminService.IssueCertificateAsync(dto);
+            if (result != null) { Toast.ShowSuccess("Cấp chứng thư thành công!"); _showIssueModal = false; await LoadCertificates(); }
+            else Toast.ShowError("Cấp chứng thư thất bại.");
+        }
+        catch (Exception ex) { Toast.ShowError($"Lỗi: {ex.Message}"); }
+        _isSaving = false;
+    }
+
+    private void ShowRevokeConfirm(CertificateDto cert) { _revokingCert = cert; _showRevokeConfirm = true; }
+
+    private async Task RevokeCertificate()
+    {
+        if (_revokingCert == null) return;
+        var ok = await AdminService.RevokeCertificateAsync(_revokingCert.Id);
+        if (ok) { Toast.ShowSuccess("Thu hồi thành công!"); await LoadCertificates(); }
+        else Toast.ShowError("Thu hồi thất bại.");
+    }
+}

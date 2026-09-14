@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/DocumentService/">
+    <Project Path="DocumentService/src/DocumentService.API/DocumentService.API.csproj" />
+    <Project Path="DocumentService/src/DocumentService.Core/DocumentService.Core.csproj" />
+    <Project Path="DocumentService/src/DocumentService.Infrastructure/DocumentService.Infrastructure.csproj" />
+    <Project Path="DocumentService/tests/DocumentService.Tests/DocumentService.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Frontend/">
+    <Project Path="Frontend/HauDocumentApp.csproj" />
+  </Folder>
+  <Folder Name="/IdentityService/">
+    <Project Path="IdentityService/src/IdentityService.API/IdentityService.API.csproj" />
+    <Project Path="IdentityService/src/IdentityService.Core/IdentityService.Core.csproj" />
+    <Project Path="IdentityService/src/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj" />
+    <Project Path="IdentityService/tests/IdentityService.Tests/IdentityService.Tests.csproj" />
+  </Folder>
+  <Folder Name="/SignService/">
+    <Project Path="SignService/src/SignService.API/SignService.API.csproj" />
+    <Project Path="SignService/src/SignService.Core/SignService.Core.csproj" />
+    <Project Path="SignService/src/SignService.Infrastructure/SignService.Infrastructure.csproj" />
+    <Project Path="SignService/tests/SignService.Tests/SignService.Tests.csproj" />
+  </Folder>
+  <Project Path="ApiGateway/ApiGateway.csproj" />
+</Solution>

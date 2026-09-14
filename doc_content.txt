@@ -1,0 +1,539 @@
+uTRƯỜNG ĐẠI HỌC KIẾN TRÚC HÀ NỘI
+KHOA CÔNG NGHỆ THÔNG TIN
+-----------------
+
+
+ĐỒ ÁN TỐT NGHIỆP KỸ SƯ
+NGÀNH: CÔNG NGHỆ THÔNG TIN
+MÃ NGÀNH: 748201
+KHÓA: 2022 - 2027
+
+ĐỀ TÀI:
+NGHIÊN CỨU CÁC KỸ THUẬT XỬ LÝ CHỮ KÝ SỐ VÀ NHẬN DIỆN KÝ TỰ QUANG HỌC OCR 
+HIỆN ĐẠI ỨNG DỤNG TRONG PHÁT TRIỂN 
+HỆ THỐNG THÔNG TIN HỖ TRỢ 
+QUẢN LÝ CÔNG VĂN ĐI VÀ ĐẾN CỦA 
+TRƯỜNG ĐẠI HỌC KIẾN TRÚC HÀ NỘI
+
+
+
+
+         SINH VIÊN THỰC HIỆN: 	NGUYỄN ĐĂNG KHOA
+LỚP:	2022CN2
+
+
+
+
+HÀ NỘI 3-2027
+TRƯỜNG ĐẠI HỌC KIẾN TRÚC HÀ NỘI
+KHOA CÔNG NGHỆ THÔNG TIN
+-----------------
+
+
+ĐỒ ÁN TỐT NGHIỆP KỸ SƯ
+NGÀNH: CÔNG NGHỆ THÔNG TIN
+MÃ NGÀNH: 748201
+KHÓA: 2022 - 2027
+
+ĐỀ TÀI:
+NGHIÊN CỨU CÁC KỸ THUẬT XỬ LÝ CHỮ KÝ SỐ VÀ NHẬN DIỆN KÝ TỰ QUANG HỌC OCR 
+HIỆN ĐẠI ỨNG DỤNG TRONG PHÁT TRIỂN 
+HỆ THỐNG THÔNG TIN HỖ TRỢ 
+QUẢN LÝ CÔNG VĂN ĐI VÀ ĐẾN CỦA 
+TRƯỜNG ĐẠI HỌC KIẾN TRÚC HÀ NỘI
+
+
+
+GIÁO VIÊN HƯỚNG DẪN	: TS.TRẦN TRUNG
+
+SINH VIÊN THỰC HIỆN 	: NGUYỄN ĐĂNG KHOA
+     LỚP	: 2022CN2
+
+
+
+
+HÀ NỘI 3-2027
+
+LỜI CẢM ƠN
+
+DANH MỤC BẢNG BIỂU
+
+DANH MỤC HÌNH ẢNH
+
+DANH MỤC THUẬT NGỮ
+
+MỤC LỤC
+LỜI CẢM ƠN	i
+DANH MỤC BẢNG BIỂU	ii
+DANH MỤC HÌNH ẢNH	iii
+DANH MỤC THUẬT NGỮ	iv
+MỞ ĐẦU	viii
+CHƯƠNG 1: GIỚI THIỆU VỀ ĐỒ ÁN	1
+1.1. Mục tiêu của đề tài	1
+1.1.1. Lý do chọn đề tài	1
+1.1.2. Đối tượng và Phạm vi nghiên cứu	2
+1.2. Giới thiệu các công nghệ sử dụng	2
+1.2.1. Kiến trúc vi dịch vụ (Microservices Architecture)	2
+1.2.2. Nền tảng lập trình .NET/C# và Python	3
+1.2.3. Công nghệ nhận dạng ký tự quang học PaddleOCR	3
+1.2.4. Trục truyền thông điệp Apache Kafka	3
+1.2.5. Hệ quản trị cơ sở dữ liệu PostgreSQL và Lưu trữ MinIO	4
+1.2.6. Nền tảng phát triển giao diện đa nền tảng Blazor	4
+1.2.7. Công nghệ API Gateway và Điều phối lưu lượng	5
+CHƯƠNG 2: THIẾT KẾ HỆ THỐNG	6
+2.1. Phân tích yêu cầu và Nghiệp vụ hệ thống	6
+2.1.1. Mục tiêu nghiệp vụ của hệ thống	6
+2.1.2. Xác định các nhóm Tác nhân	7
+2.1.2.1. Quản trị viên (Admin)	7
+2.1.2.2. Văn thư	8
+2.1.2.3. Chuyên viên	8
+2.1.2.4. Lãnh đạo Phòng	9
+2.1.2.5. Ban Giám hiệu	9
+2.1.3. Sơ đồ thiết kế usercase	10
+2.1.3.1. Sơ đồ Use Case tổng quan hệ thống	10
+2.1.3.2. Sơ đồ UserCase chi tiết	14
+2.1.4. Kịch bản chuẩn và ngoại lệ	22
+2.1.4.1.  Kịch bản cho tính năng Đăng nhập	22
+2.1.4.2. Kịch bản tính năng Tiếp nhận và bóc tách công văn đến (OCR)	23
+2.1.4.3. Kịch bản tính năng Soạn thảo và trình duyệt công văn đi	25
+2.1.4.4. Kịch bản tính năng Phân công và Ký duyệt cấp phòng	27
+2.1.4.5. Kịch bản tính năng Phê duyệt và Ký số pháp nhân	30
+2.1.4.6. Kịch bản tính năng Quản trị hệ thống và Phân quyền	32
+2.2. Mô hình Phân cấp Quản lý hành chính	34
+2.2.1. Luồng dữ liệu và sơ đồ luồng dữ liệu	34
+2.2.2. Vai trò người dùng và Phân quyền (RBAC)	34
+2.3. Sơ đồ phân cấp chức năng và ma trận phân quyền	36
+2.4. Thiết kế hệ thống và sơ đồ thiết kế hệ thống	37
+2.4.1. Tổng quan Kiến trúc Microservices	37
+2.4.2. Lớp User/Client (Giao diện người dùng)	39
+2.4.3. Lớp Gateway (Cửa ngõ hệ thống)	40
+2.4.4. Lớp Service	41
+2.4.4.1. Identity Service	41
+2.4.4.2. Document Service	42
+2.4.4.3. OCR Service	43
+2.4.4.4. Sign Service	44
+2.4.5. Lớp Hạ tầng và Lưu trữ (Infrastructure & Storage Layer)	46
+2.5. Biểu đồ trình tự các chức năng chính	47
+2.5.1. Trình tự chức năng Tiếp nhận và bóc tách OCR	47
+2.5.2. Trình tự chức năng Phê duyệt và Ký số pháp nhân	49
+2.6. Thiết kế cơ sở dữ liệu	51
+2.6.1. Chiến lược lưu trữ dữ liệu	51
+2.6.2. Sơ đồ thực thể liên kết (ERD - Entity Relationship Diagram)	52
+2.6.3. Đặc tả chi tiết các bảng dữ liệu	53
+2.6.3.1. Bảng AppUsers (Quản lý tài khoản người dùng)	53
+2.6.3.2. Bảng AppRoles (Quản lý vai trò người dùng)	55
+2.6.3.3. Bảng AppUserRoles (Bảng trung gian phân quyền)	56
+2.6.3.4. Bảng Departments (Quản lý sơ đồ tổ chức)	58
+2.6.3.5. Bảng Documents (Thông tin công văn)	59
+2.6.3.6. Bảng DocumentTypes (Phân loại văn bản)	61
+2.6.3.7. Bảng DocumentProcess (Nhật ký luân chuyển và Bút phê)	62
+2.6.3.8. Bảng Signatures (Bằng chứng ký số)	63
+MỞ ĐẦU
+
+
+CHƯƠNG 1: GIỚI THIỆU VỀ ĐỒ ÁN
+1.1. Mục tiêu của đề tài
+1.1.1. Lý do chọn đề tài 
+Trong bối cảnh cách mạng công nghiệp 4.0 đang diễn ra mạnh mẽ, việc chuyển đổi số trong quản lý hành chính đã trở thành yêu cầu cấp thiết đối với các cơ sở giáo dục đại học. Đặc biệt, tại Trường Đại học Kiến trúc Hà Nội, với quy mô tổ chức đa dạng gồm nhiều khoa, phòng và ban chức năng, lưu lượng công văn đi và đến mỗi ngày là cực kỳ lớn. Tuy nhiên, quy trình quản lý hiện nay vẫn còn phụ thuộc nhiều vào văn bản giấy và các thao tác thủ công, dẫn đến những hạn chế về tốc độ luân chuyển thông tin cũng như hiệu quả lưu trữ .
+Việc duy trì kho lưu trữ vật lý không chỉ gây tốn kém không gian mà còn tiềm ẩn rủi ro thất lạc, hư hỏng tài liệu theo thời gian. Bên cạnh đó, quá trình nhập liệu metadata (thông tin đặc tả) cho công văn bằng tay thường tiêu tốn nhiều thời gian của cán bộ văn thư và dễ phát sinh sai sót. Những rào cản này làm giảm tính kịp thời trong việc triển khai các chỉ đạo từ Ban Giám hiệu xuống các đơn vị cấp dưới.
+Để giải quyết triệt để các vấn đề trên, sự kết hợp giữa kỹ thuật Nhận diện ký tự quang học (OCR) hiện đại và Chữ ký số là chìa khóa then chốt. Công nghệ OCR cho phép tự động hóa khâu số hóa văn bản, trích xuất dữ liệu nhanh chóng với độ chính xác cao, trong khi chữ ký số đảm bảo tính pháp lý, toàn vẹn và chống chối bỏ cho các văn bản điện tử. Chính vì vậy, đề tài "Nghiên cứu các kỹ thuật xử lý chữ ký số và nhận diện ký tự quang học OCR hiện đại ứng dụng trong phát triển hệ thống thông tin hỗ trợ quản lý công văn đi và đến của Trường Đại học Kiến trúc Hà Nội" được lựa chọn nhằm hiện đại hóa quy trình hành chính, góp phần xây dựng môi trường làm việc số chuyên nghiệp và hiệu quả tại Nhà trường.
+Để giải quyết các vấn đề nêu trên, đồ án tập trung vào việc nghiên cứu và làm chủ các kỹ thuật xử lý chữ ký số cùng mô hình OCR tiên tiến (điển hình là PaddleOCR) để ứng dụng vào bài toán tiếng Việt. Mục tiêu cao nhất là phát triển thành công một hệ thống thông tin trên kiến trúc Microservices, cho phép tự động bóc tách dữ liệu từ công văn và điều phối luồng phê duyệt một cách minh bạch. Qua đó, hệ thống không chỉ giảm bớt gánh nặng nhập liệu cho cán bộ văn thư mà còn cung cấp công cụ ký số pháp nhân, giúp Ban Giám hiệu và các phòng ban xử lý văn bản mọi lúc, mọi nơi trên nền tảng số.
+1.1.2. Đối tượng và Phạm vi nghiên cứu
+Hệ thống được thiết kế dành riêng cho quy trình quản lý công văn hành chính tại Trường Đại học Kiến trúc Hà Nội. Phạm vi ứng dụng bao gồm các luồng công văn đi và đến cơ bản, được triển khai thử nghiệm trên cả hai nền tảng là trình duyệt Web và ứng dụng di động nhằm tối ưu hóa khả năng tương tác cho người dùng.
+1.2. Giới thiệu các công nghệ sử dụng 
+Để hiện thực hóa một hệ thống quản lý công văn hiện đại có khả năng xử lý hình ảnh phức tạp và đảm bảo tính pháp lý trên môi trường số, đồ án đã lựa chọn phối hợp nhiều công nghệ tiên tiến. Việc lựa chọn này dựa trên tiêu chí tối ưu hóa hiệu suất xử lý, đảm bảo an ninh thông tin và khả năng mở rộng linh hoạt cho hạ tầng của Nhà trường.
+1.2.1. Kiến trúc vi dịch vụ (Microservices Architecture)
+Thay vì xây dựng một ứng dụng đơn khối (Monolithic) cồng kềnh, hệ thống áp dụng kiến trúc Microservices. Trong mô hình này, hệ thống được chia thành các dịch vụ nhỏ độc lập, mỗi dịch vụ đảm nhận một chức năng nghiệp vụ riêng biệt như Định danh, OCR, hay Ký số và giao tiếp với nhau thông qua mạng hoặc trục truyền thông điệp.
+Ưu điểm: Cho phép mở rộng tài nguyên độc lập cho các tác vụ nặng (như OCR) mà không cần nâng cấp toàn bộ hạ tầng, tăng tính chịu lỗi và giúp việc bảo trì, nâng cấp từng phần diễn ra nhanh chóng.
+Nhược điểm: Độ phức tạp trong việc triển khai và quản lý giao tiếp giữa các dịch vụ cao hơn so với kiến trúc truyền thống.
+1.2.2. Nền tảng lập trình .NET/C# và Python 
+Hệ thống tận dụng tối đa thế mạnh của từng ngôn ngữ lập trình thông qua mô hình đa ngôn ngữ:
+.NET/C#: Được sử dụng để xây dựng các dịch vụ cốt lõi như Identity Service, Document Service và Sign Service. .NET cung cấp sự ổn định cao cho các nghiệp vụ doanh nghiệp và khả năng tích hợp tốt với các chuẩn bảo mật chữ ký số.
+Python: Được lựa chọn riêng cho dịch vụ OCR Service. Với hệ sinh thái thư viện phong phú về trí tuệ nhân tạo (AI) và học sâu (Deep Learning), Python giúp triển khai hiệu quả các mô hình nhận diện hình ảnh phức tạp.
+1.2.3. Công nghệ nhận dạng ký tự quang học PaddleOCR
+Trái tim của hệ thống là mô hình PaddleOCR, một trong những công nghệ OCR hàng đầu thế giới hiện nay.
+Đặc điểm: Mô hình được tinh chỉnh để đạt độ chính xác tối ưu với tiếng Việt, có khả năng tự động bóc tách các trường thông tin quan trọng như số hiệu, ngày ban hành, cơ quan gửi và trích yếu nội dung từ ảnh scan công văn.
+Lợi ích: Giảm thiểu tối đa việc nhập liệu thủ công cho văn thư và tạo nguồn dữ liệu sạch để tái huấn luyện mô hình trong tương lai.
+1.2.4. Trục truyền thông điệp Apache Kafka 
+Apache Kafka đóng vai trò là "trục xương sống" điều phối giao tiếp bất đồng bộ giữa các dịch vụ.
+Cơ chế: Khi một tệp tin được lưu trữ thành công, Document Service sẽ đẩy một thông báo vào Kafka để kích hoạt dịch vụ OCR xử lý tự động.
+Lợi ích: Đảm bảo hệ thống vận hành mượt mà, chịu tải cực tốt ngay cả khi có hàng nghìn công văn được đẩy về cùng lúc và dữ liệu không bị thất thoát.
+1.2.5. Hệ quản trị cơ sở dữ liệu PostgreSQL và Lưu trữ MinIO
+Hệ thống sử dụng cơ chế lưu trữ tách biệt để tối ưu hóa hiệu năng xử lý:
+PostgreSQL: Lưu trữ dữ liệu đặc tả (Metadata), thông tin tài khoản và trạng thái luân chuyển văn bản. Khả năng hỗ trợ kiểu dữ liệu JSONB giúp PostgreSQL lưu trữ kết quả bóc tách OCR một cách linh hoạt.
+MinIO (Object Storage): Là hệ thống lưu trữ đối tượng chuẩn S3 chuyên dùng để chứa các tệp PDF vật lý. MinIO giúp quản lý hàng triệu tệp tin chuyên nghiệp, đảm bảo tệp luôn sẵn sàng để Sign Service lấy ra ký số hoặc hiển thị cho người dùng thông qua các liên kết (Links).
+1.2.6. Nền tảng phát triển giao diện đa nền tảng Blazor
+Để tối ưu hóa quy trình phát triển và đảm bảo tính đồng nhất về công nghệ trong toàn bộ hệ thống, đồ án lựa chọn Blazor làm nền tảng chính để xây dựng giao diện người dùng trên cả trình duyệt Web và ứng dụng di động.
+Sự đồng bộ hóa ngôn ngữ (C# Everywhere): Khác với các framework giao diện truyền thống, Blazor cho phép nhà phát triển sử dụng ngôn ngữ C# để xây dựng các thành phần giao diện tương tác thay vì JavaScript. Điều này giúp tận dụng tối đa các mô hình dữ liệu (Models) và logic nghiệp vụ đã xây dựng ở các dịch vụ Back-end (như Document Service hay Identity Service), từ đó giảm thiểu sai sót và tăng tốc độ phát triển hệ thống.
+Hiệu năng và khả năng đa nền tảng: Hệ thống ứng dụng Blazor WebAssembly cho phiên bản Web nhằm mang lại trải nghiệm mượt mà với tốc độ xử lý nhanh ngay tại trình duyệt. Đối với phiên bản di động, đồ án sử dụng Blazor Hybrid tích hợp trong .NET MAUI, cho phép ứng dụng chạy trực tiếp trên các thiết bị iOS và Android như một ứng dụng bản địa (Native App) mà vẫn chia sẻ được phần lớn mã nguồn với phiên bản Web.
+Vai trò trong hệ thống: Giao diện Blazor đóng vai trò là cầu nối trực quan, giúp người dùng tương tác thuận tiện với các tính năng thông minh của hệ thống. Thông qua ứng dụng di động và Web, cán bộ có thể dễ dàng theo dõi các thông báo đẩy từ hệ thống, xem kết quả bóc tách dữ liệu từ OCR Service và thực hiện ký số phê duyệt công văn một cách nhanh chóng, đảm bảo tính liên tục của luồng công việc ngay cả khi không có mặt tại văn phòng.
+1.2.7. Công nghệ API Gateway và Điều phối lưu lượng
+Trong kiến trúc Microservices của hệ thống, API Gateway đóng vai trò là cửa ngõ duy nhất tiếp nhận và điều phối mọi yêu cầu từ phía ứng dụng Web và Mobile. Để thực hiện nhiệm vụ này, đồ án lựa chọn sử dụng YARP làm bộ điều phối trung tâm. 
+Chức năng định tuyến (Routing): API Gateway giúp che giấu cấu trúc phức tạp bên trong của các dịch vụ. Thay vì để Client gọi trực tiếp vào từng Service, Gateway sẽ dựa vào URL để chuyển tiếp yêu cầu đến đúng dịch vụ đích như Identity Service hay OCR Service. 
+Xác thực tập trung: Gateway thực hiện kiểm tra mã thông báo bảo mật (JWT) ngay tại cửa ngõ. Điều này giúp giảm tải cho các dịch vụ bên dưới, đảm bảo chỉ những yêu cầu hợp lệ mới được đi sâu vào hệ thống. 
+Tối ưu hóa hiệu năng: Với khả năng hoạt động như một Reverse Proxy, công nghệ này giúp cân bằng tải, nén dữ liệu và quản lý các kết nối HTTPS, giúp hệ thống vận hành ổn định và bảo mật hơn trước các tác động từ môi trường mạng bên ngoài.
+
+
+CHƯƠNG 2: THIẾT KẾ HỆ THỐNG
+2.1. Phân tích yêu cầu và Nghiệp vụ hệ thống
+2.1.1. Mục tiêu nghiệp vụ của hệ thống
+Hệ thống quản lý công văn được xây dựng với mục đích cốt lõi là chuyển đổi phương thức quản lý công văn từ truyền thống sang môi trường số hóa toàn diện tại Trường Đại học Kiến trúc Hà Nội. Thay vì chỉ tập trung vào khía cạnh lưu trữ, mục tiêu nghiệp vụ của hệ thống hướng tới việc tối ưu hóa toàn bộ vòng đời của văn bản thông qua các tiêu chí cụ thể sau: 
+Số hóa và Lưu trữ tập trung: Loại bỏ sự phụ thuộc vào kho lưu trữ vật lý vốn gây tốn kém không gian và tiềm ẩn rủi ro thất lạc hoặc hư hỏng tài liệu theo thời gian. Mục tiêu là xây dựng một cơ sở dữ liệu tập trung, cho phép truy xuất văn bản tức thời và đảm bảo tính kế thừa dữ liệu lâu dài. 
+Tự động hóa quy trình nhập liệu (OCR): Giải quyết triệt để vấn đề sai sót và tiêu tốn thời gian khi cán bộ văn thư phải nhập liệu metadata thủ công. Bằng cách ứng dụng công nghệ OCR hiện đại, hệ thống đặt mục tiêu bóc tách tự động các thông tin như số hiệu, ngày ban hành và trích yếu nội dung với độ chính xác cao, giúp giảm bớt đáng kể áp lực hành chính. 
+Đảm bảo tính pháp lý và an toàn thông tin: Thay thế con dấu vật lý và chữ ký tay bằng chữ ký số pháp nhân và chữ ký số cá nhân. Mục tiêu nghiệp vụ ở đây là đảm bảo mọi văn bản điện tử khi ban hành đều có giá trị pháp lý tương đương văn bản giấy, đồng thời đảm bảo tính toàn vẹn, chống giả mạo và chống chối bỏ. 
+Tối ưu hóa luồng xử lý và phê duyệt: Rút ngắn thời gian luân chuyển công văn giữa các cấp lãnh đạo và các phòng ban. Hệ thống hướng tới việc thực hiện các luồng phê duyệt Top-down và Bottom-up một cách minh bạch, giúp Ban Giám hiệu triển khai chỉ đạo nhanh chóng và chuyên viên báo cáo kết quả xử lý kịp thời. 
+Nâng cao tính linh hoạt và khả năng tiếp cận: Thông qua nền tảng Web và ứng dụng di động, mục tiêu của hệ thống là cho phép cán bộ và lãnh đạo có thể xử lý, ký duyệt văn bản mọi lúc, mọi nơi, không bị giới hạn bởi không gian làm việc truyền thống.
+2.1.2. Xác định các nhóm Tác nhân
+2.1.2.1. Quản trị viên (Admin)
+Trong hệ thống Quản lý công văn, Quản trị viên là nhóm tác nhân giữ quyền hạn cao nhất về mặt kỹ thuật và vận hành hạ tầng. Vai trò này không tham gia trực tiếp vào các nghiệp vụ xử lý công văn hàng ngày nhưng lại là "người kiến tạo" và duy trì môi trường làm việc cho tất cả các nhóm tác nhân khác. 
+Các nhiệm vụ và quyền hạn cốt lõi của Admin bao gồm:
+Quản trị định danh và tài khoản: Thực hiện cấp phát, thu hồi hoặc điều chỉnh thông tin tài khoản cho toàn bộ cán bộ, giảng viên trong Nhà trường. 
+Thiết lập và cấu hình hệ thống: Quản trị viên chịu trách nhiệm thiết lập các tham số hệ thống, cấu hình kết nối giữa các dịch vụ (Microservices) và quản lý tài nguyên lưu trữ trên MinIO. 
+Cấu hình luồng quy trình (Workflow): Admin có quyền thiết lập và điều chỉnh linh hoạt luồng luân chuyển văn bản giữa các phòng ban để phù hợp với những thay đổi về quy định hành chính của Nhà trường. 
+Phân quyền truy cập (RBAC): Dựa trên vị trí công tác thực tế, Admin sẽ gán các vai trò tương ứng (Văn thư, Chuyên viên, Lãnh đạo...) cho người dùng, đảm bảo mỗi cá nhân chỉ được tiếp cận đúng phạm vi dữ liệu được phép. 
+Giám sát và bảo mật: Theo dõi lịch sử tác động của người dùng lên hệ thống (Audit Logs) để đảm bảo tính minh bạch và kịp thời phát hiện các hành vi truy cập bất thường. 
+Việc xác định rõ vai trò Admin giúp hệ thống tách biệt hoàn toàn giữa quản trị kỹ thuật và xử lý nghiệp vụ, từ đó tăng cường tính bảo mật và chuyên môn hóa trong vận hành.
+2.1.2.2. Văn thư
+Nhóm tác nhân Văn thư đóng vai trò là "cửa ngõ" thông tin, chịu trách nhiệm chính trong việc điều phối luồng văn bản vật lý và số hóa đầu vào cho toàn bộ hệ thống. Đây là nhóm người dùng tương tác trực tiếp và thường xuyên nhất với các dịch vụ OCR. 
+Các nhiệm vụ trọng tâm:
+Tiếp nhận và Số hóa: Tiếp nhận công văn giấy từ các nguồn bên ngoài, thực hiện quét (scan) và tải lên hệ thống để khởi tạo quy trình số. 
+Vận hành OCR: Sử dụng dịch vụ nhận dạng ký tự quang học để trích xuất thông tin tự động, sau đó kiểm tra và xác nhận tính chính xác của dữ liệu trước khi chuyển tiếp. 
+Phát hành và Lưu trữ: Thực hiện các thủ tục đóng dấu điện tử, phát hành công văn đi sau khi đã có đủ chữ ký số và quản lý kho lưu trữ tệp tin PDF trên hệ thống MinIO. 
+2.1.2.3. Chuyên viên
+Chuyên viên là nhóm tác nhân trực tiếp thực hiện các nghiệp vụ chuyên môn và xử lý nội dung chi tiết của từng công văn. 
+Các nhiệm vụ trọng tâm:
+Soạn thảo: Khởi tạo các tờ trình, dự thảo công văn đi và tải các tài liệu đính kèm lên hệ thống. 
+Xử lý chỉ đạo: Tiếp nhận công văn đến từ lãnh đạo, thực hiện các nhiệm vụ được giao và cập nhật tiến độ, kết quả xử lý trực tiếp trên hệ thống. 
+Phối hợp nghiệp vụ: Tra cứu metadata và nội dung công văn liên quan để phục vụ công tác chuyên môn. 
+2.1.2.4. Lãnh đạo Phòng
+Lãnh đạo Phòng đóng vai trò kiểm soát nội dung chuyên môn và điều phối công việc trong phạm vi đơn vị mình quản lý. 
+Các nhiệm vụ trọng tâm:
+Kiểm soát chuyên môn: Xem xét và chỉnh sửa các dự thảo công văn do chuyên viên soạn thảo. 
+Ký số cấp đơn vị: Thực hiện ký nháy hoặc ký số cá nhân để xác nhận nội dung trước khi trình lên Ban Giám hiệu. 
+Phân công nhiệm vụ: Tiếp nhận công văn chỉ đạo từ Ban Giám hiệu và thực hiện phân bổ công việc cho các chuyên viên phù hợp trong phòng. 
+2.1.2.5. Ban Giám hiệu
+Ban Giám hiệu là nhóm tác nhân có thẩm quyền cao nhất trong việc phê duyệt và đưa ra các quyết định hành chính chính thức của Nhà trường. 
+Các nhiệm vụ trọng tâm:
+Phê duyệt cuối cùng: Xem xét và đưa ra quyết định phê duyệt đối với các công văn đi đã qua các cấp kiểm soát. 
+Ký số pháp nhân: Thực hiện ký số bằng chứng thư số của Nhà trường để văn bản có giá trị pháp lý cao nhất khi phát hành ra bên ngoài. 
+Bút phê chỉ đạo: Đưa ra các ý kiến chỉ đạo trực tiếp trên văn bản đến, làm căn cứ để các phòng ban triển khai thực hiện
+2.1.3. Sơ đồ thiết kế usercase
+2.1.3.1. Sơ đồ Use Case tổng quan hệ thống
+
+Hình 2.3.1.1a. Sơ đồ thiết kế Usercase tổng quát 
+Hệ thống được thiết kế nhằm mô phỏng chính xác cơ cấu tổ chức và quy trình hành chính thực tế tại Trường Đại học Kiến trúc Hà Nội. Việc xác định rõ các tác nhân (Actors) dựa trên mô hình phân quyền RBAC đảm bảo mỗi cá nhân tham gia vào hệ thống đều được tiếp cận đúng phạm vi dữ liệu và thực hiện đúng chức trách nghiệp vụ của mình. 
+User (Người dùng chung): Là một actor tổng quát, bao gồm toàn bộ cán bộ, giảng viên và nhân viên đang công tác tại Nhà trường. Tất cả người dùng đều phải thực hiện đăng nhập thông qua Identity Service để xác thực danh tính và quyền hạn trước khi truy cập vào các tính năng bên trong hệ thống. 
+Quản trị viên (Admin): Kế thừa từ User (Người dùng chung), Admin là tác nhân giữ quyền hạn cao nhất về mặt kỹ thuật và vận hành hạ tầng. Nhiệm vụ cốt lõi bao gồm quản lý tài khoản người dùng, cấu hình luồng quy trình xử lý (Workflow), thiết lập các tham số hệ thống và giám sát an ninh thông qua nhật ký tác động (Audit Logs). 
+Văn thư: Kế thừa từ User (Người dùng chung), đóng vai trò là "cửa ngõ" điều phối thông tin của Nhà trường. Tác nhân này chịu trách nhiệm số hóa công văn giấy, vận hành dịch vụ OCR để tự động bóc tách dữ liệu, thực hiện phát hành văn bản đi và quản lý kho lưu trữ tệp tin PDF trên hệ thống MinIO. 
+Chuyên viên: Kế thừa từ User (Người dùng chung), là nhóm tác nhân trực tiếp thực hiện các nghiệp vụ chuyên môn. Chuyên viên thực hiện soạn thảo các tờ trình hoặc dự thảo công văn đi, tiếp nhận chỉ đạo từ lãnh đạo các cấp và cập nhật tiến độ cũng như báo cáo kết quả xử lý công việc trực tiếp trên nền tảng số. 
+Lãnh đạo Phòng: Kế thừa từ User (Người dùng chung), chịu trách nhiệm kiểm soát nội dung và điều hành công việc trong phạm vi đơn vị quản lý. Tác nhân này thực hiện phân công nhiệm vụ cụ thể cho từng chuyên viên, xem xét phê duyệt các dự thảo và thực hiện ký số nội bộ (ký nháy) cấp đơn vị. 
+Ban Giám hiệu: Kế thừa từ User (Người dùng chung), là tác nhân có thẩm quyền phê duyệt cuối cùng và đưa ra các quyết định hành chính chính thức. Ban Giám hiệu thực hiện ghi bút phê chỉ đạo trên văn bản đến và sử dụng chứng thư số pháp nhân của Nhà trường để thực hiện ký số pháp lý cho các văn bản ban hành ra bên ngoài. 
+Hệ thống tập trung vào việc số hóa và tự động hóa quy trình luân chuyển văn bản giữa các đơn vị chuyên môn và cấp lãnh đạo. Vì vậy, việc phân định rõ các tác nhân này là cơ sở then chốt để thiết lập ma trận phân quyền và xây dựng các luồng xử lý nghiệp vụ thông minh trong hệ thống. 
+Mô tả các usercase trong hệ thống:
+Hệ thống tập trung vào việc số hóa quy trình quản lý văn bản thông qua các công nghệ hiện đại như OCR và Chữ ký số. Các Use Case được thiết kế để đảm bảo tính thông suốt từ khâu tiếp nhận đến khi ban hành văn bản chính thức. 
+a. Use Case chung
+Login (Đăng nhập): Người dùng thực hiện cung cấp thông tin tài khoản để truy cập vào hệ thống. Tùy vào vai trò (Role) mà người dùng sẽ được điều hướng đến không gian làm việc (Workspace) tương ứng. 
+Tra cứu Metadata: Cho phép mọi người dùng tìm kiếm văn bản dựa trên các thông tin đặc tả như số hiệu, trích yếu, ngày ban hành hoặc cơ quan gửi. 
+Kiểm tra tính toàn vẹn: Sử dụng dịch vụ Sign Service để xác thực xem văn bản PDF có bị chỉnh sửa trái phép sau khi ký hay không. 
+b. Use Case cho Văn thư
+Sau khi đăng nhập thành công với vai trò Văn thư, người dùng có thể:
+Tiếp nhận công văn đến: Thực hiện quét (scan) văn bản giấy và tải tệp lên hệ thống để khởi tạo quy trình số hóa. 
+Vận hành OCR: Hệ thống tự động nhận diện ký tự và bóc tách dữ liệu; Văn thư có trách nhiệm kiểm tra và hiệu chỉnh lại kết quả nếu cần thiết. 
+Phát hành và Lưu trữ: Thực hiện đóng dấu điện tử lên văn bản đã được phê duyệt và lưu trữ chính thức vào hệ thống MinIO. 
+Xem báo cáo số lượng: Theo dõi tổng số công văn đi và đến trong các khoảng thời gian cụ thể. 
+c. Use Case cho Chuyên viên
+Sau khi đăng nhập thành công với vai trò Chuyên viên, người dùng có thể:
+Soạn thảo công văn: Khởi tạo các dự thảo công văn đi, đính kèm tệp tin và trình lên cấp quản lý. 
+Báo cáo tiến độ: Cập nhật trạng thái xử lý các công văn đến đã được phân công. 
+d. Use Case cho Lãnh đạo Phòng
+Sau khi đăng nhập thành công với vai trò Lãnh đạo Phòng, người dùng có thể:
+Phân công nhiệm vụ: Tiếp nhận chỉ đạo từ Ban Giám hiệu và giao việc cho các chuyên viên trong phòng thực hiện. 
+Ký số nội bộ: Thực hiện xác nhận nội dung chuyên môn của văn bản (ký nháy) trước khi trình ký cấp trường. 
+e. Use Case cho Ban Giám hiệu
+Sau khi đăng nhập thành công với vai trò Ban Giám hiệu, người dùng có thể:
+Ghi bút phê chỉ đạo: Đưa ra các ý kiến chỉ đạo trực tiếp trên văn bản đến để điều phối hoạt động của Nhà trường. 
+Ký số pháp nhân: Thực hiện phê duyệt cuối cùng bằng chứng thư số của Đại học Kiến trúc Hà Nội. 
+f. Use Case cho Quản trị viên 
+Sau khi đăng nhập thành công với vai trò Admin, người dùng có thể:
+Quản lý tài khoản & Phân quyền: Cấp mới hoặc thu hồi quyền truy cập của cán bộ dựa trên cơ chế RBAC. 
+Xem lịch sử tác động: Theo dõi nhật ký hệ thống (Audit Logs) để quản lý an toàn thông tin
+2.1.3.2. Sơ đồ UserCase chi tiết
+a. Sơ đồ cho nhóm chức năng của Văn thư
+
+Hình 2.1.3.2a. Sơ đồ Usercase cho nhóm chức năng của Văn thư
+Mô tả chi tiết Use Case:
+Hệ thống cung cấp quy trình số hóa và quản lý văn bản một cách tự động hóa cao, giúp bộ phận Văn thư tối ưu hóa việc tiếp nhận, trích xuất dữ liệu và phát hành công văn. Các Use Case thành phần trong chức năng này bao gồm: 
+Đăng nhập hệ thống: Đây là bước khởi đầu bắt buộc, nơi thực hiện cung cấp thông tin tài khoản định danh để truy cập vào hệ thống. Sau khi xác thực danh tính qua Identity Service, người dùng sẽ được cấp quyền vào không gian làm việc dành riêng cho nghiệp vụ văn thư. 
+Xem menu quản lý: Sau khi đăng nhập thành công, màn hình sẽ hiển thị Menu quản trị nghiệp vụ. Tại đây, hệ thống hiển thị các phân hệ chức năng như: Tiếp nhận công văn đến, Quản lý văn bản đi, và Theo dõi luồng xử lý, giúp Văn thư dễ dàng lựa chọn tác vụ cần thực hiện. 
+Tiếp nhận và Số hóa: Khi Văn thư chọn chức năng tiếp nhận, hệ thống cho phép tải lên các tệp tin PDF (được quét từ văn bản giấy). Ngay sau khi tệp được tải lên, hệ thống sẽ tự động lưu trữ tạm thời vào MinIO và kích hoạt quy trình xử lý dữ liệu tiếp theo. 
+Kiểm tra và Hiệu chỉnh OCR: Đây là Use Case then chốt ứng dụng trí tuệ nhân tạo: 
+Hệ thống sử dụng OCR Service để tự động nhận diện và bóc tách các trường thông tin (Số hiệu, Ngày ban hành, Trích yếu...) từ tệp PDF. 
+Văn thư tiến hành đối soát kết quả bóc tách tự động với hình ảnh văn bản gốc. 
+Người dùng thực hiện hiệu chỉnh trực tiếp các thông tin bị nhận diện sai hoặc bổ sung các trường dữ liệu còn thiếu để đảm bảo độ chính xác tuyệt đối trước khi lưu trữ chính thức. 
+Phát hành và Lưu trữ: Sau khi văn bản đã được các cấp lãnh đạo phê duyệt bằng chữ ký số cá nhân, Văn thư thực hiện bước Phát hành. Use Case này sẽ gọi đến Sign Service để áp dụng chữ ký số pháp nhân (con dấu điện tử) của nhà trường, cập nhật trạng thái văn bản thành "Đã phát hành" và lưu trữ bền vững vào kho dữ liệu số. 
+b. Sơ đồ cho nhóm chức năng của Chuyên viên
+
+Hình 2.1.3.2b. Sơ đồ Usercase cho nhóm chức năng của Chuyên viên
+Mô tả chi tiết Use Case:
+Đăng nhập hệ thống: Người dùng thực hiện đăng nhập bằng tài khoản cấp chuyên viên. Sau khi hệ thống Identity Service xác thực, chuyên viên sẽ được truy cập vào không gian làm việc tập trung các công cụ hỗ trợ soạn thảo và theo dõi nhiệm vụ cá nhân. 
+Xem menu quản lý: Giao diện sau đăng nhập hiển thị các phân hệ dành riêng cho chuyên viên như: danh sách văn bản cần xử lý, quản lý dự thảo công văn đi và lịch sử công tác nghiệp vụ. 
+Soạn thảo và Tải tệp dự thảo: Đây là chức năng nòng cốt của chuyên viên nhằm khởi tạo các tờ trình hoặc dự thảo văn bản đi. Chuyên viên thực hiện tải tệp (PDF/Word) lên hệ thống qua Document Service để bắt đầu luồng phê duyệt từ dưới lên (Bottom-up). 
+Kiểm tra bóc tách dự thảo: Ngay khi chuyên viên tải dự thảo lên, hệ thống gọi OCR Service để nhận diện sơ bộ các thông tin đặc tả. Chuyên viên có trách nhiệm đối soát và xác nhận các thông tin này để đảm bảo dữ liệu "sạch" trước khi trình lên lãnh đạo phòng. 
+Báo cáo kết quả xử lý: Đối với các công văn đến đã được phân công, chuyên viên sử dụng chức năng này để báo cáo tiến độ và đính kèm kết quả thực hiện nhiệm vụ. Thông tin này được đẩy về phía lãnh đạo phòng để giám sát và đánh giá chất lượng công việc. 
+Tra cứu và Kiểm tra toàn vẹn: Chuyên viên thực hiện tra cứu các văn bản liên quan trong kho dữ liệu của Nhà trường để làm căn cứ soạn thảo. Hệ thống tích hợp Sign Service giúp chuyên viên kiểm tra tính nguyên bản của tài liệu trước khi khai thác thông tin.
+c. Sơ đồ cho nhóm chức năng của Lãnh đạo Phòng
+
+Hình 2.1.3.2c. Sơ đồ Usercase cho nhóm chức năng của Lãnh đạo phòng
+Mô tả chi tiết các Use Case:
+Dưới đây là phần mô tả chi tiết các chức năng dựa trên vai trò thực tế của Lãnh đạo Phòng trong luồng hành chính: 
+Đăng nhập: Lãnh đạo Phòng thực hiện đăng nhập vào hệ thống để truy cập không gian làm việc dành riêng cho cấp quản lý đơn vị. Sau khi xác thực, hệ thống sẽ hiển thị các thông báo về công văn mới được chuyển đến phòng hoặc các dự thảo đang chờ duyệt. 
+Xem menu quản lý: Giao diện cung cấp các công cụ quản lý nhân sự trong phòng, danh mục công văn của đơn vị và biểu đồ theo dõi hiệu suất xử lý công việc của các chuyên viên. 
+Phân công nhiệm vụ: Đây là chức năng thực thi luồng "Top-down". Khi nhận được công văn chỉ đạo từ Ban Giám hiệu, Lãnh đạo Phòng sẽ lựa chọn chuyên viên phù hợp trong đơn vị để giao việc, đính kèm yêu cầu và thời hạn xử lý. 
+Kiểm duyệt và Chỉnh sửa dự thảo: Lãnh đạo Phòng trực tiếp xem xét nội dung các dự thảo do chuyên viên soạn thảo. Tác nhân này có quyền hiệu chỉnh trực tiếp văn bản hoặc yêu cầu chuyên viên sửa lại trước khi tiến hành ký xác nhận. 
+Ký số nội bộ/Ký nháy: Sử dụng Sign Service để thực hiện ký số xác nhận nội dung chuyên môn của đơn vị. Đây là bước bắt buộc để văn bản có đủ điều kiện trình lên Ban Giám hiệu thực hiện ký số pháp nhân. 
+Theo dõi tiến độ: Lãnh đạo Phòng giám sát toàn bộ quá trình xử lý văn bản trong phòng mình quản lý. Mọi hành động cập nhật của chuyên viên đều được thông báo kịp thời để lãnh đạo nắm bắt tình hình thực hiện nhiệm vụ của đơn vị. 
+Xem báo cáo thống kê đơn vị: Kết xuất các số liệu về tỷ lệ văn bản xử lý đúng hạn, số lượng công văn đang tồn đọng của phòng để phục vụ công tác báo cáo trong các cuộc họp giao ban của Nhà trường.
+
+d. Sơ đồ cho nhóm chức năng của Ban Giám hiệu
+
+Hình 2.1.3.2d. Sơ đồ Usercase cho nhóm chức năng của Ban Giám Hiệu
+Mô tả chi tiết các Use Case
+Dưới đây là phần mô tả chi tiết các chức năng dựa trên quyền hạn cao nhất của Ban Giám hiệu trong hệ thống: 
+Đăng nhập: Thành viên Ban Giám hiệu thực hiện đăng nhập vào hệ thống để truy cập vào không gian làm việc dành riêng cho lãnh đạo cao nhất. Hệ thống sẽ ưu tiên hiển thị các văn bản đến quan trọng cần chỉ đạo gấp và các tờ trình đã có đủ chữ ký nháy của Lãnh đạo Phòng chờ phê duyệt. 
+Xem menu quản lý: Màn hình cung cấp cái nhìn tổng thể về tình hình hành chính của Nhà trường, bao gồm các chỉ số về lưu lượng văn bản và các báo cáo an ninh hệ thống. 
+Ghi bút phê chỉ đạo: Đối với các công văn đến, Ban Giám hiệu thực hiện ghi ý kiến chỉ đạo trực tiếp trên bản điện tử. Đây là căn cứ pháp lý và nghiệp vụ để các đơn vị cấp dưới (Lãnh đạo Phòng và Chuyên viên) triển khai thực hiện nhiệm vụ. 
+Phê duyệt cuối cùng: Ban Giám hiệu xem xét toàn bộ nội dung văn bản và quá trình ký kiểm soát của các cấp bên dưới. Nếu đồng ý, lãnh đạo sẽ thực hiện phê duyệt để chuyển sang bước áp dụng chữ ký số pháp lý. 
+Ký số pháp nhân: Sử dụng Sign Service để áp dụng chứng thư số của Trường Đại học Kiến trúc Hà Nội (tương đương con dấu đỏ vật lý). Đây là bước quan trọng nhất để văn bản có giá trị pháp lý cao nhất khi ban hành ra các cơ quan bên ngoài. 
+Xem nhật ký hệ thống: Ban Giám hiệu có quyền giám sát các lịch sử tác động của người dùng lên hệ thống (Audit Logs). Chức năng này giúp lãnh đạo đảm bảo tính minh bạch, an toàn thông tin và kịp thời phát hiện các sai sót hoặc hành vi bất thường trong quy trình hành chính. 
+Xem báo cáo số lượng toàn trường: Kết xuất các báo cáo tổng quát về tình hình công văn đi và đến của toàn bộ Nhà trường. Dữ liệu này giúp Ban Giám hiệu có cái nhìn chiến lược về hiệu quả xử lý công việc của tất cả các phòng ban, khoa và trung tâm.
+e. Sơ đồ cho nhóm chức năng của Quản trị viên 
+
+Hình 2.1.3.2e. Sơ đồ Usercase cho nhóm chức năng của Quản trị viên
+Mô tả chi tiết các Use Case
+Dưới đây là phần mô tả chi tiết các chức năng quản trị kỹ thuật dựa trên kiến trúc Microservices của hệ thống: 
+Đăng nhập quản trị: Quản trị viên thực hiện đăng nhập vào hệ thống để truy cập vào bảng điều khiển (Dashboard) dành riêng cho việc vận hành hạ tầng. Chức năng này được bảo mật nghiêm ngặt qua Identity Service để tránh các truy cập trái phép vào dữ liệu hệ thống. 
+Xem menu quản trị: Màn hình cung cấp các công cụ thiết lập tài khoản, quản lý danh mục đơn vị (Phòng/Ban/Khoa) và các thông số kỹ thuật về lưu trữ cũng như kết nối dịch vụ. 
+Quản lý tài khoản và Phân quyền: Admin thực hiện cấp phát, thu hồi hoặc điều chỉnh thông tin tài khoản cho cán bộ trong Nhà trường. Dựa trên mô hình RBAC, Admin gán các vai trò (Văn thư, Chuyên viên, Lãnh đạo...) cho người dùng, đảm bảo mỗi cá nhân chỉ tiếp cận đúng phạm vi dữ liệu được phép. 
+Cấu hình luồng quy trình: Cho phép Admin thiết lập và điều chỉnh linh hoạt luồng luân chuyển văn bản giữa các phòng ban. Việc cấu hình này giúp hệ thống thích ứng nhanh với những thay đổi về quy định hành chính của Nhà trường mà không cần can thiệp vào mã nguồn. 
+Giám sát và Bảo mật: Admin sử dụng chức năng này để theo dõi lịch sử tác động của người dùng lên hệ thống thông qua Audit Logs. Việc giám sát giúp kịp thời phát hiện các hành vi bất thường, đảm bảo tính minh bạch và an toàn thông tin tuyệt đối cho kho dữ liệu công văn. 
+Quản lý hạ tầng và Lưu trữ: Admin giám sát tài nguyên lưu trữ trên MinIO, kiểm tra trạng thái hoạt động của trục truyền thông điệp Kafka và cơ sở dữ liệu PostgreSQL. Nhiệm vụ này đảm bảo các dịch vụ Microservices như OCR hay Sign Service luôn trong trạng thái sẵn sàng xử lý
+2.1.4. Kịch bản chuẩn và ngoại lệ
+2.1.4.1.  Kịch bản cho tính năng Đăng nhập
+2.1.4.2. Kịch bản tính năng Tiếp nhận và bóc tách công văn đến (OCR)
+2.1.4.3. Kịch bản tính năng Soạn thảo và trình duyệt công văn đi
+
+2.1.4.4. Kịch bản tính năng Phân công và Ký duyệt cấp phòng
+
+2.1.4.5. Kịch bản tính năng Phê duyệt và Ký số pháp nhân
+
+2.1.4.6. Kịch bản tính năng Quản trị hệ thống và Phân quyền
+
+2.2. Mô hình Phân cấp Quản lý hành chính
+2.2.1. Luồng dữ liệu và sơ đồ luồng dữ liệu
+Hệ thống Hệ thống thông tin hỗ trợ quản lý công văn đi và đến của Trường đại học Kiến Trúc Hà Nội được thiết kế để mô phỏng chính xác cơ cấu tổ chức và quy trình nghiệp vụ hành chính thực tế tại Đại học Kiến trúc Hà Nội. Mô hình này đảm bảo tính kế thừa và đúng thẩm quyền trong việc xử lý văn bản:
+Luồng chiều dọc (Top-down & Bottom-up): Văn bản được trình từ Chuyên viên lên Lãnh đạo Phòng và cuối cùng là Ban Giám hiệu (đối với công văn đi). Ngược lại, chỉ đạo từ Ban Giám hiệu sẽ được phân phối xuống các đơn vị thực hiện (đối với công văn đến).
+Luồng chiều ngang: Sự phối hợp giữa các Phòng/Ban/Khoa trong việc xử lý các công văn có nội dung liên quan đến nhiều đơn vị.
+Luồng xử lý khi có công văn đến:
+
+Luồng xử lý khi có công văn đi:
+
+2.2.2. Vai trò người dùng và Phân quyền (RBAC)
+Để đảm bảo an ninh thông tin, hệ thống áp dụng mô hình phân quyền dựa trên vai trò (Role-Based Access Control). Mỗi cá nhân khi đăng nhập sẽ chỉ có quyền hạn tương ứng với vị trí công việc của mình:
+Bảng 2.2.1. Bảng Vai trò người dùng và phân quyền
+2.3. Sơ đồ phân cấp chức năng và ma trận phân quyền
+
+Sơ đồ phân cấp chức năng hệ thống
+Ma trận phân quyền:
+Bảng 2.3. Ma trận phân quyền
+2.4. Thiết kế hệ thống và sơ đồ thiết kế hệ thống
+2.4.1. Tổng quan Kiến trúc Microservices
+Hệ thống thông tin hỗ trợ quản lý công văn đi và đến của Trường đại học Kiến Trúc Hà Nội áp dụng kiến trúc Microservices (Vi dịch vụ). Thay vì xây dựng một ứng dụng đơn khối (Monolithic) cồng kềnh, hệ thống được chia thành các dịch vụ nhỏ độc lập. Mỗi dịch vụ đảm nhận một chức năng nghiệp vụ riêng biệt và giao tiếp với nhau thông qua mạng hoặc trục truyền thông điệp (Message Bus).
+Lựa chọn này mang lại những ưu điểm chiến lược cho nhà trường:
+Linh hoạt về công nghệ : Kiến trúc này cho phép tận dụng tối đa thế mạnh của các ngôn ngữ lập trình khác nhau.
+Khả năng mở rộng độc lập : Khi lượng công văn tăng cao (ví dụ trong các đợt tuyển sinh), hệ thống có thể mở rộng tài nguyên cho riêng dịch vụ OCR hoặc Doc Service mà không cần nâng cấp toàn bộ hạ tầng.
+Độ tin cậy và khả năng chịu lỗi : Nếu một dịch vụ gặp sự cố (ví dụ: dịch vụ thông báo), các chức năng chính như tìm kiếm hay ký số vẫn có thể hoạt động bình thường, đảm bảo tính liên tục của công tác hành chính.
+Dễ dàng bảo trì và nâng cấp : Đội ngũ kỹ thuật có thể cập nhật từng phần của hệ thống một cách nhanh chóng mà không gây gián đoạn dịch vụ toàn diện.
+Dưới đây là sơ đồ thiết kế hệ thống:
+
+Hình 2.4.1. Sơ đồ thiết kế hệ thống
+2.4.2. Lớp User/Client (Giao diện người dùng) 
+Lớp User/Client là điểm đầu cuối (Endpoint) nơi diễn ra sự tương tác giữa con người và hệ thống. Trong kiến trúc Microservices của hệ thống, lớp này không tham gia vào việc xử lý nghiệp vụ nặng mà tập trung vào việc tối ưu hóa trải nghiệm người dùng (UX) và hiển thị dữ liệu.
+Thành phần chính:
+Người dùng (Users): Bao gồm các nhóm đối tượng với quyền hạn khác nhau như Văn thư, Chuyên viên, Lãnh đạo phòng và Ban Giám hiệu. Mỗi đối tượng sẽ có giao diện tùy biến dựa trên vai trò của mình. 
+Ứng dụng đa nền tảng (Multi-platform Application): Hệ thống được thiết kế để chạy trên trình duyệt web (Web App) và các thiết bị di động (Mobile App), giúp cán bộ có thể xử lý công việc mọi lúc, mọi nơi. 
+Chức năng nhiệm vụ:
+Tiếp nhận đầu vào: Thu thập thông tin từ người dùng (như tải file PDF công văn lên, nhập ý kiến bút phê).
+Gửi yêu cầu: Đóng gói các thao tác của người dùng thành các yêu cầu HTTP (API Calls) và gửi lên tầng tiếp theo thông qua API Gateway.
+Hiển thị kết quả: Nhận dữ liệu phản hồi từ các dịch vụ bên dưới (như kết quả bóc tách OCR từ Python hoặc trạng thái ký số) để hiển thị lại cho người dùng một cách trực quan.
+2.4.3. Lớp Gateway (Cửa ngõ hệ thống) 
+API Gateway đóng vai trò là điểm tiếp nhận duy nhất cho tất cả các yêu cầu từ phía Client. Thay vì để ứng dụng Web gọi trực tiếp vào từng dịch vụ riêng lẻ, Gateway sẽ đứng ra làm "người điều phối".
+Chức năng chính:
+Định tuyến (Routing): Dựa vào URL của yêu cầu, Gateway sẽ xác định xem cần gửi yêu cầu đó đến dịch vụ nào (ví dụ: yêu cầu đăng nhập gửi đến Identity Service, yêu cầu tải file gửi đến Document Service). 
+Xác thực tập trung: Gateway kiểm tra Token (JWT) của người dùng để đảm bảo họ có quyền truy cập trước khi chuyển tiếp yêu cầu vào sâu bên trong. Điều này giúp các dịch vụ bên dưới bớt đi gánh nặng phải tự kiểm tra lại từ đầu.
+2.4.4. Lớp Service
+2.4.4.1. Identity Service
+Dịch vụ Định danh (Identity Service) là thành phần then chốt, đóng vai trò là "nguyên tử bảo mật" cho toàn bộ kiến trúc Microservices của Hệ thống thông tin hỗ trợ quản lý công văn đi và đến của Trường đại học Kiến Trúc Hà Nội. Được phát triển trên nền tảng .NET/C#, dịch vụ này cung cấp một cơ chế xác thực và phân quyền tập trung, đảm bảo mọi hành vi truy cập vào tài nguyên của Nhà trường đều được kiểm soát chặt chẽ.
+Các chức năng và nhiệm vụ cốt lõi:
+Quản lý định danh và Xác thực (Authentication):
+Xác thực tập trung: Identity Service là nơi duy nhất quản lý thông tin tài khoản của toàn bộ cán bộ, giảng viên trong trường. Thay vì để mỗi dịch vụ tự quản lý người dùng, việc tập trung tại đây giúp đồng bộ dữ liệu và tăng cường bảo mật.
+Cơ chế JWT (JSON Web Token): Hệ thống sử dụng chuẩn xác thực hiện đại dựa trên Token. Sau khi người dùng cung cấp thông tin đăng nhập chính xác, Identity Service sẽ tạo ra một mã thông báo (Access Token) được ký số bảo mật. Mã này chứa các thông tin định danh (Claims) và có thời hạn sử dụng nhất định.
+Phân quyền dựa trên vai trò (Role-Based Access Control - RBAC):
+Dịch vụ chịu trách nhiệm thực thi logic phân quyền cho 5 nhóm đối tượng: Admin, Văn thư, Chuyên viên, Lãnh đạo phòng và Ban Giám hiệu. Thông tin về vai trò (Role) và quyền hạn (Permissions) được nhúng trực tiếp vào trong JWT. Điều này cho phép các dịch vụ khác (như Sign Service hay OCR Service) có thể kiểm tra quyền hạn của người dùng một cách tức thời mà không cần phải truy vấn lại cơ sở dữ liệu.
+Quản trị người dùng và Tổ chức:
+Thực hiện các nghiệp vụ CRUD (Thêm, sửa, xóa, truy vấn) hồ sơ người dùng và quản lý sơ đồ tổ chức (Phòng/Ban/Khoa) để phục vụ cho việc điều hướng và phân phối công văn chính xác theo luồng hành chính của Trường.
+Tương tác kỹ thuật và Hạ tầng:
+Kết nối PostgreSQL: Dịch vụ tương tác trực tiếp với cơ sở dữ liệu PostgreSQL để lưu trữ thông tin tài khoản. Mật khẩu người dùng được bảo vệ bằng các thuật toán băm (Hashing) mạnh mẽ nhất hiện nay, đảm bảo ngay cả quản trị viên hệ thống cũng không thể đọc được mật khẩu gốc.
+Giao diện API: Cung cấp các Endpoint cho lớp Gateway để thực hiện các thao tác: Đăng nhập (Login), Đăng xuất (Logout), Làm mới Token (Refresh Token) và Kiểm tra quyền (Validate Token).
+2.4.4.2. Document Service
+Document Service đóng vai trò là "trái tim" điều phối và là trung tâm quản lý vòng đời của mọi văn bản trong hệ thống. Được phát triển trên nền tảng .NET/C#, dịch vụ này không chỉ chịu trách nhiệm quản lý tệp tin thuần túy mà còn đảm nhận vai trò kết nối, đảm bảo tính nhất quán giữa dữ liệu nghiệp vụ và lưu trữ vật lý.
+Vai trò và luồng xử lý dữ liệu tập trung:
+Tiếp nhận và Định danh văn bản: Mọi yêu cầu tương tác với công văn từ phía người dùng đều được tập trung xử lý tại đây. Khi một công văn mới được tải lên, Document Service sẽ thực hiện định danh duy nhất cho văn bản (thông qua mã GUID), đồng thời phân loại sơ bộ để đưa vào đúng luồng nghiệp vụ tương ứng (công văn đến hoặc công văn đi).
+Quản lý lưu trữ kép (Hybrid Storage):Để tối ưu hiệu năng và khả năng mở rộng, dịch vụ thực hiện cơ chế lưu trữ tách biệt:
+Lưu trữ tệp vật lý: Dịch vụ trực tiếp đẩy tệp PDF gốc lên hệ thống MinIO Object Storage. Việc này giúp giải phóng gánh nặng cho cơ sở dữ liệu và cho phép hệ thống xử lý các tệp tin dung lượng lớn một cách mượt mà.
+Quản lý Metadata: Song song với đó, các thông tin định tuyến cơ bản (như người tạo, thời gian, trạng thái hiện tại và liên kết tới tệp trong MinIO) được ghi nhận vào PostgreSQL.
+Điều phối quy trình bất đồng bộ qua Kafka: Đây là chức năng quan trọng nhất giúp hệ thống vận hành thông minh. Ngay sau khi tệp tin được lưu trữ thành công, Document Service sẽ phát đi một sự kiện (Event) mang tên "DocumentUploaded" vào trục Message Bus (Kafka). Hành động này chính là "ngòi nổ" để kích hoạt các dịch vụ xử lý chuyên sâu như OCR (Python) mà không cần người dùng phải thao tác thủ công hay chờ đợi phản hồi trực tiếp, từ đó nâng cao trải nghiệm người dùng và hiệu suất hệ thống.
+Kiểm soát trạng thái và Phiên bản: Dịch vụ chịu trách nhiệm theo dõi toàn bộ quá trình biến đổi của văn bản từ lúc là bản nháp, đang bóc tách thông tin, cho đến khi được ký số và ban hành chính thức. Mọi sự thay đổi về nội dung hoặc thuộc tính của công văn đều được Document Service cập nhật trạng thái liên tục vào cơ sở dữ liệu để các bộ phận liên quan có thể theo dõi thời gian thực.
+2.4.4.3. OCR Service
+Dịch vụ Nhận dạng ký tự quang học (OCR Service) là thành phần mang tính đột phá nhất trong hệ thống, đóng vai trò là "trí tuệ nhân tạo" giúp tự động hóa khâu nhập liệu. Việc tách rời dịch vụ này bằng ngôn ngữ Python là một quyết định chiến lược, cho phép hệ thống khai thác tối đa các thư viện xử lý ảnh và mô hình học sâu (Deep Learning) mạnh mẽ nhất hiện nay.
+
+Cơ chế vận hành và xử lý thông minh:
+Tiếp nhận tín hiệu bất đồng bộ (Event-driven): Thay vì chờ đợi yêu cầu trực tiếp từ người dùng (có thể gây treo giao diện nếu file quá nặng), OCR Service hoạt động theo cơ chế "lắng nghe". Khi nhận được thông điệp từ Kafka, dịch vụ sẽ tự động xếp hàng và xử lý tệp tin. Điều này đảm bảo hệ thống vẫn hoạt động mượt mà ngay cả khi có hàng nghìn công văn đổ về cùng lúc.
+Quy trình bóc tách dữ liệu (Extraction Pipeline): Dựa trên đường dẫn nhận được từ thông điệp Kafka, dịch vụ sẽ kết nối với MinIO Object Storage để tải tệp tin vào bộ nhớ đệm xử lý. Mô hình sử dụng mô hình PaddleOCR – một trong những công nghệ OCR hàng đầu thế giới hiện nay, được tinh chỉnh để đạt độ chính xác tối ưu với tiếng Việt. Hệ thống thực hiện quét qua các vùng dữ liệu để nhận diện ký tự.
+Trích xuất Metadata: Sau khi có dữ liệu thô, dịch vụ sử dụng các thuật toán xử lý ngôn ngữ tự nhiên (NLP) cơ bản để bóc tách các trường thông tin quan trọng như: Số hiệu công văn, Ngày ban hành, Cơ quan gửi và Trích yếu nội dung.
+Số hóa và Lưu trữ bền vững: Kết quả sau khi bóc tách không được trả về Client ngay lập tức mà được Python thực hiện lệnh Lưu kết quả OCR trực tiếp vào PostgreSQL. Dữ liệu này được lưu dưới dạng "Bản nháp" (Draft). Điều này cho phép nhân viên Văn thư có thể truy xuất lại để kiểm tra, chỉnh sửa và xác nhận tính chính xác trước khi đưa vào lưu trữ chính thức, tạo ra một quy trình kiểm soát chất lượng chặt chẽ giữa AI và con người.
+Ưu điểm kỹ thuật:
+Hiệu năng vượt trội: Việc chạy độc lập giúp các tác vụ xử lý ảnh tiêu tốn nhiều CPU/GPU không làm ảnh hưởng đến các dịch vụ nghiệp vụ khác như tìm kiếm hay ký số.
+Khả năng học hỏi: Dữ liệu sau khi được Văn thư hiệu chỉnh sẽ là nguồn "dữ liệu sạch" quý giá để hệ thống có thể tái huấn luyện (re-train) các mô hình AI trong tương lai, giúp độ chính xác ngày càng được nâng cao.
+
+2.4.4.4. Sign Service
+Dịch vụ Ký số (Sign Service) là thành phần chịu trách nhiệm thực thi các nghiệp vụ liên quan đến tính pháp lý, tính toàn vẹn và xác thực của văn bản. Trong bối cảnh chuyển đổi số tại Nhà trường, dịch vụ này đóng vai trò thay thế con dấu vật lý và chữ ký tay truyền thống bằng các thuật toán mã hóa hiện đại.
+Các chức năng và quy trình xử lý cốt lõi:
+Quản lý Chữ ký số đa cấp (Multi-level Digital Signature):
+Ký số cá nhân: Cho phép các cấp lãnh đạo (Trưởng phòng, Ban Giám hiệu) thực hiện ký phê duyệt văn bản. Dịch vụ xác thực chứng thư số cá nhân để đảm bảo người ký đúng là người có thẩm quyền.
+Ký số pháp nhân (Con dấu điện tử): Sau khi có đủ chữ ký của lãnh đạo, dịch vụ thực hiện đóng dấu số của Nhà trường (Hanoi University of Architecture). Đây là bước xác nhận văn bản có giá trị pháp lý cao nhất để phát hành ra bên ngoài.
+Đảm bảo tính toàn vẹn (Integrity) và Chống chối bỏ:
+Dịch vụ sử dụng các thuật toán băm (Hashing) và mã hóa khóa công khai (RSA/ECC). Một khi văn bản đã được ký, bất kỳ sự thay đổi nhỏ nào vào nội dung tệp PDF cũng sẽ làm chữ ký số mất hiệu lực, giúp phát hiện sớm các hành vi giả mạo văn bản.
+Tương tác và Phối hợp hạ tầng (Theo sơ đồ):
+Truy xuất và Ghi đè (MinIO): Dịch vụ kết nối với MinIO để tải tệp tin gốc. Sau khi áp dụng lớp chữ ký số (Digital Signature Layer) vào nội dung PDF, nó sẽ lưu trữ phiên bản mới đã ký trở lại MinIO, đảm bảo lưu vết (Version Control) cho văn bản. 
+Cập nhật trạng thái (PostgreSQL): Ngay sau khi ký thành công, dịch vụ thực hiện cập nhật trạng thái văn bản từ "Chờ ký" sang "Đã ký" hoặc "Đã ban hành" vào PostgreSQL. Điều này giúp các dịch vụ khác (như Document Service) có thể hiển thị thông tin chính xác cho người dùng.
+Ý nghĩa: Sign Service giúp rút ngắn tối đa thời gian luân chuyển văn bản giấy. Thay vì phải trình ký trực tiếp, lãnh đạo có thể phê duyệt và đóng dấu số ngay trên ứng dụng di động hoặc web, giúp quy trình hành chính của Nhà trường trở nên nhanh chóng, minh bạch và chuyên nghiệp hơn.
+2.4.5. Lớp Hạ tầng và Lưu trữ (Infrastructure & Storage Layer)
+Nếu các lớp trên đóng vai trò là bộ não và các giác quan xử lý, thì lớp Hạ tầng và Lưu trữ chính là "hệ xương" và "mạch máu" đảm bảo sự sống còn của hệ thống. Trong kiến trúc Microservices của Hệ thống thông tin hỗ trợ quản lý công văn đi và đến của Trường đại học Kiến Trúc Hà Nội, lớp này không chỉ đơn thuần là nơi chứa dữ liệu mà còn là môi trường kết nối, giúp các dịch vụ rời rạc hoạt động như một thực thể thống nhất.
+Ba thành phần cốt lõi của tầng hạ tầng bao gồm:
+- Message Bus (Apache Kafka) 
+Đóng vai trò là "trục xương sống" điều phối giao tiếp bất đồng bộ (Asynchronous Communication) giữa các dịch vụ.
+Cơ chế vận hành: Thay vì các dịch vụ gọi trực tiếp lẫn nhau (có thể gây nghẽn mạch nếu một bên xử lý chậm), Kafka cho phép chúng gửi và nhận thông điệp thông qua các hàng đợi (Queue).
+Ứng dụng thực tế: Khi Document Service hoàn tất việc tải lên, nó chỉ cần đẩy một "thông báo upload" vào Kafka. OCR Service sẽ tự động bắt tín hiệu này để "xử lý OCR" khi có tài nguyên rảnh. Cơ chế này giúp hệ thống chịu tải cực tốt ngay cả khi hàng trăm cán bộ cùng nộp công văn trong một thời điểm.
+- Cơ sở dữ liệu quan hệ (PostgreSQL) 
+Đây là nơi lưu trữ "linh hồn" của mọi nghiệp vụ hành chính tại nhà trường, là các dữ liệu đặc tả (Metadata).
+Nhiệm vụ: Lưu trữ thông tin tài khoản (từ Identity Service), kết quả bóc tách văn bản (từ OCR Service) và các trạng thái luân chuyển công văn.
+Tại sao chọn PostgreSQL: Hệ thống tận dụng khả năng lưu trữ dữ liệu cấu trúc cực kỳ bền vững, đồng thời hỗ trợ kiểu dữ liệu JSONB linh hoạt. Điều này cho phép lưu trữ các kết quả OCR từ Python một cách đa dạng mà không cần thay đổi cấu trúc bảng thường xuyên.
+- Lưu trữ đối tượng (MinIO Object Storage)
+Đối với một hệ thống quản lý tài liệu, việc lưu trữ tệp tin vật lý (PDF/Ảnh scan) là thách thức lớn nhất về mặt dung lượng.
+Giải pháp: Thay vì lưu file trực tiếp vào cơ sở dữ liệu (gây chậm hệ thống), hệ thống sử dụng MinIO, là một nền tảng lưu trữ đối tượng chuẩn S3.
+Ưu điểm: MinIO giúp quản lý hàng triệu tệp tin PDF một cách chuyên nghiệp, hỗ trợ phân tán và sao lưu (Backup) dễ dàng. Mỗi tệp tin trong MinIO sẽ có một định danh duy nhất, được PostgreSQL trỏ đến thông qua các liên kết (Links), đảm bảo tệp tin luôn sẵn sàng để Sign Service lấy ra ký số hoặc Document Service hiển thị cho người dùng.
+Sự phối hợp tổng thể: Sự kết hợp giữa Kafka (Giao tiếp), PostgreSQL (Metadata) và MinIO (Tệp vật lý) tạo nên một thế chân kiềng vững chắc. Mô hình này đảm bảo dữ liệu của Nhà trường không bao giờ bị thất thoát, quy trình xử lý luôn thông suốt và hệ thống có khả năng mở rộng không giới hạn trong tương lai.
+Chú thích: S3 (Simple Storage Service) là một dịch vụ lưu trữ đối tượng (Object Storage) cực kỳ nổi tiếng, ban đầu được phát triển bởi Amazon Web Services (AWS).
+2.5. Biểu đồ trình tự các chức năng chính
+2.5.1. Trình tự chức năng Tiếp nhận và bóc tách OCR
+
+
+
+
+Hình 2.5.1. Trình tự chức năng Tiếp nhận và bóc tách OCR
+Phân tích luồng xử lý trên sơ đồ trình tự:
+Tính bất đồng bộ (Asynchronous): Hệ thống không bắt Văn thư phải chờ mô hình AI xử lý xong mới phản hồi. Ngay sau khi tệp được lưu vào MinIO, Document Service sẽ trả về kết quả thành công ngay lập tức để người dùng có thể thực hiện việc khác, trong khi việc bóc tách được xử lý ngầm qua Kafka. 
+Sự phối hợp đa ngôn ngữ: Sơ đồ thể hiện rõ vai trò của dịch vụ .NET trong việc quản lý luồng (Giai đoạn 1) và dịch vụ Python trong việc xử lý thuật toán chuyên sâu (Giai đoạn 2). 
+Hạ tầng hạ tầng và lưu trữ: Mọi kết quả bóc tách cuối cùng đều được Python đẩy trực tiếp vào PostgreSQL dưới dạng bản nháp để đảm bảo tính toàn vẹn dữ liệu trước khi Văn thư vào kiểm tra lại.
+
+
+2.5.2. Trình tự chức năng Phê duyệt và Ký số pháp nhân
+
+Hình 2.5.2. Trình tự chức năng Phê duyệt và Ký số pháp nhân
+Phân tích luồng xử lý trên sơ đồ trình tự:
+- Cơ chế kiểm soát và xác thực tập trung
+Luồng xử lý bắt đầu bằng một rào cản bảo mật nghiêm ngặt tại lớp Gateway. 
+Xác thực tại cửa ngõ: Thay vì để Sign Service tự xử lý xác thực, API Gateway đóng vai trò là điểm tiếp nhận duy nhất, thực hiện kiểm tra mã thông báo JWT. Điều này giúp đảm bảo chỉ những yêu cầu có chữ ký xác thực hợp lệ từ Identity Service mới được phép đi sâu vào các dịch vụ nghiệp vụ bên dưới. 
+Thực thi phân quyền RBAC: Dựa trên các thông tin định danh (Claims) nhúng trong JWT, hệ thống tự động nhận diện vai trò của người ký (Lãnh đạo Phòng hoặc Ban Giám hiệu) để áp dụng các cấp độ ký tương ứng (ký nháy hoặc ký số pháp nhân). 
+- Đảm bảo tính pháp lý và chống chối bỏ
+Đây là trái tim của quy trình, được xử lý bởi Sign Service nhằm thay thế con dấu vật lý bằng thuật toán mã hóa. 
+Quy trình mã hóa nội bộ: Khi nhận yêu cầu, Sign Service không chỉ đơn thuần dán một hình ảnh chữ ký mà thực hiện quy trình băm (Hashing) nội dung tệp PDF bằng các thuật toán mạnh mẽ như RSA/ECC. Dấu vân tay số (Digital Digest) này đảm bảo rằng bất kỳ sự thay đổi nhỏ nào sau khi ký cũng sẽ bị phát hiện, giúp duy trì tính toàn vẹn tuyệt đối cho văn bản của Nhà trường. 
+Áp dụng chứng thư số đa cấp: Luồng xử lý phân định rõ ràng giữa ký số cá nhân (xác nhận nội dung chuyên môn) và ký số pháp nhân (con dấu điện tử của Trường Đại học Kiến trúc Hà Nội). Sự phân cấp này phản ánh chính xác thẩm quyền trong quy trình hành chính thực tế. 
+- Quản lý lưu trữ kép và Kiểm soát phiên bản (Hybrid Storage)
+Hệ thống áp dụng cơ chế lưu trữ tách biệt để tối ưu hóa hiệu năng và khả năng truy xuất. 
+Lưu vết vật lý trên MinIO: Tệp PDF sau khi ký không được lưu đè một cách đơn giản mà được quản lý theo phiên bản (Version Control) trên MinIO. Việc lưu trữ tệp vật lý tách biệt giúp giải phóng gánh nặng cho cơ sở dữ liệu và cho phép hệ thống quản lý hàng triệu tệp tin PDF một cách chuyên nghiệp. 
+Nhất quán dữ liệu đặc tả (Metadata): Song song với việc lưu tệp, Sign Service thực hiện cập nhật trạng thái văn bản (từ "Chờ ký" sang "Đã ban hành") vào PostgreSQL. Điều này đảm bảo tính nhất quán của dữ liệu toàn hệ thống, giúp các dịch vụ khác như Document Service có thể hiển thị trạng thái chính xác cho người dùng theo thời gian thực. 
+- Tính minh bạch và Giám sát hệ thống
+Toàn bộ luồng xử lý đều để lại dấu vết kỹ thuật nhằm mục đích hậu kiểm. 
+Ghi nhật ký tác động (Audit Logs): Mọi hành động từ bước gửi yêu cầu ký, thời điểm ký thành công đến người thực hiện đều được ghi lại. Chức năng này cung cấp căn cứ để Ban Giám hiệu giám sát tính minh bạch và an toàn thông tin trong suốt vòng đời của một văn bản điện tử.
+2.6. Thiết kế cơ sở dữ liệu
+2.6.1. Chiến lược lưu trữ dữ liệu
+Trong kiến trúc Microservices của hệ thống, lớp Hạ tầng và Lưu trữ được coi là "hệ xương" đảm bảo sự sống còn và khả năng mở rộng của toàn bộ ứng dụng . Thay vì áp dụng mô hình lưu trữ đơn khối truyền thống, đồ án thực hiện chiến lược lưu trữ lai (Hybrid Storage), tách biệt hoàn toàn giữa dữ liệu đặc tả và dữ liệu vật lý để tối ưu hóa hiệu năng. 
+Việc tách biệt dữ liệu đặc tả và dữ liệu vật lý giúp giải quyết vấn đề nghiêm trọng về hiệu năng truy vấn và khó khăn trong việc sao lưu khi lưu trữ trực tiếp các tệp tin PDF dung lượng lớn vào cơ sở dữ liệu quan hệ. Do đó, hệ thống áp dụng cơ chế lưu trữ kép. Dữ liệu đặc tả (Metadata): Được quản lý bởi hệ quản trị cơ sở dữ liệu quan hệ, tập trung vào logic nghiệp vụ và tra cứu nhanh. Dữ liệu vật lý (Object Data): Được quản lý bởi hệ thống lưu trữ đối tượng chuyên dụng, tập trung vào khả năng chứa tệp tin dung lượng lớn và quản lý phiên bản. 
+PostgreSQL đóng vai trò lưu trữ "linh hồn" của mọi nghiệp vụ hành chính tại Nhà trường. Lưu trữ Metadata là lưu giữ các thông tin như số hiệu công văn, trích yếu, ngày ban hành được bóc tách từ OCR Service và thông tin tài khoản từ Identity Service. Nó tận dụng tính linh hoạt với JSONB để lưu trữ kết quả bóc tách từ mô hình AI một cách linh hoạt. Điều này cho phép cấu trúc dữ liệu OCR có thể thay đổi hoặc mở rộng mà không cần thực hiện thay đổi cấu trúc bảng (Schema) thường xuyên. Xây dựng một cơ sở dữ liệu tập trung cho phép người dùng truy xuất văn bản ngay lập tức thông qua các chỉ mục (Index) được tối ưu hóa. 
+Còn MinIO là giải pháp lưu trữ đối tượng chuẩn S3, chuyên dùng để quản lý các tệp PDF vật lý trong hệ thống. MinIO có khả năng quản lý hàng triệu tệp tin PDF, hỗ trợ cơ chế phân tán và sao lưu (Backup) dễ dàng, đảm bảo tài liệu của Nhà trường không bị thất thoát. Nó dùng cơ chế liên kết (Linking): Mỗi tệp tin tải lên được Document Service định danh duy nhất (GUID) và lưu trữ vật lý trên MinIO. Trong PostgreSQL, hệ thống chỉ lưu trữ các liên kết (Links) hoặc đường dẫn dẫn tới tệp này. Cơ chế này đảm bảo tệp tin luôn sẵn sàng để Sign Service lấy ra thực hiện các thuật toán mã hóa khóa công khai (RSA/ECC) mà không gây nghẽn mạch hệ thống.
+2.6.2. Sơ đồ thực thể liên kết (ERD - Entity Relationship Diagram)
+Sơ đồ ERD dưới đây mô tả mối quan hệ logic giữa các thực thể chính trong hệ thống, đảm bảo tính nhất quán từ khâu định danh người dùng đến quy trình bóc tách OCR và ký số pháp lý.
+
+Hình 2.6.2. Sơ đồ cơ sở dữ liệu
+2.6.3. Đặc tả chi tiết các bảng dữ liệu
+2.6.3.1. Bảng AppUsers (Quản lý tài khoản người dùng)
+Bảng này đóng vai trò là trung tâm của dịch vụ Identity Service, lưu trữ toàn bộ thông tin định danh của cán bộ, giảng viên trong Nhà trường. Mọi dữ liệu tại đây được thiết kế để phục vụ quá trình xác thực và cấp mã thông báo JWT.
+Các ràng buộc và quan hệ (Relationships):
+Quan hệ 1-n với Departments: Mỗi bản ghi trong AppUsers phải thuộc về một đơn vị cụ thể trong bảng Departments.
+Quan hệ 1-n với Signatures: Một người dùng có thể thực hiện nhiều lần ký số trên các văn bản khác nhau. 
+Quan hệ n-n với AppRoles: Thông qua bảng trung gian AppUserRoles để xác định các quyền hạn nghiệp vụ (Văn thư, Chuyên viên, Lãnh đạo...). 
+Chiến lược tối ưu hóa:
+Đánh chỉ mục (Index) trên trường username và email để tăng tốc độ truy vấn trong quá trình đăng nhập.
+Trường password_hash được thiết kế kiểu Text để có độ dài linh hoạt, phù hợp với nhiều tiêu chuẩn mã hóa khác nhau trong tương lai.
+
+2.6.3.2. Bảng AppRoles (Quản lý vai trò người dùng)
+Bảng này lưu trữ danh mục các nhóm quyền hạn trong hệ thống. Thông tin vai trò tại đây sẽ được dịch vụ Identity Service trích xuất và nhúng trực tiếp vào mã thông báo JWT, giúp các Microservices khác (như Sign Service hay OCR Service) có thể kiểm tra quyền hạn thực thi nghiệp vụ của người dùng một cách tức thời .
+Các ràng buộc và quan hệ (Relationships):
+Quan hệ n-n với AppUsers: Thông qua bảng trung gian AppUserRoles. Một vai trò có thể được gán cho nhiều người dùng khác nhau và ngược lại. 
+Dữ liệu mẫu (Seed Data): Khi khởi tạo hệ thống, bảng này sẽ chứa 05 vai trò cốt lõi tương ứng với 05 nhóm tác nhân đã phân tích: Quản trị viên, Văn thư, Chuyên viên, Lãnh đạo Phòng và Ban Giám hiệu. 
+Chiến lược tối ưu hóa:
+Sử dụng kiểu dữ liệu Varchar cho trường role_name theo yêu cầu kỹ thuật để tối ưu dung lượng lưu trữ và giúp việc kiểm tra quyền hạn trong mã nguồn (code) được rõ ràng, minh bạch hơn.
+Đánh chỉ mục (Index) trên trường role_name nhằm tăng tốc độ truy vấn cho dịch vụ Identity khi thực hiện quy trình đăng nhập và cấp phát mã thông báo bảo mật.
+2.6.3.3. Bảng AppUserRoles (Bảng trung gian phân quyền)
+Bảng này đóng vai trò cầu nối kỹ thuật để triển khai mô hình Phân quyền dựa trên vai trò (RBAC). Thay vì giới hạn một người dùng chỉ có một vai trò duy nhất, bảng này cho phép một cán bộ có thể đồng thời đảm nhiệm nhiều vị trí công tác (ví dụ: Một giảng viên vừa là Chuyên viên xử lý nghiệp vụ, vừa có thể được giao vai trò Văn thư đơn vị). 
+Các ràng buộc và quy tắc nghiệp vụ:
+Khóa chính hỗn hợp (Composite Primary Key): Sự kết hợp giữa user_id và role_id tạo thành một khóa chính duy nhất. Điều này đảm bảo một người dùng không bị gán trùng lặp một vai trò nhiều lần trong cơ sở dữ liệu.
+Toàn vẹn dữ liệu (Referential Integrity): * Nếu một tài khoản người dùng bị xóa khỏi bảng AppUsers, các bản ghi liên quan trong bảng này cũng sẽ tự động bị loại bỏ (Cascade Delete).
+Tương tự, nếu một vai trò bị xóa khỏi bảng AppRoles, hệ thống sẽ thu hồi vai trò đó từ tất cả người dùng liên quan.
+Vai trò trong kiến trúc Microservices: Khi người dùng thực hiện đăng nhập, Identity Service sẽ thực hiện lệnh JOIN giữa bảng này với bảng AppRoles để thu thập danh sách tất cả các chuỗi định danh quyền hạn (Role Claims) . Các chuỗi này sau đó được nén vào mã thông báo JWT để các dịch vụ như Sign Service kiểm tra xem người dùng có đủ thẩm quyền thực hiện ký số hay không. 
+Chiến lược tối ưu hóa:
+Hệ thống thực hiện đánh chỉ mục (Index) trên cả hai trường user_id và role_id. Việc này cực kỳ quan trọng để tăng tốc độ truy vấn khi kiểm tra quyền hạn của một người dùng cụ thể trong hàng ngàn bản ghi, giúp giảm độ trễ (latency) cho mỗi yêu cầu API gọi qua Gateway .
+2.6.3.4. Bảng Departments (Quản lý sơ đồ tổ chức)
+Bảng này lưu trữ thông tin về các Phòng, Ban, Khoa và Trung tâm thuộc Trường Đại học Kiến trúc Hà Nội. Dữ liệu tại đây không chỉ phục vụ việc quản lý nhân sự mà còn là căn cứ để hệ thống xác định luồng luân chuyển công văn (Workflow) và tạo số hiệu văn bản theo quy định 
+Các ràng buộc và quy tắc nghiệp vụ:
+Mối quan hệ đệ quy (1-n): Trường parent_id cho phép quản lý không giới hạn các cấp hành chính (Trường $\rightarrow$ Khoa $\rightarrow$ Bộ môn) . Nếu parent_id là NULL, đơn vị đó được hiểu là cấp cao nhất (Trường). 
+Toàn vẹn dữ liệu: Khi xóa một đơn vị cha, hệ thống sẽ kiểm tra ràng buộc để đảm bảo không còn đơn vị con hoặc người dùng nào đang thuộc đơn vị đó, tránh tình trạng dữ liệu mồ côi . 
+Vai trò trong nghiệp vụ quản lý công văn:
+Định hướng luồng xử lý (Routing): Khi Ban Giám hiệu ghi bút phê chỉ đạo, hệ thống dựa vào department_id của chuyên viên để chuyển văn bản đến đúng đơn vị cần xử lý. 
+Phân quyền dữ liệu: Kết hợp với vai trò (Role), bảng này giúp giới hạn phạm vi tra cứu văn bản; ví dụ: Chuyên viên khoa CNTT chỉ có thể tra cứu các văn bản nội bộ của khoa mình. 
+2.6.3.5. Bảng Documents (Thông tin công văn)
+Bảng này đóng vai trò là trung tâm lưu trữ dữ liệu đặc tả (Metadata) bóc tách được từ mô hình PaddleOCR và quản lý liên kết tới tệp tin vật lý . Mọi thông tin tại đây giúp người dùng tra cứu văn bản tức thời mà không cần mở tệp gốc.
+
+Các ràng buộc và quy tắc nghiệp vụ:
+Tích hợp OCR Service: Ngay khi OCR Service xử lý xong, nó sẽ thực hiện lệnh cập nhật các trường doc_number, title, issued_date và ocr_data_raw trực tiếp vào bản ghi này. 
+Quản lý lưu trữ lai (Hybrid): Trường minio_path đóng vai trò là "mỏ neo" kết nối Metadata với tệp vật lý. Khi người dùng muốn xem văn bản, hệ thống sẽ lấy đường dẫn này để gọi tệp từ MinIO. 
+Trạng thái vòng đời: Trường status được thiết kế kiểu Varchar theo yêu cầu của bạn để lưu trữ trực tiếp tên trạng thái, giúp việc truy vấn và đọc dữ liệu (Debug/Audit) trở nên minh bạch hơn.
+Chiến lược tối ưu hóa:
+Đánh chỉ mục (Indexing): Thực hiện đánh chỉ mục trên các trường thường xuyên tra cứu như doc_number và title để đảm bảo tốc độ phản hồi khi cán bộ tìm kiếm văn bản trong kho dữ liệu khổng lồ của Nhà trường . 
+Kiểu dữ liệu JSONB: Sử dụng Jsonb cho dữ liệu OCR thô giúp tiết kiệm không gian lưu trữ và tăng tốc độ xử lý các thuộc tính không cố định mà mô hình AI bóc tách được . 
+2.6.3.6. Bảng DocumentTypes (Phân loại văn bản)
+Bảng này lưu trữ danh mục các loại văn bản hành chính thường gặp. Việc phân loại giúp hệ thống tự động hóa việc gán quyền truy cập và xác định các bước phê duyệt cần thiết cho mỗi loại hồ sơ.
+
+
+
+Các ràng buộc và quy tắc nghiệp vụ:
+Quan hệ 1-n với Documents: Một loại văn bản có thể được áp dụng cho hàng nghìn công văn khác nhau trong kho lưu trữ. 
+Dữ liệu mẫu (Seed Data): Khi triển khai, bảng này sẽ được thiết lập sẵn các giá trị chuẩn theo quy định hành chính của Trường Đại học Kiến trúc Hà Nội để hỗ trợ Văn thư lựa chọn nhanh chóng sau khi OCR bóc tách dữ liệu.
+2.6.3.7. Bảng DocumentProcess (Nhật ký luân chuyển và Bút phê)
+Bảng này lưu trữ toàn bộ lịch sử biến đổi và luân chuyển của một văn bản qua các cấp. Đây là nơi chứa các nội dung "bút phê" chỉ đạo, là yếu tố then chốt trong nghiệp vụ điều hành của Ban Giám hiệu.
+
+2.6.3.8. Bảng Signatures (Bằng chứng ký số)
+Bảng này lưu trữ các thông tin kỹ thuật phục vụ việc xác thực tính pháp lý và toàn vẹn của văn bản sau khi qua dịch vụ Sign Service.
+Vai trò kỹ thuật:
+Tính chống chối bỏ: Bảng này lưu vết ai đã ký, ký loại gì và ký vào lúc nào. Kết hợp với tệp PDF trong MinIO, hệ thống có thể đối soát tính toàn vẹn bất cứ lúc nào thông qua thuật toán băm (Hashing).

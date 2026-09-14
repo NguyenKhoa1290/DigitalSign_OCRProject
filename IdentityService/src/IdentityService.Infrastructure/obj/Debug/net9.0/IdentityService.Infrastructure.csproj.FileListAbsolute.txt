@@ -1,0 +1,17 @@
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\bin\Debug\net9.0\IdentityService.Infrastructure.deps.json
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\bin\Debug\net9.0\IdentityService.Infrastructure.runtimeconfig.json
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\bin\Debug\net9.0\IdentityService.Infrastructure.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\bin\Debug\net9.0\IdentityService.Infrastructure.pdb
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\bin\Debug\net9.0\IdentityService.Core.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\bin\Debug\net9.0\IdentityService.Core.pdb
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.csproj.AssemblyReference.cache
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.AssemblyInfoInputs.cache
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.AssemblyInfo.cs
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.csproj.CoreCompileInputs.cache
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\Identity.1C9B4358.Up2Date
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\refint\IdentityService.Infrastructure.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.pdb
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.genruntimeconfig.cache
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\ref\IdentityService.Infrastructure.dll

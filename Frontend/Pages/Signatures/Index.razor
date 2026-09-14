@@ -1,0 +1,269 @@
+@page "/signatures"
+@page "/signatures/{DocId:guid}"
+@attribute [Authorize(Roles = "Manager,BoardOfDirectors")]
+@inject SignatureService SignatureService
+@inject DocumentService DocumentService
+@inject AuthService AuthService
+@inject IToastService Toast
+@inject NavigationManager NavManager
+
+<PageTitle>Ký số - HAU</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ký số Tài liệu</h1>
+        <p class="page-subtitle">Quản lý chữ ký số cho các văn bản</p>
+    </div>
+</div>
+
+@if (DocId.HasValue)
+{
+    <!-- Document-specific signing view -->
+    @if (_isLoading)
+    {
+        <LoadingSpinner />
+    }
+    else if (_document != null)
+    {
+        <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Thông tin Tài liệu</span></div>
+                <div class="card-body">
+                    <div style="margin-bottom:16px;">
+                        <h3 style="font-size:16px;font-weight:600;color:var(--color-text-primary);margin-bottom:8px;">@_document.Title</h3>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <StatusBadge Status="@_document.Status" />
+                            @if (!string.IsNullOrEmpty(_document.DocumentNumber))
+                            {
+                                <span style="font-size:13px;color:var(--color-text-secondary)">Số: @_document.DocumentNumber</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Loại văn bản</div>
+                            <div class="detail-value">@(_document.DocumentTypeName ?? "—")</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Ngày ban hành</div>
+                            <div class="detail-value">@(_document.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                        </div>
+                    </div>
+
+                    <!-- Sign Buttons -->
+                    <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+                        @if (_role == "Manager" && _document.Status == "PendingDeptReview")
+                        {
+                            <button class="btn btn-success" @onclick='() => ShowSignModal("DeptSign")' disabled="@_isActionLoading">
+                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                                Ký nháy (Manager)
+                            </button>
+                        }
+                        @if (_role == "BoardOfDirectors" && (_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned"))
+                        {
+                            <button class="btn btn-primary" @onclick='() => ShowSignModal("DirectorSign")' disabled="@_isActionLoading">
+                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                </svg>
+                                Ký số pháp nhân (BGH)
+                            </button>
+                        }
+                        <button class="btn btn-outline" @onclick="VerifySignatures" disabled="@_isActionLoading">
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            Xác minh chữ ký
+                        </button>
+                    </div>
+
+                    @if (_verifyResult != null)
+                    {
+                        <div class="alert @(_verifyResult.AllValid ? "alert-success" : "alert-danger")" style="margin-top:16px">
+                            @if (_verifyResult.AllValid)
+                            {
+                                <span>✓ Tất cả @_verifyResult.TotalSignatures chữ ký đều hợp lệ</span>
+                            }
+                            else
+                            {
+                                <span>⚠ @_verifyResult.ValidSignatures/@_verifyResult.TotalSignatures chữ ký hợp lệ</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span class="card-title">Chữ ký hiện có (@(_signatures?.Count ?? 0))</span></div>
+                <div class="card-body">
+                    @if (_signatures == null || !_signatures.Any())
+                    {
+                        <div class="empty-state" style="padding:30px 10px">
+                            <div class="empty-state-icon">
+                                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </div>
+                            <p class="empty-state-title">Chưa có chữ ký</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var sig in _signatures)
+                        {
+                            <div class="sig-item">
+                                <div class="sig-icon" style="@(sig.IsValid ? "" : "background:var(--color-danger-light);color:var(--color-danger)")">
+                                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </div>
+                                <div class="sig-info">
+                                    <div class="sig-name">@sig.SignerName</div>
+                                    <div class="sig-meta">@sig.SignatureType • @sig.SignedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                    @if (!string.IsNullOrEmpty(sig.CertificateSubject))
+                                    {
+                                        <div class="sig-meta">@sig.CertificateSubject</div>
+                                    }
+                                    @if (sig.IsValid) { <span class="sig-valid">✓ Hợp lệ</span> }
+                                    else { <span class="sig-invalid">✗ Không hợp lệ</span> }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <!-- List of pending documents to sign -->
+    @if (_isLoading)
+    {
+        <LoadingSpinner />
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header"><span class="card-title">Tài liệu cần ký</span></div>
+            <div class="card-body">
+                <p style="color:var(--color-text-secondary);font-size:14px;">
+                    Chọn tài liệu cụ thể từ <a href="/documents">danh sách công văn</a> để thực hiện ký số.
+                </p>
+            </div>
+        </div>
+    }
+}
+
+<!-- Sign Modal -->
+@if (_showSignModal)
+{
+    <div class="modal-overlay" @onclick="CloseSignModal">
+        <div class="modal" @onclick:stopPropagation>
+            <div class="modal-header">
+                <span class="modal-title">@(_signType == "DeptSign" ? "Ký nháy" : "Ký số pháp nhân")</span>
+                <button class="modal-close" @onclick="CloseSignModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Bạn sắp ký số tài liệu này bằng chứng thư số của mình.</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mã PIN chứng thư (nếu có)</label>
+                    <input type="password" class="form-control" placeholder="Nhập mã PIN..." @bind="_pinCode" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ghi chú</label>
+                    <textarea class="form-control" placeholder="Ghi chú..." @bind="_signComment" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="CloseSignModal">Hủy</button>
+                <button class="btn btn-success" @onclick="ExecuteSign" disabled="@_isActionLoading">
+                    @if (_isActionLoading)
+                    {
+                        <div class="spinner spinner-sm" style="border-top-color:white"></div>
+                        <span>Đang ký...</span>
+                    }
+                    else
+                    {
+                        <span>Ký số</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid? DocId { get; set; }
+
+    private DocumentDto? _document;
+    private List<SignatureDto>? _signatures;
+    private SignatureVerifyResult? _verifyResult;
+    private string? _role;
+    private bool _isLoading = true;
+    private bool _isActionLoading;
+
+    private bool _showSignModal;
+    private string _signType = "";
+    private string? _pinCode;
+    private string _signComment = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _role = await AuthService.GetRoleAsync();
+
+        if (DocId.HasValue)
+        {
+            _document = await DocumentService.GetDocumentAsync(DocId.Value);
+            _signatures = await SignatureService.GetSignaturesAsync(DocId.Value);
+        }
+
+        _isLoading = false;
+    }
+
+    private void ShowSignModal(string type)
+    {
+        _signType = type;
+        _pinCode = null;
+        _signComment = "";
+        _showSignModal = true;
+    }
+    private void CloseSignModal() => _showSignModal = false;
+
+    private async Task ExecuteSign()
+    {
+        if (!DocId.HasValue) return;
+        _isActionLoading = true;
+
+        var req = new SignRequestDto { SignatureType = _signType, PinCode = _pinCode, Comment = _signComment };
+        var result = await SignatureService.SignAsync(DocId.Value, req);
+
+        _isActionLoading = false;
+        _showSignModal = false;
+
+        if (result != null)
+        {
+            Toast.ShowSuccess("Ký số thành công!");
+            _document = await DocumentService.GetDocumentAsync(DocId.Value);
+            _signatures = await SignatureService.GetSignaturesAsync(DocId.Value);
+        }
+        else
+        {
+            Toast.ShowError("Ký số thất bại. Vui lòng kiểm tra chứng thư số.");
+        }
+    }
+
+    private async Task VerifySignatures()
+    {
+        if (!DocId.HasValue) return;
+        _isActionLoading = true;
+        _verifyResult = await SignatureService.VerifyAsync(DocId.Value);
+        _isActionLoading = false;
+    }
+}

@@ -1,0 +1,44 @@
+@if (IsVisible)
+{
+    <div class="modal-overlay" @onclick="HandleOverlayClick">
+        <div class="modal" @onclick:stopPropagation>
+            <div class="modal-header">
+                <span class="modal-title">@Title</span>
+                <button class="modal-close" @onclick="Cancel">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--color-text-secondary); font-size: 14px;">@Message</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="Cancel">@CancelText</button>
+                <button class="btn @ConfirmButtonClass" @onclick="Confirm">@ConfirmText</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; } = "Xác nhận";
+    [Parameter] public string Message { get; set; } = "Bạn có chắc chắn muốn thực hiện thao tác này?";
+    [Parameter] public string ConfirmText { get; set; } = "Xác nhận";
+    [Parameter] public string CancelText { get; set; } = "Hủy";
+    [Parameter] public string ConfirmButtonClass { get; set; } = "btn-danger";
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    private async Task Confirm()
+    {
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnConfirm.InvokeAsync();
+    }
+
+    private async Task Cancel()
+    {
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnCancel.InvokeAsync();
+    }
+
+    private async Task HandleOverlayClick() => await Cancel();
+}

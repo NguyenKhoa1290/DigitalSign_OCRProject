@@ -1,0 +1,83 @@
+version: '3.9'
+
+services:
+  # ============================================================
+  # PostgreSQL Database
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: hau_identity_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: identity_service_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - hau_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d identity_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============================================================
+  # Identity Service API
+  # ============================================================
+  identity-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hau_identity_service
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=identity_service_db;Username=postgres;Password=postgres123
+      - JwtSettings__Key=HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
+      - JwtSettings__Issuer=IdentityService
+      - JwtSettings__Audience=HAU-MicroservicesClients
+      - JwtSettings__ExpiryMinutes=60
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - hau_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================================
+  # pgAdmin (Optional - Database Management UI)
+  # ============================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: hau_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@hau.edu.vn
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - hau_network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  hau_network:
+    driver: bridge
+    name: hau_microservices_network

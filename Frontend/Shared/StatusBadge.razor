@@ -1,0 +1,23 @@
+@code {
+    [Parameter] public string Status { get; set; } = string.Empty;
+
+    private (string CssClass, string Label) GetBadgeInfo() => Status switch
+    {
+        "Draft" => ("badge badge-gray", "Nháp"),
+        "PendingDeptReview" => ("badge badge-yellow", "Chờ duyệt phòng"),
+        "DeptSigned" => ("badge badge-blue", "Đã ký nháy"),
+        "PendingDirectorSign" => ("badge badge-orange", "Chờ BGH ký"),
+        "DirectorSigned" => ("badge badge-purple", "BGH đã ký"),
+        "Published" => ("badge badge-green", "Đã ban hành"),
+        "Rejected" => ("badge badge-red", "Từ chối"),
+        _ => ("badge badge-gray", Status)
+    };
+}
+
+@{
+    var (cssClass, label) = GetBadgeInfo();
+}
+<span class="@cssClass">
+    <span class="badge-dot"></span>
+    @label
+</span>

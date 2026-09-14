@@ -1,0 +1,12 @@
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\bin\Debug\net9.0\IdentityService.Core.deps.json
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\bin\Debug\net9.0\IdentityService.Core.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\bin\Debug\net9.0\IdentityService.Core.pdb
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.csproj.AssemblyReference.cache
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.GeneratedMSBuildEditorConfig.editorconfig
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.AssemblyInfoInputs.cache
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.AssemblyInfo.cs
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.csproj.CoreCompileInputs.cache
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\refint\IdentityService.Core.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.pdb
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\ref\IdentityService.Core.dll

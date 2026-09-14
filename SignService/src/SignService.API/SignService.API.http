@@ -1,0 +1,6 @@
+@SignService.API_HostAddress = http://localhost:5275
+
+GET {{SignService.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

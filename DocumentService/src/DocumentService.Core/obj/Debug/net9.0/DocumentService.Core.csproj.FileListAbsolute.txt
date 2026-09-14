@@ -1,0 +1,11 @@
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.GeneratedMSBuildEditorConfig.editorconfig
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.AssemblyInfoInputs.cache
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.AssemblyInfo.cs
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.csproj.CoreCompileInputs.cache
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\bin\Debug\net9.0\DocumentService.Core.deps.json
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\bin\Debug\net9.0\DocumentService.Core.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\bin\Debug\net9.0\DocumentService.Core.pdb
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\refint\DocumentService.Core.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.pdb
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\ref\DocumentService.Core.dll

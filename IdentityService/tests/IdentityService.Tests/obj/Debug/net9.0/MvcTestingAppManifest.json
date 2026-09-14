@@ -1,0 +1,5 @@
+{
+  "IdentityService.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.API",
+  "IdentityService.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Core",
+  "IdentityService.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "F:\\DigitalSign_OCRProject\\IdentityService\\src\\IdentityService.Infrastructure"
+}

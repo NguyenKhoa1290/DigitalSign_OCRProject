@@ -1,0 +1,19 @@
+<div class="loading-state">
+    <div class="spinner @SizeClass"></div>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <span>@Message</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string Message { get; set; } = "Đang tải...";
+    [Parameter] public string Size { get; set; } = "md"; // sm, md, lg
+
+    private string SizeClass => Size switch
+    {
+        "sm" => "spinner-sm",
+        "lg" => "spinner-lg",
+        _ => ""
+    };
+}

@@ -1,0 +1,17 @@
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.csproj.AssemblyReference.cache
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.AssemblyInfoInputs.cache
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.AssemblyInfo.cs
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.csproj.CoreCompileInputs.cache
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\bin\Debug\net9.0\DocumentService.Infrastructure.deps.json
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\bin\Debug\net9.0\DocumentService.Infrastructure.runtimeconfig.json
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\bin\Debug\net9.0\DocumentService.Infrastructure.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\bin\Debug\net9.0\DocumentService.Infrastructure.pdb
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\bin\Debug\net9.0\DocumentService.Core.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\bin\Debug\net9.0\DocumentService.Core.pdb
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\Document.C3081AC9.Up2Date
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\refint\DocumentService.Infrastructure.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.pdb
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.genruntimeconfig.cache
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\ref\DocumentService.Infrastructure.dll

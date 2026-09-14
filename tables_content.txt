@@ -1,0 +1,251 @@
+=== TABLE 0 ===
+Thành phần | Nội dung mô tả
+Use Case | Đăng nhập hệ thống
+Actor | Toàn bộ người dùng (Văn thư, Chuyên viên, Lãnh đạo Phòng, Ban Giám hiệu, Quản trị viên)
+Tiền điều kiện | Người dùng đã được Quản trị viên cấp tài khoản định danh trên hệ thống
+Hậu điều kiện | Người dùng truy cập thành công vào không gian làm việc (Workspace) theo đúng vai trò
+Kịch bản chính | 1. Người dùng truy cập vào ứng dụng trên trình duyệt Web hoặc thiết bị di động. 
+2. Màn hình hiện lên form đăng nhập bao gồm: 1 ô nhập Tên đăng nhập, 1 ô nhập Mật khẩu, 1 nút Đăng nhập. 
+3. Người dùng nhập đầy đủ Tên đăng nhập và Mật khẩu. 
+4. Người dùng click nút Đăng nhập. 
+5. Hệ thống (Identity Service) tiếp nhận thông tin, thực hiện xác thực và kiểm tra vai trò (Role) của người dùng trong cơ sở dữ liệu PostgreSQL. 
+6. Hệ thống tạo mã xác thực JWT chứa thông tin quyền hạn và gửi về thiết bị. 
+7. Màn hình hiện lên menu các chức năng quản lý tương ứng với vai trò của người dùng (ví dụ: Văn thư hiện menu Tiếp nhận, Lãnh đạo hiện menu Phân công).
+Ngoại lệ | 6.1. Người dùng nhập thiếu thông tin (Tên đăng nhập hoặc Mật khẩu) và click Đăng nhập: 
+6.1.1. Màn hình hiện lên thông báo: "Vui lòng điền đầy đủ thông tin". 
+6.2. Người dùng nhập sai Tên đăng nhập hoặc Mật khẩu và click Đăng nhập: 
+6.2.1. Màn hình hiện lên thông báo lỗi: "Tên đăng nhập hoặc mật khẩu không chính xác". 
+6.3. Tài khoản của người dùng đang trong trạng thái bị khóa bởi Admin: 
+6.3.1. Màn hình hiện lên thông báo: "Tài khoản đã bị khóa, vui lòng liên hệ Quản trị viên". 
+6.4. Phiên đăng nhập hết hạn (Token expired): 
+6.4.1. Hệ thống tự động đẩy người dùng về màn hình đăng nhập và hiển thị thông báo: "Phiên làm việc đã hết hạn, vui lòng đăng nhập lại".
+
+=== TABLE 1 ===
+Thành phần | Nội dung mô tả
+Use Case | Tiếp nhận và bóc tách công văn đến (OCR)
+Actor | Văn thư
+Tiền điều kiện | Văn thư đăng nhập thành công vào hệ thống và truy cập vào phân hệ Quản lý công văn đến.
+Hậu điều kiện | Tệp PDF được lưu trữ vào MinIO và các thông tin đặc tả (Metadata) được bóc tách, lưu vào cơ sở dữ liệu dưới dạng bản nháp.
+Kịch bản chính | 1. Văn thư chọn chức năng Tiếp nhận công văn đến từ menu quản trị. 
+2. Màn hình hiển thị danh sách các công văn đã tiếp nhận và nút Tiếp nhận mới. 
+3. Văn thư nhấn nút tiếp nhận mới, màn hình hiện lên form tải tệp bao gồm: 1 vùng chọn tệp PDF (bắt buộc) và 1 nút Tải lên. 
+4. Văn thư thực hiện chọn tệp PDF công văn đã được quét (scan) từ máy tính. 
+5. Văn thư nhấn nút Tải lên. 
+6. Hệ thống thực hiện lưu tệp vật lý vào hệ thống lưu trữ MinIO và phát đi thông điệp qua trục Kafka. 
+7. OCR Service (Python) tự động kích hoạt mô hình PaddleOCR để nhận diện và bóc tách các trường thông tin: Số hiệu, Ngày ban hành, Cơ quan ban hành và Trích yếu nội dung. 
+8. Sau khi xử lý xong, màn hình hiển thị form thông tin công văn với các ô dữ liệu đã được điền tự động từ kết quả OCR cùng bản xem trước tệp PDF ở bên cạnh. 
+9. Văn thư thực hiện đối soát thông tin bóc tách với văn bản gốc và hiệu chỉnh các trường dữ liệu bị sai lệch hoặc còn thiếu (bắt buộc điền Số hiệu và Trích yếu). 
+10. Văn thư nhấn nút Lưu. 
+11. Hệ thống lưu metadata vào PostgreSQL và thông báo "Tiếp nhận và bóc tách thành công".
+Ngoại lệ | 6.1. Tệp tải lên không hợp lệ hoặc quá dung lượng quy định: 
+6.1.1. Hệ thống hiển thị thông báo lỗi: "Định dạng tệp không hỗ trợ hoặc tệp quá lớn" và yêu cầu văn thư chọn lại tệp PDF hợp lệ. 
+6.2. Mô hình OCR không thể bóc tách dữ liệu do chất lượng ảnh kém: 
+6.2.1. Màn hình hiện form với các ô dữ liệu trống cùng dòng cảnh báo: "Không thể tự động bóc tách thông tin, vui lòng nhập liệu thủ công". 
+6.2.2. Văn thư thực hiện nhập tay toàn bộ thông tin công văn và click Lưu. 
+6.3. Văn thư nhập thiếu các thông tin bắt buộc và click Lưu: 
+6.3.1. Màn hình hiện lên thông báo: "Vui lòng điền đầy đủ thông tin bắt buộc (Số hiệu, Trích yếu)". 
+6.3.2. Văn thư bổ sung thông tin và thực hiện nhấn Lưu lại.
+
+=== TABLE 2 ===
+Thành phần | Nội dung mô tả
+Use Case | Soạn thảo và trình duyệt công văn đi (DraftOutgoingDocument)
+Actor | Chuyên viên
+Tiền điều kiện | Chuyên viên đăng nhập thành công vào hệ thống và truy cập vào Workspace dành cho Chuyên viên.
+Hậu điều kiện | Một dự thảo công văn được tạo thành công, lưu trữ trên hệ thống và chuyển sang trạng thái "Chờ lãnh đạo duyệt".
+Kịch bản chính | 1. Chuyên viên chọn chức năng Soạn thảo công văn đi từ menu nghiệp vụ. 
+2. Màn hình hiển thị danh sách các dự thảo cá nhân và nút Khởi tạo mới. 
+3. Chuyên viên nhấn nút Khởi tạo mới, màn hình hiện lên form soạn thảo bao gồm các thông tin:
+-Nút tải tệp dự thảo (bắt buộc)
+-Ô chọn Loại văn bản (bắt buộc)
+-Ô nhập Trích yếu nội dung (bắt buộc)
+-Ô chọn Độ khẩn
+-Ô chọn Lãnh đạo phòng duyệt (bắt buộc)
+-Các ô Metadata bóc tách từ OCR.
+4. Chuyên viên thực hiện chọn và tải tệp dự thảo (PDF/Word) lên hệ thống. 
+5. Document Service lưu tệp vào MinIO và kích hoạt OCR Service để nhận diện sơ bộ nội dung dự thảo. 
+6. Hệ thống tự động điền các thông tin bóc tách được vào các ô tương ứng trên form. 
+7. Chuyên viên kiểm tra, hoàn thiện các thông tin bắt buộc và chọn Lãnh đạo Phòng chịu trách nhiệm duyệt. 
+8. Chuyên viên nhấn nút Trình duyệt. 
+9. Hệ thống lưu toàn bộ thông tin vào cơ sở dữ liệu PostgreSQL, cập nhật trạng thái văn bản và hiển thị thông báo: "Trình duyệt công văn thành công".
+Ngoại lệ | 6.1. Tệp dự thảo không đúng định dạng hoặc bị lỗi: 
+6.1.1. Hệ thống hiển thị thông báo lỗi: "Vui lòng chọn tệp tin đúng định dạng (PDF/DOCX)". 
+6.2. Chuyên viên nhập thiếu thông tin bắt buộc và click Trình duyệt: 
+6.2.1. Màn hình hiện lên dòng thông báo đỏ dưới các ô trống: "Vui lòng không để trống thông tin này".
+6.2.2. Chuyên viên bổ sung đầy đủ và thực hiện trình lại. 
+6.3. Hệ thống không thể kết nối tới dịch vụ lưu trữ MinIO: 
+6.3.1. Màn hình hiện thông báo lỗi: "Hệ thống lưu trữ đang bận, vui lòng thử lại sau". 
+6.4. Chuyên viên chọn sai lãnh đạo phê duyệt: 
+6.4.1. Chuyên viên có thể nhấn nút Hủy để quay lại danh sách hoặc sửa lại thông tin trước khi nhấn Trình duyệt.
+
+=== TABLE 3 ===
+Thành phần | Nội dung mô tả
+Use Case | Phân công và Ký duyệt cấp phòng 
+(DepartmentalTaskAssignmentAndApproval)
+Actor | Lãnh đạo Phòng
+Tiền điều kiện | Lãnh đạo Phòng đăng nhập thành công và hệ thống hiển thị thông báo có công văn đến cần phân công hoặc dự thảo công văn đi cần phê duyệt.
+Hậu điều kiện | Công văn đến được chuyển cho Chuyên viên xử lý hoặc dự thảo công văn đi được ký nháy thành công và chuyển lên Ban Giám hiệu.
+Kịch bản chính | 1. Lãnh đạo Phòng chọn phân hệ Quản lý công việc đơn vị từ menu điều hành. 
+2. Màn hình hiển thị danh sách các văn bản đang chờ xử lý của phòng. 
+3. Lãnh đạo Phòng chọn một văn bản cụ thể để thực hiện nghiệp vụ. 
+4. Màn hình hiện lên form chi tiết xử lý bao gồm: 
+-Thông tin nội dung và tệp đính kèm (chế độ xem),
+-Ô chọn Chuyên viên thực hiện (bắt buộc đối với công văn đến),
+-Ô nhập Ý kiến chỉ đạo/Yêu cầu sửa đổi,
+-Ô chọn Thời hạn hoàn thành,
+-Nút Ký số nội bộ (dành cho công văn đi),
+-Nút Hủy và nút Phê duyệt/Phân công. 
+5. Đối với công văn đến: Lãnh đạo chọn chuyên viên phù hợp, nhập yêu cầu chỉ đạo và thời hạn xử lý. 
+6. Đối với công văn đi: Lãnh đạo kiểm duyệt nội dung dự thảo, nếu đồng ý thì thực hiện thao tác Ký số nội bộ thông qua Sign Service. 
+7. Lãnh đạo Phòng nhấn nút Phê duyệt/Phân công. 
+8. Hệ thống lưu trạng thái mới vào PostgreSQL, cập nhật lịch sử luân chuyển và hiển thị thông báo: "Xử lý văn bản thành công".
+Ngoại lệ | 6.1. Lãnh đạo Phòng không đồng ý với nội dung dự thảo của chuyên viên: 
+6.1.1. Lãnh đạo nhập nội dung yêu cầu chỉnh sửa vào ô ý kiến và nhấn nút Trả lại. 
+6.1.2. Hệ thống cập nhật trạng thái "Yêu cầu sửa đổi" và gửi thông báo về cho chuyên viên soạn thảo. 
+6.2. Lỗi xác thực chữ ký số cá nhân:
+6.2.1. Khi thực hiện ký số nội bộ, nếu chứng thư số không hợp lệ, màn hình hiện thông báo lỗi: "Chữ ký số không hợp lệ hoặc đã hết hạn". 
+6.2.2. Lãnh đạo kiểm tra lại thiết bị ký số và thực hiện lại thao tác. 
+6.3. Lãnh đạo nhấn Lưu/Phân công nhưng chưa chọn chuyên viên thực hiện: 
+6.3.1. Màn hình hiển thị dòng thông báo lỗi dưới ô chọn chuyên viên: "Vui lòng chọn chuyên viên xử lý". 
+6.3.2. Lãnh đạo bổ sung thông tin và thực hiện nhấn nút lại.
+
+=== TABLE 4 ===
+Thành phần | Nội dung mô tả
+Use Case | Phê duyệt và Ký số pháp nhân
+(FinalApprovalAndLegalSignature)
+Actor | Ban Giám hiệu
+Tiền điều kiện | Ban Giám hiệu đăng nhập thành công; văn bản đi đã có đủ chữ ký nháy của Lãnh đạo Phòng hoặc văn bản đến cần ghi ý kiến chỉ đạo.
+Hậu điều kiện | Văn bản được áp dụng chữ ký số pháp nhân (con dấu điện tử) của Trường, trạng thái cập nhật thành "Đã ban hành" và lưu trữ bản cuối cùng vào MinIO.
+Kịch bản chính | 1. Ban Giám hiệu truy cập vào Giám hiệu Workspace từ màn hình chính. 
+2. Hệ thống hiển thị danh sách các văn bản "Chờ phê duyệt" hoặc "Cần chỉ đạo". 
+3. Ban Giám hiệu chọn một văn bản cụ thể để xem chi tiết. 
+4. Màn hình hiển thị nội dung văn bản PDF kèm theo thông tin các cấp đã ký kiểm soát trước đó. 
+5. Đối với công văn đến: Ban Giám hiệu nhập nội dung chỉ đạo vào ô Bút phê chỉ đạo và nhấn Lưu chỉ đạo. 
+6. Đối với công văn đi: Ban Giám hiệu xem xét dự thảo cuối cùng, sau đó nhấn nút Ký số pháp nhân. 
+7. Hệ thống yêu cầu xác thực thiết bị ký số (Token/HSM). 
+8. Sign Service thực hiện băm tệp PDF, áp dụng chứng thư số của Trường Đại học Kiến trúc Hà Nội và ghi đè phiên bản tệp đã ký vào MinIO. 
+9. Hệ thống cập nhật trạng thái văn bản thành "Đã ban hành" trong PostgreSQL và gửi thông báo cho Văn thư để thực hiện chuyển phát hành. 
+10. Màn hình hiển thị thông báo: "Văn bản đã được ký số và phê duyệt thành công".
+Ngoại lệ | 6.1. Ban Giám hiệu không đồng ý với nội dung và yêu cầu chỉnh sửa lại: 
+6.1.1. Ban Giám hiệu nhập lý do từ chối vào ô ý kiến và nhấn nút Trả lại. 
+6.1.2. Hệ thống chuyển trạng thái về "Yêu cầu chỉnh sửa" và gửi thông báo cho cấp phòng hoặc chuyên viên liên quan. 
+6.2. Lỗi kết nối với dịch vụ Sign Service hoặc Chứng thư số không hợp lệ:
+6.2.1. Hệ thống hiển thị thông báo lỗi: "Không thể thực hiện ký số, vui lòng kiểm tra lại thiết bị hoặc chứng thư số pháp nhân". 
+6.2.2. Ban Giám hiệu hoặc cán bộ hỗ trợ kỹ thuật kiểm tra lại trạng thái dịch vụ và thực hiện lại. 
+6.3. Văn bản chưa có đủ chữ ký kiểm soát (ký nháy) của cấp phòng: 
+6.3.1. Nút Ký số pháp nhân bị vô hiệu hóa (disabled), hệ thống hiển thị dòng nhắc: "Văn bản cần có chữ ký nháy của Lãnh đạo Phòng trước khi phê duyệt".
+
+=== TABLE 5 ===
+Thành phần | Nội dung mô tả
+Use Case | Quản trị hệ thống và Phân quyền
+ (AccountManagementAndRBAC)
+Actor | Quản trị viên (Admin)
+Tiền điều kiện | Admin đăng nhập thành công và truy cập vào phân hệ Admin Workspace.
+Hậu điều kiện | Thông tin tài khoản, quyền hạn (RBAC) hoặc cấu hình luồng xử lý (Workflow) được cập nhật thành công vào hệ thống.
+Kịch bản chính | 1. Admin truy cập vào Admin Workspace từ menu chính. 
+2. Màn hình hiển thị các chức năng quản trị: Quản lý tài khoản, Phân quyền vai trò, Cấu hình Workflow, Xem Audit Logs. 
+3. Quản lý tài khoản: Admin chọn "Thêm mới" hoặc "Chỉnh sửa" tài khoản cán bộ. 
+4. Admin nhập các thông tin: Tên đăng nhập, Mật khẩu, Thông tin cá nhân và gán vai trò tương ứng (Văn thư, Chuyên viên, Lãnh đạo Phòng, Ban Giám hiệu). 
+5. Cấu hình Workflow: Admin thiết lập trình tự luân chuyển văn bản giữa các đơn vị để phù hợp với quy định của Nhà trường. 
+6. Admin nhấn nút Lưu cấu hình. 
+7. Hệ thống cập nhật dữ liệu vào cơ sở dữ liệu PostgreSQL và đồng bộ hóa quyền hạn thông qua Identity Service. 
+8. Màn hình hiển thị thông báo: "Cập nhật cấu hình hệ thống thành công".
+Ngoại lệ | 6.1. Admin nhập thiếu thông tin bắt buộc khi cấp tài khoản: 
+6.1.1. Màn hình hiện thông báo đỏ dưới các ô trống: "Vui lòng điền đầy đủ thông tin tài khoản". 
+6.1.2. Admin bổ sung đầy đủ và thực hiện Lưu lại. 
+6.2. Tên đăng nhập bị trùng trong hệ thống: 
+6.2.1. Hệ thống hiển thị thông báo lỗi: "Tên đăng nhập đã tồn tại, vui lòng chọn tên khác". 
+6.3. Lỗi kết nối giữa các dịch vụ hạ tầng (Identity Service hoặc PostgreSQL): 
+6.3.1. Hệ thống hiển thị thông báo lỗi kỹ thuật: "Không thể kết nối dịch vụ định danh, vui lòng kiểm tra lại hạ tầng". 
+6.3.2. Admin kiểm tra trạng thái dịch vụ và thực hiện lại thao tác.
+
+=== TABLE 6 ===
+Vai trò | Nhiệm vụ chính trong hệ thống
+Admin | Quản trị kỹ thuật, cấp tài khoản, cấu hình luồng duyệt (Workflow).
+Văn thư | Tiếp nhận công văn đến, vận hành OCR, phát hành và lưu trữ công văn đi.
+Chuyên viên | Soạn thảo tờ trình, tiếp nhận chỉ đạo và báo cáo kết quả xử lý công văn.
+Lãnh đạo Phòng | Kiểm soát nội dung chuyên môn, ký số cấp đơn vị, phân công nhiệm vụ.
+Ban Giám hiệu | Phê duyệt cuối cùng, thực hiện ký số pháp nhân và ghi bút phê chỉ đạo.
+
+=== TABLE 7 ===
+Chức năng | Admin | Văn thư | Chuyên viên | Lãnh đạo phòng | Ban Giám Hiệu
+Nhóm Định danh |  |  |  |  | 
+Cấp tài khoản & Phân quyền | X |  |  |  | 
+Xem lịch sử tác động | X |  |  | X | X
+Nhóm Công văn |  |  |  |  | 
+Tiếp nhận công văn đến |  | X |  |  | 
+Soạn thảo, tải công văn lên |  | X | X |  | 
+Phân phối và lưu trữ |  | X |  |  | 
+Xem báo cáo số lượng | X | X |  | X | X
+Nhóm OCR & Ký số |  |  |  |  | 
+Kiểm tra kết quả bóc tách |  | X | X |  | 
+Ký số nội bộ / cấp phòng |  |  |  | X | 
+Ký số pháp nhân (Đại học) |  |  |  |  | X
+Tra cứu & Kiểm tra toàn vẹn | X | X | X | X | X
+
+=== TABLE 8 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | id | GUID | Primary Key | Định danh duy nhất toàn cầu cho mỗi tài khoản, đảm bảo không trùng lặp khi mở rộng hệ thống.
+2 | username | Varchar(50) | Unique, Not Null | Tên đăng nhập dùng để truy cập hệ thống (ví dụ: khoand, admin). Không cho phép trùng lặp.
+3 | password_hash | Text | Not Null | Lưu trữ mật khẩu đã được xử lý qua các thuật toán băm (Hashing) mạnh. Hệ thống tuyệt đối không lưu mật khẩu gốc.
+4 | full_name | Nvarchar(100) | Not Null | Họ và tên đầy đủ của cán bộ (Hỗ trợ tiếng Việt có dấu).
+5 | email | Varchar(100) | Unique | Địa chỉ thư điện tử công vụ, dùng để nhận thông báo luân chuyển công văn hoặc khôi phục mật khẩu.
+6 | phone_number | Varchar(15) |  | Số điện thoại liên lạc của cán bộ.
+7 | department_id | GUID | Foreign Key | Liên kết tới bảng Departments. Xác định cán bộ này thuộc phòng, ban hoặc khoa nào trong trường.
+8 | is_active | Boolean | Default: True | Trạng thái tài khoản. Nếu là False, người dùng sẽ không thể đăng nhập dù nhập đúng mật khẩu.
+9 | created_at | DateTime | Default: Now() | Ghi lại thời điểm tài khoản được khởi tạo lần đầu bởi Admin.
+
+=== TABLE 9 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | id | GUID | Primary Key | Định danh duy nhất toàn cầu cho mỗi vai trò, đảm bảo tính nhất quán dữ liệu giữa các dịch vụ.
+2 | role_name | Varchar(50) | Unique, Not Null | Tên vai trò định danh cho các nhóm quyền (ví dụ: Admin, Clerk, Specialist, Manager, BoardOfDirectors) .
+3 | description | Nvarchar(255) |  | Mô tả chi tiết phạm vi quyền hạn và trách nhiệm của vai trò đó trong hệ thống quản lý công văn.
+
+=== TABLE 10 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | user_id | GUID | Composite PK, Foreign Key | Liên kết trực tiếp tới trường id của bảng AppUsers. Xác định người dùng được gán quyền.
+2 | role_id | GUID | Composite PK, Foreign Key | Liên kết trực tiếp tới trường id của bảng AppRoles. Xác định vai trò được cấp cho người dùng.
+
+=== TABLE 11 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | id | GUID | Primary Key | Định danh duy nhất cho mỗi đơn vị/phòng ban.
+2 | dept_name | Nvarchar(150) | Not Null | Tên đầy đủ của đơn vị (ví dụ: Khoa Công nghệ thông tin, Phòng Tổng hợp).
+3 | dept_code | Varchar(20) | Unique, Not Null | Mã viết tắt của đơn vị, dùng để cấu thành số hiệu công văn đi (ví dụ: CNTT, TH).
+4 | parent_id | GUID | Foreign Key | Liên kết tới chính trường id của bảng này (Self-referencing), dùng để tạo cấu trúc cây thư mục đơn vị.
+5 | description | Nvarchar(255) |  | Ghi chú về chức năng hoặc vị trí văn phòng của đơn vị.
+6 | created_at | DateTime |  | Thời điểm đơn vị được khởi tạo trên hệ thống.
+
+=== TABLE 12 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | id | GUID | Primary Key | Định danh duy nhất toàn cầu cho văn bản.
+2 | doc_number | Nvarchar(50) | Index | Số hiệu công văn (ví dụ: 123/QD-HAU) được bóc tách tự động bởi OCR.
+3 | title | Nvarchar(500) | Not Null | Trích yếu hoặc tiêu đề nội dung công văn bóc tách từ OCR.
+4 | issued_date | Date |  | Ngày ban hành văn bản ghi trên công văn.
+5 | minio_path | Text | Not Null | Đường dẫn hoặc định danh liên kết trực tiếp tới tệp PDF vật lý lưu trong hệ thống MinIO.
+6 | ocr_data_raw | Jsonb |  | Lưu trữ toàn bộ kết quả bóc tách thô (tọa độ, độ tin cậy) từ Python dưới dạng JSON để linh hoạt tái sử dụng.
+7 | status | Varchar(50) | Not Null | Trạng thái hiện tại của văn bản (ví dụ: 'Draft', 'Pending', 'Signed', 'Published') .
+8 | doc_type_id | GUID | Foreign Key | Liên kết tới bảng DocumentTypes để phân loại văn bản.
+
+=== TABLE 13 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | id | GUID | Primary Key | Định danh duy nhất cho từng loại văn bản.
+2 | type_name | Varchar(100) | Unique, Not Null | Tên loại văn bản (ví dụ: 'CongVanDen', 'CongVanDi', 'ToTrinh', 'QuyetDinh').
+3 | description | Nvarchar(255) |  | Mô tả chi tiết về cách sử dụng loại văn bản này trong thực tế.
+
+=== TABLE 14 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | id | GUID | Primary Key | Định danh duy nhất cho mỗi bước xử lý.
+2 | doc_id | GUID | Foreign Key | Liên kết tới bảng Documents. Xác định bước xử lý này thuộc văn bản nào.
+3 | from_user_id | GUID | Foreign Key | Người thực hiện hành động (người gửi/người phê duyệt). Liên kết tới AppUsers.
+4 | to_user_id | GUID | Foreign Key | Người nhận nhiệm vụ tiếp theo (ví dụ: Lãnh đạo giao cho Chuyên viên).
+5 | action | Varchar(50) | Not Null | Tên hành động xử lý (ví dụ: 'Assign' - Phân công, 'Approve' - Phê duyệt, 'Reject' - Trả lại).
+6 | comment | Nvarchar(Max) |  | Nội dung Bút phê chỉ đạo của lãnh đạo hoặc ý kiến giải trình của chuyên viên.
+7 | timestamp | DateTime | Default: Now() | Thời điểm chính xác thực hiện hành động để theo dõi tiến độ xử lý văn bản.
+
+=== TABLE 15 ===
+STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
+1 | id | GUID | Primary Key | Định danh cho mỗi lượt ký số thành công.
+2 | doc_id | GUID | Foreign Key | Liên kết tới văn bản được áp dụng chữ ký.
+3 | signer_id | GUID | Foreign Key | Người thực hiện ký (Lãnh đạo hoặc Ban Giám hiệu).
+4 | signature_type | Varchar(100) | Not Null | Phân loại loại chữ ký theo yêu cầu: 'PersonalSignature' (Ký nháy) hoặc 'LegalSeal' (Ký pháp nhân).
+5 | signed_at | DateTime |  | Thời điểm ký số thành công để phục vụ giám sát hệ thống (Audit Logs) .
+

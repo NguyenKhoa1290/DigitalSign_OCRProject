@@ -1,0 +1,188 @@
+@page "/documents"
+@attribute [Authorize]
+@inject DocumentService DocumentService
+@inject NavigationManager NavManager
+@inject IToastService Toast
+
+<PageTitle>Danh sách Công văn - HAU</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Danh sách Công văn</h1>
+        <p class="page-subtitle">Quản lý toàn bộ công văn trong hệ thống</p>
+    </div>
+    <div class="page-actions">
+        <AuthorizeView Roles="Clerk,Specialist">
+            <a href="/documents/create" class="btn btn-primary">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Tạo mới
+            </a>
+        </AuthorizeView>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <div class="search-box">
+        <svg class="search-box-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" class="form-control" placeholder="Tìm kiếm theo tiêu đề, số hiệu..."
+               @bind="_searchQuery" @bind:event="oninput" @bind:after="OnSearchChanged" />
+    </div>
+    <select class="form-control filter-select" @bind="_statusFilter" @bind:after="LoadDocuments">
+        <option value="">Tất cả trạng thái</option>
+        <option value="Draft">Nháp</option>
+        <option value="PendingDeptReview">Chờ duyệt phòng</option>
+        <option value="DeptSigned">Đã ký nháy</option>
+        <option value="PendingDirectorSign">Chờ BGH ký</option>
+        <option value="DirectorSigned">BGH đã ký</option>
+        <option value="Published">Đã ban hành</option>
+        <option value="Rejected">Từ chối</option>
+    </select>
+    <select class="form-control filter-select" @bind="_typeFilter" @bind:after="LoadDocuments">
+        <option value="">Tất cả loại</option>
+        @if (_documentTypes != null)
+        {
+            @foreach (var t in _documentTypes)
+            {
+                <option value="@t.Id">@t.Name</option>
+            }
+        }
+    </select>
+</div>
+
+@if (_isLoading)
+{
+    <LoadingSpinner />
+}
+else if (_result == null || _result.Items.Count == 0)
+{
+    <div class="table-wrapper">
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <p class="empty-state-title">Không có công văn nào</p>
+            <p class="empty-state-desc">Chưa có công văn nào phù hợp với bộ lọc hiện tại.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tiêu đề / Số hiệu</th>
+                    <th>Loại văn bản</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày ban hành</th>
+                    <th>Người tạo</th>
+                    <th>Ngày tạo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var doc in _result.Items)
+                {
+                    <tr @onclick="() => ViewDocument(doc.Id)">
+                        <td>
+                            <div class="table-title" title="@doc.Title">@doc.Title</div>
+                            @if (!string.IsNullOrEmpty(doc.DocumentNumber))
+                            {
+                                <div class="table-meta">Số: @doc.DocumentNumber</div>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(doc.DocumentTypeName))
+                            {
+                                <span class="badge badge-indigo">@doc.DocumentTypeName</span>
+                            }
+                            else { <span style="color:var(--color-text-muted)">—</span> }
+                        </td>
+                        <td><StatusBadge Status="@doc.Status" /></td>
+                        <td>@(doc.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>@(doc.CreatedByName ?? "—")</td>
+                        <td>@doc.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="pagination">
+            <span class="pagination-info">
+                Hiển thị @((_currentPage - 1) * _pageSize + 1)–@Math.Min(_currentPage * _pageSize, _result.TotalCount) / @_result.TotalCount văn bản
+            </span>
+            <div class="pagination-controls">
+                <button class="page-btn" @onclick="PrevPage" disabled="@(!_result.HasPreviousPage)">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                @for (int i = Math.Max(1, _currentPage - 2); i <= Math.Min(_result.TotalPages, _currentPage + 2); i++)
+                {
+                    int pg = i;
+                    <button class="page-btn @(pg == _currentPage ? "active" : "")" @onclick="() => GoToPage(pg)">@pg</button>
+                }
+                <button class="page-btn" @onclick="NextPage" disabled="@(!_result.HasNextPage)">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _isLoading = true;
+    private PagedResult<DocumentDto>? _result;
+    private List<DocumentTypeDto>? _documentTypes;
+    private string _searchQuery = "";
+    private string _statusFilter = "";
+    private string _typeFilter = "";
+    private int _currentPage = 1;
+    private const int _pageSize = 15;
+    private System.Threading.CancellationTokenSource? _searchCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _documentTypes = await DocumentService.GetDocumentTypesAsync();
+        await LoadDocuments();
+    }
+
+    private async Task LoadDocuments()
+    {
+        _isLoading = true;
+        try
+        {
+            _result = await DocumentService.GetDocumentsAsync(
+                _currentPage, _pageSize, _statusFilter, _typeFilter, _searchQuery);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Lỗi tải danh sách: {ex.Message}");
+        }
+        _isLoading = false;
+    }
+
+    private async Task OnSearchChanged()
+    {
+        _searchCts?.Cancel();
+        _searchCts = new();
+        try
+        {
+            await Task.Delay(400, _searchCts.Token);
+            _currentPage = 1;
+            await LoadDocuments();
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void ViewDocument(Guid id) => NavManager.NavigateTo($"/documents/{id}");
+    private async Task PrevPage() { if (_currentPage > 1) { _currentPage--; await LoadDocuments(); } }
+    private async Task NextPage() { if (_result?.HasNextPage == true) { _currentPage++; await LoadDocuments(); } }
+    private async Task GoToPage(int page) { _currentPage = page; await LoadDocuments(); }
+}

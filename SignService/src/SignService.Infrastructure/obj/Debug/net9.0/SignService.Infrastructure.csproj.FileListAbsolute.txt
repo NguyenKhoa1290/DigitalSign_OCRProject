@@ -13,3 +13,4 @@ F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\n
 F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\refint\SignService.Infrastructure.dll
 F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.pdb
 F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\ref\SignService.Infrastructure.dll
+F:\DigitalSign_OCRProject\SignService\src\SignService.Infrastructure\obj\Debug\net9.0\SignService.Infrastructure.sourcelink.json

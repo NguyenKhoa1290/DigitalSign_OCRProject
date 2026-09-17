@@ -121,9 +121,10 @@ PendingDeptReview / DeptSigned / PendingDirectorSign -> Rejected
 - Sau upload, service publish Kafka event `document.uploaded` nếu Kafka bật.
 - OCR result cập nhật bằng `PATCH /api/documents/{id}/ocr`.
 
-Điểm cần hoàn thiện:
+Tình trạng hiện tại:
 
-- Kafka event hiện gửi `authToken` rỗng, nên OCR auto-update DocumentService cần bổ sung cơ chế service-token/JWT hợp lệ.
+- Kafka event vẫn gửi `authToken` rỗng, nhưng DocumentService đã hỗ trợ header nội bộ `X-Service-Token`.
+- OCRService đã fallback sang `SERVICE_TOKEN` khi Kafka event không có JWT, nên có thể tự PATCH kết quả OCR về DocumentService trong Docker/local.
 
 ## 4. OCRService
 
@@ -155,7 +156,6 @@ GET  /api/ocr/health
 Điểm cần hoàn thiện:
 
 - Chưa có màn hình frontend riêng để xem/kiểm tra kết quả OCR.
-- Luồng Kafka tự động cần token/service-token hợp lệ để PATCH về DocumentService.
 
 ## 5. SignService
 
@@ -218,7 +218,6 @@ GET  /api/signatures/certificates/{userId}
 
 ## 7. Những việc còn lại
 
-- Bổ sung service-token/JWT cho OCRService khi chạy Kafka tự động.
 - Thêm màn hình frontend riêng cho OCR result nếu cần.
 - Persist refresh token và/hoặc thêm JWT blacklist khi logout.
 - Rà soát secrets trong `appsettings*.json` trước khi deploy.

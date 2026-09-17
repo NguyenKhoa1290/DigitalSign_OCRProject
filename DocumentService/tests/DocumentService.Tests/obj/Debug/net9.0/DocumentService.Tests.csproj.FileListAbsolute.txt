@@ -511,3 +511,4 @@ F:\DigitalSign_OCRProject\DocumentService\tests\DocumentService.Tests\bin\Debug\
 F:\DigitalSign_OCRProject\DocumentService\tests\DocumentService.Tests\bin\Debug\net9.0\runtimes\win-x86\native\vcruntime140.dll
 F:\DigitalSign_OCRProject\DocumentService\tests\DocumentService.Tests\bin\Debug\net9.0\runtimes\win-x86\native\zlib1.dll
 F:\DigitalSign_OCRProject\DocumentService\tests\DocumentService.Tests\bin\Debug\net9.0\runtimes\win-x86\native\zstd.dll
+F:\DigitalSign_OCRProject\DocumentService\tests\DocumentService.Tests\obj\Debug\net9.0\DocumentService.Tests.sourcelink.json

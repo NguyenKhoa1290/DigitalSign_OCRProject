@@ -753,8 +753,6 @@ F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\System.Pr
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\dotnet.native.wlvwu26j41.js
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\dotnet.native.kiufslnrq2.wasm
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\dotnet.runtime.x4l8oxbjyh.js
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.0x8p9itgfi.wasm
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.weckg3gxml.pdb
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\Microsoft.CSharp.r0g6l56h0f.wasm.gz
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\Microsoft.VisualBasic.Core.07inldnjdu.wasm.gz
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\Microsoft.VisualBasic.e1oebmd44l.wasm.gz
@@ -927,8 +925,6 @@ F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\System.Pr
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\dotnet.native.wlvwu26j41.js.gz
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\dotnet.native.kiufslnrq2.wasm.gz
 F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\dotnet.runtime.x4l8oxbjyh.js.gz
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.0x8p9itgfi.wasm.gz
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.weckg3gxml.pdb.gz
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\4w16fo2nhx-{0}-r0g6l56h0f-r0g6l56h0f.gz
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\1kvv2e0hcx-{0}-07inldnjdu-07inldnjdu.gz
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\e0v1jenall-{0}-e1oebmd44l-e1oebmd44l.gz
@@ -1104,6 +1100,11 @@ F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\ad9hmal8b6-{0}-wl
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\nwunhxox1w-{0}-kiufslnrq2-kiufslnrq2.gz
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\ylv44dynb6-{0}-x4l8oxbjyh-x4l8oxbjyh.gz
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\o7wvhspfgl-{0}-w3g3ckx2qd-w3g3ckx2qd.gz
-F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\2qiep4vvox-{0}-0x8p9itgfi-0x8p9itgfi.gz
-F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\bwfusj677n-{0}-weckg3gxml-weckg3gxml.gz
-F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\0zv0h6vu5r-{0}-8jcd16focu-8jcd16focu.gz
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.wqvioytsxd.wasm
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.peii2eozuf.pdb
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.wqvioytsxd.wasm.gz
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.peii2eozuf.pdb.gz
+F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\HauDocumentApp.sourcelink.json
+F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\2qiep4vvox-{0}-wqvioytsxd-wqvioytsxd.gz
+F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\bwfusj677n-{0}-peii2eozuf-peii2eozuf.gz
+F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\0zv0h6vu5r-{0}-yd6i77h9i5-yd6i77h9i5.gz

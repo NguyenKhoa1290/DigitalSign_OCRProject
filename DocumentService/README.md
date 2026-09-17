@@ -69,5 +69,6 @@ Draft
 - File upload lên MinIO bucket `documents`.
 - `Document.MinioPath` được lưu dạng `documents/{storedFileName}`.
 - Kafka event gửi `minio_path = storedFileName`, tức object name không kèm bucket prefix.
-- Kafka event hiện gửi `authToken` rỗng, nên OCRService chưa tự PATCH kết quả về DocumentService nếu chưa bổ sung service-token/JWT hợp lệ.
-
+- Kafka event hiện gửi `authToken` rỗng; OCRService sẽ fallback sang `SERVICE_TOKEN` để PATCH kết quả OCR về DocumentService.
+- Endpoint `PATCH /api/documents/{id}/ocr` nhận JWT người dùng hoặc header nội bộ `X-Service-Token`.
+- `SERVICE_TOKEN` của OCRService phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.

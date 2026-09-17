@@ -212,3 +212,177 @@ POST http://localhost:5000/api/auth/login
 - Lần đầu Docker build frontend sau khi thêm `wasm-tools` bị lỗi `unable to find python in $PATH`; đã fix bằng `python3` trong `Frontend/Dockerfile`.
 - Sau khi có `wasm-tools`, Docker publish frontend đã chạy native wasm optimization thay vì publish không tối ưu.
 - Chưa gửi email thật qua SMTP vì cần credential/app password hợp lệ và có thể phát sinh email ra ngoài.
+
+## TC-DOCKER-004 — Khôi phục stack Docker sau khi chuyển Hyper-V sang WSL2
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 17/09/2026 |
+| Phạm vi | Docker Desktop WSL2 + Docker Compose full stack |
+| Mục tiêu | Build lại image và deploy lại hệ thống sau khi Docker mất toàn bộ image/container |
+| Kết quả | Pass |
+
+### Điều kiện ban đầu
+
+- Docker Desktop đang chạy bằng WSL2.
+- `docker info` ghi nhận Docker root mới trên `/var/lib/docker`.
+- `docker info` ghi nhận `Images: 0`.
+- `docker compose ps` ban đầu không có container đang chạy.
+
+### Các bước đã chạy
+
+1. Kiểm tra Docker:
+
+```powershell
+docker --version
+docker compose version
+docker info --format "{{json .}}"
+docker images
+```
+
+2. Build lại image:
+
+```powershell
+docker compose build
+```
+
+3. Do OCR build bị kéo dài ở bước `pip install`, dừng build tổng và build lại riêng:
+
+```powershell
+docker compose build ocr-service
+```
+
+4. Chạy stack:
+
+```powershell
+docker compose up -d
+```
+
+5. Kiểm tra health/login:
+
+```powershell
+docker compose ps
+Invoke-WebRequest http://localhost:5000/health -UseBasicParsing
+Invoke-WebRequest http://localhost:5000/ -UseBasicParsing
+Invoke-WebRequest http://localhost:5048/health -UseBasicParsing
+Invoke-WebRequest http://localhost:5051/api/ocr/health -UseBasicParsing
+Invoke-WebRequest http://localhost:5227/ -UseBasicParsing
+POST http://localhost:5000/api/auth/login
+```
+
+6. Kiểm tra hạ tầng:
+
+```powershell
+docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+docker run --rm --network digitalsign_ocrproject_default --entrypoint /bin/sh quay.io/minio/mc:latest -c "mc alias set local http://minio:9000 minioadmin minioadmin >/dev/null && mc ls local"
+```
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Custom images `hau/*` | Đã build lại đủ 6 image |
+| `docker compose up -d` | Pass |
+| `docker compose ps` | Các container chính `Up`; `postgres` và `identity-service` healthy |
+| `GET http://localhost:5000/health` | HTTP 200 |
+| `GET http://localhost:5000/` | HTTP 200 |
+| `GET http://localhost:5048/health` | HTTP 200 |
+| `GET http://localhost:5051/api/ocr/health` | HTTP 200 |
+| `GET http://localhost:5227/` | HTTP 200 |
+| Login Gateway `admin / Admin@123` | Pass, có access token, role `Admin` |
+| MinIO | Có bucket `documents` |
+| Kafka | Có topic `document.uploaded` |
+
+### Ghi chú
+
+- Đã tạo hướng dẫn phục hồi: `HUONG_DAN_KHOI_PHUC_DOCKER_WSL2.md`.
+- Đã bổ sung link hướng dẫn này vào `TRIEN_KHAI_DOCKER.md`.
+- Vì Docker data mới, volume hiện tại là dữ liệu mới rỗng. Nếu cần dữ liệu thật, restore backup PostgreSQL/MinIO/`hau_sign_certs`.
+- Docker frontend publish có warning `Users._formDepartmentId` chưa được gán; warning không chặn deploy.
+
+## TC-OCR-AUTH-005 — OCRService dùng service-token để cập nhật DocumentService
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 17/09/2026 |
+| Phạm vi | DocumentService + OCRService + Docker internal network |
+| Mục tiêu | Xác nhận OCRService có thể PATCH kết quả OCR về DocumentService khi Kafka event không có JWT người dùng |
+| Kết quả | Pass |
+
+### Điều kiện trước test
+
+- Docker stack đang chạy.
+- `document-service` và `ocr-service` đã được build/recreate từ code mới.
+- `document-service` có `ServiceAuth__OcrServiceToken=hau-dev-ocr-service-token`.
+- `ocr-service` có `SERVICE_TOKEN=hau-dev-ocr-service-token`.
+- Có seed user `admin / Admin@123`.
+
+### Các bước đã chạy
+
+1. Build code:
+
+```powershell
+dotnet build .\HAU_DigitalSign_OCR.slnx
+python -m compileall OCRService\app
+```
+
+2. Chạy test tự động:
+
+```powershell
+dotnet test .\HAU_DigitalSign_OCR.slnx --no-build
+```
+
+3. Build/redeploy Docker:
+
+```powershell
+docker compose build document-service ocr-service
+docker compose up -d document-service ocr-service api-gateway
+```
+
+4. Kiểm tra OCR health và biến môi trường trong container:
+
+```powershell
+Invoke-WebRequest http://localhost:5051/api/ocr/health -UseBasicParsing
+docker compose exec -T ocr-service python -c "import os; print(bool(os.getenv('SERVICE_TOKEN')))"
+```
+
+5. Login admin qua Gateway.
+6. Tạo document test qua Gateway.
+7. Gọi trực tiếp DocumentService:
+
+```text
+PATCH http://localhost:5049/api/documents/{docId}/ocr
+Header: X-Service-Token: hau-dev-ocr-service-token
+```
+
+8. Gọi lại thiếu JWT/service-token để xác nhận bị chặn.
+9. Từ container OCR, gọi `app.services.document_service.update_ocr_result(...)` tới URL nội bộ `http://document-service:8080` với `SERVICE_TOKEN`.
+10. Verify document qua Gateway.
+
+### Dữ liệu/kết quả chính
+
+| Trường | Giá trị |
+|---|---|
+| `DocId` | `d3ee8215-3759-4525-9b2a-8e7bc0c93d4d` |
+| PATCH bằng `X-Service-Token` | `success = true` |
+| PATCH thiếu token | HTTP 401 |
+| OCR container gọi DocumentService nội bộ | `True` |
+| `VerifiedDocNumber` sau bước gọi OCR container | `OCR-SVC-005-CONTAINER` |
+| `VerifiedTitle` sau bước gọi OCR container | `TC-OCR-SVC-005 OCR container service token` |
+| Smoke test sau recreate DocumentService | PATCH bằng service-token pass; thiếu token HTTP 401 |
+
+### Build/test liên quan
+
+| Lệnh | Kết quả |
+|---|---|
+| `dotnet build .\HAU_DigitalSign_OCR.slnx` | Pass; còn warning cũ `Users._formDepartmentId` |
+| `python -m compileall OCRService\app` | Pass |
+| `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build` | Pass 29/29 |
+| `docker compose build document-service ocr-service` | Pass |
+| `docker compose up -d document-service ocr-service api-gateway` | Pass |
+| `GET http://localhost:5051/api/ocr/health` | HTTP 200 |
+
+### Ghi chú
+
+- Test này xác nhận cơ chế auth service-to-service và đường gọi từ OCR container sang DocumentService.
+- Chưa chạy full OCR bằng PaddleOCR qua Kafka upload thật trong test này; phần đó có thể test riêng khi cần kiểm tra chất lượng bóc tách OCR.

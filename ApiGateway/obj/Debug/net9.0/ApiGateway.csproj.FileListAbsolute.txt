@@ -55,3 +55,4 @@ F:\DigitalSign_OCRProject\ApiGateway\obj\Debug\net9.0\refint\ApiGateway.dll
 F:\DigitalSign_OCRProject\ApiGateway\obj\Debug\net9.0\ApiGateway.pdb
 F:\DigitalSign_OCRProject\ApiGateway\obj\Debug\net9.0\ApiGateway.genruntimeconfig.cache
 F:\DigitalSign_OCRProject\ApiGateway\obj\Debug\net9.0\ref\ApiGateway.dll
+F:\DigitalSign_OCRProject\ApiGateway\obj\Debug\net9.0\ApiGateway.sourcelink.json

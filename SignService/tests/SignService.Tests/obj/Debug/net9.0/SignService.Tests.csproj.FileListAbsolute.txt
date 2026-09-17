@@ -145,3 +145,4 @@ F:\DigitalSign_OCRProject\SignService\tests\SignService.Tests\obj\Debug\net9.0\r
 F:\DigitalSign_OCRProject\SignService\tests\SignService.Tests\obj\Debug\net9.0\SignService.Tests.pdb
 F:\DigitalSign_OCRProject\SignService\tests\SignService.Tests\obj\Debug\net9.0\SignService.Tests.genruntimeconfig.cache
 F:\DigitalSign_OCRProject\SignService\tests\SignService.Tests\obj\Debug\net9.0\ref\SignService.Tests.dll
+F:\DigitalSign_OCRProject\SignService\tests\SignService.Tests\obj\Debug\net9.0\SignService.Tests.sourcelink.json

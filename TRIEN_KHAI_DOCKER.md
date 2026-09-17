@@ -2,6 +2,8 @@
 
 Tài liệu này dùng cho trường hợp mang source code sang một máy mới và chạy toàn bộ hệ thống bằng Docker Compose.
 
+Nếu vừa chuyển Docker Desktop từ Hyper-V sang WSL2 hoặc Docker bị mất hết image/container, xem thêm file hướng dẫn nhanh: `HUONG_DAN_KHOI_PHUC_DOCKER_WSL2.md`.
+
 ## 1. Yêu cầu trên máy mới
 
 Cài sẵn:
@@ -202,7 +204,7 @@ Kết quả mong muốn có:
 document.uploaded
 ```
 
-Lưu ý hiện tại: Kafka upload event đang gửi token rỗng, nên OCRService có thể xử lý file nhưng chưa tự PATCH kết quả OCR về DocumentService qua luồng Kafka nếu chưa bổ sung service-token/JWT hợp lệ. Có thể test cập nhật OCR thủ công bằng API `/api/ocr/process` với token hợp lệ.
+Lưu ý hiện tại: Kafka upload event vẫn gửi `token` rỗng, nhưng Docker compose đã cấu hình `SERVICE_TOKEN` cho OCRService và `ServiceAuth__OcrServiceToken` cho DocumentService. Khi OCRService không nhận JWT từ event, service sẽ dùng header nội bộ `X-Service-Token` để PATCH kết quả OCR về DocumentService.
 
 ## 9. Xem log khi cần debug
 
@@ -318,6 +320,7 @@ Các giá trị mặc định trong repo chỉ phù hợp môi trường dev/dem
 - PostgreSQL username/password.
 - MinIO root user/password.
 - JWT key trong IdentityService, Gateway, DocumentService, SignService.
+- OCR service-token: `ServiceAuth__OcrServiceToken` của DocumentService và `SERVICE_TOKEN` của OCRService phải cùng giá trị.
 - Gmail app password hoặc SMTP account cho forgot/reset password.
 - `EmailSettings:Username` và `EmailSettings:Password` của IdentityService.
 - Mật khẩu Root CA/PFX trong SignService nếu đưa vào môi trường thật.

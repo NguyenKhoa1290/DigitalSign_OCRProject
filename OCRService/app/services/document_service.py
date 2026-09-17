@@ -1,12 +1,16 @@
 import logging
 import httpx
-from typing import Optional
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
-async def update_ocr_result(doc_id: str, ocr_payload: dict, token: str) -> bool:
+async def update_ocr_result(
+    doc_id: str,
+    ocr_payload: dict,
+    token: str,
+    use_service_token: bool = False,
+) -> bool:
     """
     Gọi DocumentService PATCH /api/documents/{id}/ocr để cập nhật kết quả OCR.
     ocr_payload: { doc_number, title, issued_date, ocr_data_raw }
@@ -15,9 +19,12 @@ async def update_ocr_result(doc_id: str, ocr_payload: dict, token: str) -> bool:
     url = f"{settings.document_service_url}/api/documents/{doc_id}/ocr"
 
     headers = {
-        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
+    if use_service_token:
+        headers["X-Service-Token"] = token
+    else:
+        headers["Authorization"] = f"Bearer {token}"
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:

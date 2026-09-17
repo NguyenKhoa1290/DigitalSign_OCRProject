@@ -226,7 +226,7 @@ Trong quá trình viết tài liệu phát hiện:
 **Điểm tích hợp được ghi chú rõ:**
 - `DocumentService` lưu file MinIO bằng tên GUID ngẫu nhiên và `MinioPath = documents/{storedFileName}`.
 - `SignService` khi đó còn tìm PDF theo `{docId}.pdf`; vấn đề này đã được xử lý ở Công việc số 1 ngày 16/09/2026.
-- Kafka event OCR hiện gửi token rỗng, nên cần bổ sung service-token/JWT nếu muốn OCR tự PATCH về DocumentService.
+- Kafka event OCR khi đó gửi token rỗng; hạng mục service-token đã được xử lý ở Công việc số 5 ngày 17/09/2026.
 
 ---
 
@@ -250,7 +250,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 **Lưu ý còn lại:**
 - Khi migrate dữ liệu thật cần backup thêm volume `hau_sign_certs`.
-- OCR Kafka vẫn cần service-token/JWT hợp lệ để tự PATCH kết quả về DocumentService.
+- OCR Kafka dùng service-token để tự PATCH kết quả về DocumentService; hạng mục này đã được xử lý ở Công việc số 5 ngày 17/09/2026.
 - Frontend ký số khi đó cần đồng bộ DTO với backend SignService; vấn đề này đã được xử lý ở công việc tiếp theo ngày 16/09/2026.
 
 ---
@@ -273,10 +273,11 @@ Trong quá trình viết tài liệu phát hiện:
 | 16/09/2026 | Công việc số 1: sửa SignService đọc `Documents.MinioPath`, build/test/Docker/API ký nháy end-to-end pass |
 | 16/09/2026 | Công việc số 2: sửa frontend ký số gửi đúng DTO backend, build/test/Docker/API payload frontend pass |
 | 16/09/2026 | Công việc số 3: nâng `MailKit`/`MimeKit`, cài `wasm-tools`, bổ sung Python cho Docker frontend và build/test pass |
+| 17/09/2026 | Công việc số 4: khôi phục Docker Desktop WSL2 sau khi mất image, build lại full stack, deploy và ghi hướng dẫn phục hồi |
 
 **Trạng thái hiện tại:** IdentityService, DocumentService, SignService, OCRService backend, API Gateway và Frontend đều đã có code chính.
 
-**Còn lại đáng chú ý:** service-token cho OCR Kafka, frontend OCR nếu cần, JWT blacklist và refresh token persist, kiểm thử UI ký số thủ công trên trình duyệt với role thật.
+**Còn lại đáng chú ý:** frontend OCR nếu cần, JWT blacklist và refresh token persist, kiểm thử UI ký số thủ công trên trình duyệt với role thật.
 
 ---
 
@@ -381,6 +382,88 @@ Trong quá trình viết tài liệu phát hiện:
 - Lần đầu build frontend sau khi thêm `wasm-tools` bị lỗi `unable to find python in $PATH`; đã xử lý bằng cách cài `python3` trong Dockerfile.
 - Cài `wasm-tools` local bằng .NET workload installer cũng cập nhật các workload đã có sẵn trên máy như Android/iOS/MAUI manifests/packs.
 - Chưa test gửi email thật qua SMTP vì cần credential/app password hợp lệ và thao tác này có thể gửi email ra ngoài.
+
+---
+
+## 🗓️ Công việc số 4 — 17/09/2026
+### Khôi phục Docker sau khi chuyển Hyper-V sang WSL2
+
+**Bối cảnh:**
+- Docker Desktop đang chạy bằng WSL2.
+- Docker ban đầu không còn image/container (`Images: 0`).
+- Cần build/deploy lại toàn bộ stack từ source.
+
+**Đã thực hiện:**
+- Build lại các image custom:
+  - `hau/api-gateway:local`
+  - `hau/identity-service:local`
+  - `hau/document-service:local`
+  - `hau/sign-service:local`
+  - `hau/ocr-service:local`
+  - `hau/frontend:local`
+- Pull lại image nền khi `docker compose up -d`: PostgreSQL, MinIO, MinIO client, Kafka.
+- Tạo file hướng dẫn nhanh `HUONG_DAN_KHOI_PHUC_DOCKER_WSL2.md`.
+- Bổ sung link hướng dẫn phục hồi vào `TRIEN_KHAI_DOCKER.md`.
+
+**Đã kiểm tra:**
+- `docker compose ps`: các container chính đều `Up`; `postgres` và `identity-service` healthy.
+- Gateway `/health`: HTTP 200.
+- Gateway `/`: HTTP 200.
+- Identity `/health`: HTTP 200.
+- OCR `/api/ocr/health`: HTTP 200.
+- Frontend `/`: HTTP 200.
+- Login `admin / Admin@123`: pass, có access token, role `Admin`.
+- MinIO có bucket `documents`.
+- Kafka có topic `document.uploaded`.
+
+**Ghi chú:**
+- Lần đầu `docker compose build` bị kéo dài ở bước OCR `pip install`; đã dừng build tổng và build lại riêng `docker compose build ocr-service`, sau đó pass.
+- Docker frontend publish vẫn còn warning `Users._formDepartmentId` chưa được gán; warning không chặn build/deploy.
+- Vì Docker data mới, volume dữ liệu là môi trường mới rỗng; nếu cần dữ liệu thật phải restore backup PostgreSQL/MinIO/certs.
+
+---
+
+## 🗓️ Công việc số 5 — 17/09/2026
+### Bổ sung service-token cho OCR Kafka cập nhật DocumentService
+
+**Vấn đề:**
+- DocumentService publish Kafka event `document.uploaded` sau upload file nhưng trường `token` đang rỗng.
+- OCRService xử lý được PDF từ MinIO, nhưng trước đó chỉ PATCH kết quả về DocumentService khi có JWT người dùng.
+- Luồng Kafka tự động cần cơ chế service-to-service để không phụ thuộc JWT dài hạn của người dùng.
+
+**Đã sửa code/cấu hình:**
+- `DocumentService.API` cho phép endpoint `PATCH /api/documents/{id}/ocr` nhận một trong hai cơ chế:
+  - JWT người dùng như cũ.
+  - Header nội bộ `X-Service-Token` cho OCRService.
+- Thêm cấu hình `ServiceAuth:OcrServiceToken` và `ServiceAuth:OcrServiceUserId` cho DocumentService.
+- `OCRService` fallback sang `SERVICE_TOKEN` khi Kafka event/request không có JWT.
+- `OCRService` gửi `X-Service-Token` khi dùng service-token; nếu có JWT thì vẫn gửi `Authorization: Bearer ...`.
+- Cập nhật `docker-compose.yml` để `document-service` và `ocr-service` dùng cùng token dev `hau-dev-ocr-service-token`.
+- Cập nhật `.env.example`, README OCR và tài liệu triển khai.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass; còn warning cũ `Frontend/Pages/Admin/Users.razor(198,19)`.
+- `python -m compileall OCRService\app`: pass.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build`: pass 29/29.
+- `docker compose build document-service ocr-service`: pass.
+- `docker compose up -d document-service ocr-service api-gateway`: pass.
+- OCR health `GET http://localhost:5051/api/ocr/health`: HTTP 200.
+- Container OCR có `SERVICE_TOKEN`: pass.
+- Test API service-token `TC-OCR-AUTH-005`: pass.
+
+**Kết quả test API chính:**
+- `DocId`: `d3ee8215-3759-4525-9b2a-8e7bc0c93d4d`.
+- PATCH thiếu JWT/service-token: HTTP 401.
+- PATCH bằng `X-Service-Token`: success.
+- Gọi từ container OCR qua URL nội bộ `http://document-service:8080`: success.
+- Giá trị xác nhận sau bước gọi container OCR:
+  - `docNumber = OCR-SVC-005-CONTAINER`
+  - `title = TC-OCR-SVC-005 OCR container service token`
+- Sau khi rebuild/recreate lại `document-service` lần cuối, smoke test PATCH bằng service-token vẫn pass và request thiếu token vẫn trả HTTP 401.
+
+**Ghi chú:**
+- Token dev trong repo chỉ dùng local/demo. Khi triển khai thật cần đổi `ServiceAuth__OcrServiceToken` và `SERVICE_TOKEN` sang giá trị bí mật mới, đồng bộ giữa hai service.
+- Chưa chạy full OCR bằng PaddleOCR qua Kafka upload thật trong hạng mục này; test tập trung vào cơ chế auth và đường PATCH nội bộ từ OCRService sang DocumentService.
 
 ---
 

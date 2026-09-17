@@ -15,3 +15,4 @@ F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj
 F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.pdb
 F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.genruntimeconfig.cache
 F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\ref\DocumentService.Infrastructure.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Infrastructure\obj\Debug\net9.0\DocumentService.Infrastructure.sourcelink.json

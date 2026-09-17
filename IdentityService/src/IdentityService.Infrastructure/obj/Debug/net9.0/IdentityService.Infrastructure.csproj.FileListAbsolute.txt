@@ -15,3 +15,4 @@ F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj
 F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.pdb
 F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.genruntimeconfig.cache
 F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\ref\IdentityService.Infrastructure.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Infrastructure\obj\Debug\net9.0\IdentityService.Infrastructure.sourcelink.json

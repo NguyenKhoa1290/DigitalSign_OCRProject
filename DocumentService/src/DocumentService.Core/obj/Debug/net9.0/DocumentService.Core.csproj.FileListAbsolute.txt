@@ -9,3 +9,4 @@ F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net
 F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\refint\DocumentService.Core.dll
 F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.pdb
 F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\ref\DocumentService.Core.dll
+F:\DigitalSign_OCRProject\DocumentService\src\DocumentService.Core\obj\Debug\net9.0\DocumentService.Core.sourcelink.json

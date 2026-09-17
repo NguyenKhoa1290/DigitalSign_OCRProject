@@ -12,13 +12,20 @@ namespace DocumentService.API.Controllers;
 [Authorize]
 public class DocumentsController : ControllerBase
 {
+    private const string OcrServiceTokenHeader = "X-Service-Token";
+
     private readonly IDocumentService _documentService;
     private readonly ILogger<DocumentsController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public DocumentsController(IDocumentService documentService, ILogger<DocumentsController> logger)
+    public DocumentsController(
+        IDocumentService documentService,
+        ILogger<DocumentsController> logger,
+        IConfiguration configuration)
     {
         _documentService = documentService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     // ── Lấy userId từ JWT claim ───────────────────────────────────────────────
@@ -28,6 +35,36 @@ public class DocumentsController : ControllerBase
                ?? User.FindFirstValue("sub")
                ?? throw new UnauthorizedAccessException("Không tìm thấy UserId trong token.");
         return Guid.Parse(sub);
+    }
+
+    private bool TryGetOcrCallerUserId(out Guid userId, out string? errorMessage)
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            userId = GetCurrentUserId();
+            errorMessage = null;
+            return true;
+        }
+
+        var expectedToken = _configuration["ServiceAuth:OcrServiceToken"];
+        var providedToken = Request.Headers[OcrServiceTokenHeader].FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(expectedToken)
+            || !string.Equals(providedToken, expectedToken, StringComparison.Ordinal))
+        {
+            userId = Guid.Empty;
+            errorMessage = "OCR service token không hợp lệ.";
+            return false;
+        }
+
+        var serviceUserId = _configuration["ServiceAuth:OcrServiceUserId"];
+        if (!Guid.TryParse(serviceUserId, out userId))
+        {
+            throw new InvalidOperationException("ServiceAuth:OcrServiceUserId chưa được cấu hình đúng GUID.");
+        }
+
+        errorMessage = null;
+        return true;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -129,11 +166,15 @@ public class DocumentsController : ControllerBase
     /// PATCH /api/documents/{id}/ocr - Cập nhật kết quả OCR (doc_number, title, issued_date, ocr_data_raw)
     /// </summary>
     [HttpPatch("{id:guid}/ocr")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), 401)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> UpdateOcr(Guid id, [FromBody] UpdateOcrDto dto)
     {
-        var userId = GetCurrentUserId();
+        if (!TryGetOcrCallerUserId(out var userId, out var errorMessage))
+            return Unauthorized(ApiResponse<object>.Fail(errorMessage!));
+
         var result = await _documentService.UpdateOcrDataAsync(id, dto, userId);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Cập nhật OCR thành công."));
     }

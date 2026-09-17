@@ -107,6 +107,8 @@ services:
       JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
       JwtSettings__Issuer: IdentityService
       JwtSettings__Audience: HAU-MicroservicesClients
+      ServiceAuth__OcrServiceToken: hau-dev-ocr-service-token
+      ServiceAuth__OcrServiceUserId: 00000000-0000-0000-0000-000000000051
       MinioSettings__Endpoint: minio:9000
       MinioSettings__AccessKey: minioadmin
       MinioSettings__SecretKey: minioadmin
@@ -174,6 +176,7 @@ services:
       MINIO_USE_SSL: "false"
       MINIO_BUCKET: documents
       DOCUMENT_SERVICE_URL: http://document-service:8080
+      SERVICE_TOKEN: hau-dev-ocr-service-token
       KAFKA_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC_DOCUMENT_UPLOADED: document.uploaded

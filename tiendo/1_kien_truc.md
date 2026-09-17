@@ -101,6 +101,7 @@ Chức năng chính:
 - Lấy danh sách loại văn bản.
 - Upload PDF lên MinIO.
 - Nhận kết quả OCR qua `PATCH /api/documents/{id}/ocr`.
+- Endpoint OCR chấp nhận JWT người dùng hoặc header nội bộ `X-Service-Token` khi OCRService gọi service-to-service.
 - Ghi log xử lý bằng `DocumentProcess`.
 - Chạy workflow văn bản.
 
@@ -175,7 +176,7 @@ DocumentService upload PDF
   -> PATCH /api/documents/{id}/ocr
 ```
 
-Hiện `DocumentService` publish event với token rỗng, nên OCR chỉ tự cập nhật được DocumentService nếu có cơ chế token/service-token hợp lệ.
+Hiện `DocumentService` vẫn publish event với `token` rỗng. OCRService sẽ dùng `SERVICE_TOKEN` cấu hình trong môi trường để PATCH kết quả về DocumentService bằng header `X-Service-Token`.
 
 ## Frontend
 

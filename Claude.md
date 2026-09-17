@@ -141,7 +141,8 @@ GET    /api/ocr/health
 
 - `DocumentService` upload file lên MinIO bằng tên GUID ngẫu nhiên và lưu `MinioPath = "documents/{storedFileName}"`.
 - `DocumentService` publish Kafka event `document.uploaded` với `minio_path = storedFileName`; hiện `authToken` đang gửi rỗng.
-- `OCRService` chỉ tự PATCH kết quả về `DocumentService` nếu request/Kafka event có token hợp lệ.
+- `OCRService` dùng JWT nếu request/Kafka event có token; nếu token rỗng thì fallback sang `SERVICE_TOKEN` và PATCH về `DocumentService` bằng header `X-Service-Token`.
+- `SERVICE_TOKEN` của OCRService phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
 - `SignService` đọc `Documents.MinioPath`, bỏ prefix bucket `documents/` khi cần, rồi tải/lưu lại đúng object PDF trên MinIO. Luồng này đã pass test Docker/API `TC-SIGN-001`.
 - Frontend ký số đã gửi đúng `SignRequestDto` backend (`DocId`, `SignerId`, `SignerName`, `Reason`) và payload này đã pass test Docker/API `TC-FE-SIGN-002`.
 

@@ -307,11 +307,14 @@ OCRService consumer:
 - Consumer group: `ocr-service-group`.
 - Chỉ khởi động nếu `kafka_enabled=true`.
 - Gọi `process_document(doc_id, minio_path, token)`.
+- Nếu `token` rỗng, OCRService dùng `SERVICE_TOKEN` để gọi DocumentService bằng header `X-Service-Token`.
+- `SERVICE_TOKEN` phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
 
-Điểm cần hoàn thiện:
+Service-to-service auth hiện tại:
 
-- Token trong Kafka payload đang rỗng, nên OCR không thể tự PATCH về DocumentService nếu endpoint yêu cầu JWT.
-- Nên dùng service account token, internal API key, hoặc cơ chế auth riêng cho service-to-service.
+- Docker compose đã cấu hình `ServiceAuth__OcrServiceToken` cho `document-service`.
+- Docker compose đã cấu hình `SERVICE_TOKEN` cho `ocr-service`.
+- `ServiceAuth:OcrServiceUserId = 00000000-0000-0000-0000-000000000051` được dùng làm actor hệ thống khi ghi `DocumentProcess` action `UpdateOCR`.
 
 ## JWT
 

@@ -78,6 +78,7 @@ MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=documents
 DOCUMENT_SERVICE_URL=http://localhost:5049
+SERVICE_TOKEN=hau-dev-ocr-service-token
 KAFKA_ENABLED=false
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 KAFKA_TOPIC_DOCUMENT_UPLOADED=document.uploaded
@@ -126,7 +127,10 @@ curl -X POST "http://localhost:5051/api/ocr/process" \
   }'
 ```
 
-Lưu ý: code `document_service.py` tự thêm prefix `Bearer {token}` vào header. Vì vậy giá trị `token` nên là raw JWT, không kèm chữ `Bearer`.
+Lưu ý:
+
+- Nếu truyền `token` trong request, giá trị này nên là raw JWT, không kèm chữ `Bearer`; code sẽ tự gửi header `Authorization: Bearer {token}`.
+- Nếu `token` rỗng và `SERVICE_TOKEN` có cấu hình, OCRService sẽ gọi DocumentService bằng header nội bộ `X-Service-Token`.
 
 ## Pipeline OCR
 
@@ -136,7 +140,7 @@ process_document(doc_id, minio_path, token)
   -> convert PDF sang ảnh bằng pdf2image
   -> chạy PaddleOCR từng trang
   -> bóc tách doc_number, issued_date, title, issuing_org
-  -> PATCH /api/documents/{doc_id}/ocr nếu có token
+  -> PATCH /api/documents/{doc_id}/ocr bằng JWT hoặc SERVICE_TOKEN
   -> trả kết quả OCR
 ```
 
@@ -172,9 +176,9 @@ Payload kỳ vọng:
 Điểm cần lưu ý theo code hiện tại:
 
 - DocumentService publish Kafka event sau upload file.
-- DocumentService hiện gửi `token` rỗng trong Kafka event.
-- Nếu không có token, OCR vẫn xử lý được PDF nhưng bỏ qua bước PATCH về DocumentService.
-- Cần bổ sung service-token hoặc cơ chế auth service-to-service nếu muốn OCR tự cập nhật kết quả qua Kafka.
+- DocumentService hiện vẫn gửi `token` rỗng trong Kafka event.
+- Khi Kafka event không có JWT, OCRService dùng biến môi trường `SERVICE_TOKEN` để PATCH kết quả về DocumentService qua header `X-Service-Token`.
+- `SERVICE_TOKEN` phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
 
 ## Trường bóc tách
 

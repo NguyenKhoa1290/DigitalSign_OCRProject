@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/ocr", tags=["OCR"])
 class OcrRequest(BaseModel):
     doc_id: str
     minio_path: str   # objectName trên MinIO, ví dụ: "abc123.pdf"
-    token: str = ""   # JWT token để gọi lại DocumentService
+    token: str = ""   # JWT người dùng; nếu rỗng sẽ fallback sang SERVICE_TOKEN
 
 
 class OcrResponse(BaseModel):
@@ -32,7 +32,7 @@ async def process_ocr(request: OcrRequest):
     Kích hoạt OCR thủ công cho một công văn.
     - Tải PDF từ MinIO theo `minio_path`
     - Chạy PaddleOCR bóc tách: số hiệu, ngày, trích yếu
-    - Gọi DocumentService cập nhật kết quả (nếu có token)
+    - Gọi DocumentService cập nhật kết quả bằng JWT hoặc SERVICE_TOKEN
     """
     try:
         result = await ocr_processor.process_document(

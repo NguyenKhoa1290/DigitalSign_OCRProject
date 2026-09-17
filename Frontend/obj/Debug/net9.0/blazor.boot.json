@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "HauDocumentApp",
   "resources": {
-    "hash": "sha256-FEyuDLjeOINKVq2FZOt4J2qonMHtnXPUwTGFFEiP7d0=",
+    "hash": "sha256-d1ocI3tQLidxnklcvgkcFLYnXne05tcvJ59itRE/qpc=",
     "fingerprinting": {
       "Blazored.LocalStorage.12n6dz54qr.wasm": "Blazored.LocalStorage.wasm",
       "Blazored.Toast.4gbrhkrum5.wasm": "Blazored.Toast.wasm",
@@ -205,8 +205,8 @@
       "icudt_CJK.tjcz0u77k5.dat": "icudt_CJK.dat",
       "icudt_EFIGS.tptq2av103.dat": "icudt_EFIGS.dat",
       "icudt_no_CJK.lfu7j35m59.dat": "icudt_no_CJK.dat",
-      "HauDocumentApp.0x8p9itgfi.wasm": "HauDocumentApp.wasm",
-      "HauDocumentApp.weckg3gxml.pdb": "HauDocumentApp.pdb"
+      "HauDocumentApp.wqvioytsxd.wasm": "HauDocumentApp.wasm",
+      "HauDocumentApp.peii2eozuf.pdb": "HauDocumentApp.pdb"
     },
     "jsModuleNative": {
       "dotnet.native.wlvwu26j41.js": "sha256-/FFh+hncmkDjkVdq8mZIy51/nXHJPYNgd/njEJAau7U="
@@ -420,10 +420,10 @@
       "WindowsBase.xrh1pzsh17.wasm": "sha256-PTVr6817aTUbnsNJNYM62QqznC41vKx+idMw2oKPQYI=",
       "mscorlib.c152hgsws1.wasm": "sha256-ADd9npxSWUEINZHpLAjdur/nbu8vDJWQnpTcdZzxhZo=",
       "netstandard.d2l21p6due.wasm": "sha256-JRwvgwrWXzEvLc098p6yD5FUWPaL7gHOu4gJzRkmQ1c=",
-      "HauDocumentApp.0x8p9itgfi.wasm": "sha256-ZPpnhR2Eishntl8sRUAlDch0p486Tv6joIe9ZJbLEhk="
+      "HauDocumentApp.wqvioytsxd.wasm": "sha256-yN7oY2Dm/nSMBsM1OUN2IgS02QC0O7hRAAXhihDDXWc="
     },
     "pdb": {
-      "HauDocumentApp.weckg3gxml.pdb": "sha256-KEiGmlXJIk+RHXBKjccd/73SF3oGDf7LIvCGHq1R9+s="
+      "HauDocumentApp.peii2eozuf.pdb": "sha256-T1gEStC7y4amtOjoS7QWYzLtBxxEBk+AkLjyw4BRTxY="
     }
   },
   "cacheBootResources": true,

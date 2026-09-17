@@ -182,6 +182,7 @@ Luồng OCR update:
 
 ```text
 PATCH /api/documents/{id}/ocr
+  -> xác thực bằng JWT hoặc header X-Service-Token
   -> UpdateOcrDto
   -> DocumentService.UpdateOcrDataAsync
   -> cập nhật DocNumber, Title, IssuedDate, OcrDataRaw
@@ -324,7 +325,7 @@ POST /api/ocr/process
   -> pdf2image.convert_from_bytes
   -> OcrEngine.extract_lines
   -> extractor.extract_fields
-  -> document_service.update_ocr_result(...)
+  -> document_service.update_ocr_result(...) bằng JWT hoặc SERVICE_TOKEN
 ```
 
 Luồng upload test:
@@ -342,6 +343,7 @@ Kafka:
 - `kafka_consumer.start_consumer(process_fn)` chạy background thread.
 - Topic mặc định: `document.uploaded`.
 - Payload kỳ vọng: `{ "doc_id": "...", "minio_path": "...", "token": "..." }`.
+- Nếu `token` rỗng, `ocr_processor` dùng `settings.service_token` và `document_service.py` gửi header `X-Service-Token`.
 
 ## 7. Frontend
 
@@ -379,6 +381,6 @@ Pages:
 - Identity dùng `EnsureCreatedAsync()`, Document/Sign dùng EF migrations.
 - Frontend Docker build đã cài `wasm-tools`; nếu publish frontend trên máy host thì máy host cũng nên cài workload này.
 - `ApiService.SmartDeserialize()` đã xử lý cả response trực tiếp và response bọc `ApiResponse<T>`.
-- Luồng OCR tự động cần token hợp lệ để PATCH về DocumentService.
+- Luồng OCR tự động dùng JWT nếu Kafka/request có token; nếu token rỗng thì dùng `SERVICE_TOKEN` để PATCH về DocumentService.
 - Luồng ký số backend đã thống nhất MinIO object path bằng cách SignService đọc `Documents.MinioPath`.
 - Frontend ký số hiện lấy `SignerId`/`SignerName` từ JWT và gửi `DocId`, `SignerId`, `SignerName`, `Reason` đúng `SignRequestDto` backend.

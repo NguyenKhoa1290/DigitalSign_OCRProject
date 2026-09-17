@@ -10,3 +10,4 @@ F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net
 F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\refint\IdentityService.Core.dll
 F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.pdb
 F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\ref\IdentityService.Core.dll
+F:\DigitalSign_OCRProject\IdentityService\src\IdentityService.Core\obj\Debug\net9.0\IdentityService.Core.sourcelink.json

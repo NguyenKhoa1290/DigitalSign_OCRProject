@@ -94,10 +94,16 @@ async def process_document(doc_id: str, minio_path: str, token: str) -> dict:
     }
 
     # 6. Gọi DocumentService
-    if token:
-        await document_service.update_ocr_result(doc_id, ocr_payload, token)
+    update_token = token or settings.service_token
+    if update_token:
+        await document_service.update_ocr_result(
+            doc_id,
+            ocr_payload,
+            update_token,
+            use_service_token=not bool(token),
+        )
     else:
-        logger.warning("Không có token, bỏ qua bước cập nhật DocumentService.")
+        logger.warning("Khong co JWT hoac SERVICE_TOKEN, bo qua buoc cap nhat DocumentService.")
 
     logger.info(
         "OCR hoàn tất: doc=%s | doc_number=%s | date=%s",

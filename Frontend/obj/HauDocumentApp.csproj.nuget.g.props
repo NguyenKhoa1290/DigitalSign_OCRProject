@@ -14,14 +14,14 @@
     <SourceRoot Include="D:\Software\VisualStudio\VisualStudioSharedcomponents_tools_SDKs\NuGetPackages\" />
   </ItemGroup>
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <Import Project="$(NuGetPackageRoot)microsoft.net.sdk.webassembly.pack\10.0.9\build\Microsoft.NET.Sdk.WebAssembly.Pack.props" Condition="Exists('$(NuGetPackageRoot)microsoft.net.sdk.webassembly.pack\10.0.9\build\Microsoft.NET.Sdk.WebAssembly.Pack.props')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.net.sdk.webassembly.pack\10.0.11\build\Microsoft.NET.Sdk.WebAssembly.Pack.props" Condition="Exists('$(NuGetPackageRoot)microsoft.net.sdk.webassembly.pack\10.0.11\build\Microsoft.NET.Sdk.WebAssembly.Pack.props')" />
     <Import Project="$(NuGetPackageRoot)microsoft.net.illink.tasks\9.0.17\build\Microsoft.NET.ILLink.Tasks.props" Condition="Exists('$(NuGetPackageRoot)microsoft.net.illink.tasks\9.0.17\build\Microsoft.NET.ILLink.Tasks.props')" />
     <Import Project="$(NuGetPackageRoot)microsoft.aspnetcore.components.webassembly.authentication\9.0.1\buildTransitive\Microsoft.AspNetCore.Components.WebAssembly.Authentication.props" Condition="Exists('$(NuGetPackageRoot)microsoft.aspnetcore.components.webassembly.authentication\9.0.1\buildTransitive\Microsoft.AspNetCore.Components.WebAssembly.Authentication.props')" />
     <Import Project="$(NuGetPackageRoot)microsoft.aspnetcore.components.webassembly\9.0.17\build\net9.0\Microsoft.AspNetCore.Components.WebAssembly.props" Condition="Exists('$(NuGetPackageRoot)microsoft.aspnetcore.components.webassembly\9.0.17\build\net9.0\Microsoft.AspNetCore.Components.WebAssembly.props')" />
     <Import Project="$(NuGetPackageRoot)blazored.toast\4.2.1\buildTransitive\Blazored.Toast.props" Condition="Exists('$(NuGetPackageRoot)blazored.toast\4.2.1\buildTransitive\Blazored.Toast.props')" />
   </ImportGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgMicrosoft_NET_Sdk_WebAssembly_Pack Condition=" '$(PkgMicrosoft_NET_Sdk_WebAssembly_Pack)' == '' ">C:\Users\NguyenKhoa\.nuget\packages\microsoft.net.sdk.webassembly.pack\10.0.9</PkgMicrosoft_NET_Sdk_WebAssembly_Pack>
+    <PkgMicrosoft_NET_Sdk_WebAssembly_Pack Condition=" '$(PkgMicrosoft_NET_Sdk_WebAssembly_Pack)' == '' ">C:\Users\NguyenKhoa\.nuget\packages\microsoft.net.sdk.webassembly.pack\10.0.11</PkgMicrosoft_NET_Sdk_WebAssembly_Pack>
     <PkgMicrosoft_NET_ILLink_Tasks Condition=" '$(PkgMicrosoft_NET_ILLink_Tasks)' == '' ">C:\Users\NguyenKhoa\.nuget\packages\microsoft.net.illink.tasks\9.0.17</PkgMicrosoft_NET_ILLink_Tasks>
     <PkgMicrosoft_AspNetCore_Components_WebAssembly_DevServer Condition=" '$(PkgMicrosoft_AspNetCore_Components_WebAssembly_DevServer)' == '' ">C:\Users\NguyenKhoa\.nuget\packages\microsoft.aspnetcore.components.webassembly.devserver\9.0.17</PkgMicrosoft_AspNetCore_Components_WebAssembly_DevServer>
   </PropertyGroup>

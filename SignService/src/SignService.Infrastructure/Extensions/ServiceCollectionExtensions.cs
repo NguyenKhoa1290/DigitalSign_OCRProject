@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
 
         // Repositories
         services.AddScoped<ISignatureRepository, SignatureRepository>();
+        services.AddScoped<IDocumentFileRepository, DocumentFileRepository>();
 
         // Services
         services.AddSingleton<ICertificateService, CertificateService>();

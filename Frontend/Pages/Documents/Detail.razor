@@ -110,7 +110,7 @@ else
             </button>
         }
 
-        @if ((_role == "Manager" || _role == "BoardOfDirectors") && _document.Status != "Draft")
+        @if ((_role == "Manager" || _role == "BoardOfDirectors" || _role == "Admin") && (_document.Status != "Draft" || _role == "Admin"))
         {
             <a href="/signatures/@_document.Id" class="btn btn-outline">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

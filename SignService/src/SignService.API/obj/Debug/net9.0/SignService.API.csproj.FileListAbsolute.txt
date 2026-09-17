@@ -171,4 +171,3 @@ F:\DigitalSign_OCRProject\SignService\src\SignService.API\obj\Debug\net9.0\refin
 F:\DigitalSign_OCRProject\SignService\src\SignService.API\obj\Debug\net9.0\SignService.API.pdb
 F:\DigitalSign_OCRProject\SignService\src\SignService.API\obj\Debug\net9.0\SignService.API.genruntimeconfig.cache
 F:\DigitalSign_OCRProject\SignService\src\SignService.API\obj\Debug\net9.0\ref\SignService.API.dll
-F:\DigitalSign_OCRProject\SignService\src\SignService.API\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt

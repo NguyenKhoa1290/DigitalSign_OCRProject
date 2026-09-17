@@ -1,331 +1,384 @@
-﻿# 📦 Cấu Trúc Code — Hàm và Service Chi Tiết
+# Cấu Trúc Code Theo Repository Hiện Tại
 
-> Tài liệu hóa đầy đủ các class, hàm, tham số, giá trị trả về trong từng service.
-> File: `IdentityService` (backend C#) + `OCRService` (backend Python)
+> Bản đồ nhanh các project, class và luồng chính. Tài liệu này ưu tiên đúng với code hiện có hơn là lịch sử phát triển.
 
----
+## 1. Solution
 
-## 🗂️ I. IdentityService — Infrastructure Layer
+File solution:
 
-### 1. AuthService.cs
-**Namespace:** `IdentityService.Infrastructure.Services`
-**Implements:** `IAuthService`
-**Dependencies:** `IUserRepository`, `ITokenService`, `IPasswordResetRepository`, `IEmailService`
-
-| Hàm | Tham số | Trả về | Mô tả |
-|---|---|---|---|
-| `LoginAsync` | `LoginRequestDto request` | `Task<LoginResponseDto>` | Xác thực username/password bằng BCrypt, cấp JWT + RefreshToken |
-| `RefreshTokenAsync` | `RefreshTokenRequestDto request` | `Task<LoginResponseDto>` | Lấy principal từ token cũ (bỏ qua expiry), cấp cặp token mới |
-| `ValidateTokenAsync` | `ValidateTokenRequestDto request` | `Task<ValidateTokenResponseDto>` | Kiểm tra chữ ký + hạn token, trả claims |
-| `LogoutAsync` | `string userId` | `Task` | Stub — TODO: thêm JTI vào blacklist |
-| `ChangePasswordAsync` | `Guid userId, ChangePasswordDto dto` | `Task` | Verify mật khẩu cũ, hash mật khẩu mới, tắt `MustChangePassword`, cập nhật email/SĐT nếu được cung cấp |
-| `ForgotPasswordAsync` | `ForgotPasswordDto dto` | `Task` | Tạo OTP 6 số crypto-secure, lưu SHA-256 hash vào DB, gửi email. Không báo lỗi nếu email không tồn tại (chống user enumeration) |
-| `ResetPasswordAsync` | `ResetPasswordDto dto` | `Task` | Verify OTP hash, đặt mật khẩu mới, vô hiệu hóa tất cả token OTP của user |
-
-**Private helpers:**
-```csharp
-string GenerateOtp()
-// RandomNumberGenerator.GetInt32(100000, 999999) — 6 chữ số, crypto-secure
-
-string HashOtp(string otp)
-// SHA256.HashData(UTF8(otp)) → hex lowercase — chỉ lưu hash, không lưu plain text
+```text
+HAU_DigitalSign_OCR.slnx
 ```
 
-**Luồng LoginAsync:**
-```
-1. GetByUsernameAsync(username)   → throw InvalidCredentials nếu null
-2. Kiểm tra IsActive              → throw AccountLocked nếu false
-3. BCrypt.Verify(password, hash)  → throw InvalidCredentials nếu sai
-4. Lấy danh sách roles từ UserRoles.Select(ur => ur.Role.RoleName)
-5. GenerateAccessToken + GenerateRefreshToken
-6. Trả LoginResponseDto (có MustChangePassword)
-```
+Project trong solution:
 
----
-
-### 2. UserService.cs
-**Namespace:** `IdentityService.Infrastructure.Services`
-**Implements:** `IUserService`
-**Dependencies:** `IUserRepository`, `IRoleRepository`, `IDepartmentRepository`
-
-| Hàm | Tham số | Trả về | Mô tả |
-|---|---|---|---|
-| `GetAllUsersAsync` | `int page, int pageSize, string? search` | `Task<PagedResult<UserDto>>` | Phân trang + tìm kiếm theo username/fullname/email |
-| `GetUserByIdAsync` | `Guid id` | `Task<UserDto>` | Lấy theo ID, throw `UserNotFoundException` nếu không có |
-| `GetUserByUsernameAsync` | `string username` | `Task<UserDto>` | Lấy theo username |
-| `CreateUserAsync` | `CreateUserDto dto` | `Task<UserDto>` | Validate uniqueness (username, email), validate dept + roles, hash BCrypt, set `MustChangePassword=true` |
-| `UpdateUserAsync` | `Guid id, UpdateUserDto dto` | `Task<UserDto>` | Cập nhật FullName, Email, PhoneNumber, DepartmentId, IsActive |
-| `DeleteUserAsync` | `Guid id` | `Task<bool>` | Xóa user |
-| `AssignRoleAsync` | `Guid userId, Guid roleId` | `Task` | Kiểm tra user + role tồn tại, gán role |
-| `RemoveRoleAsync` | `Guid userId, Guid roleId` | `Task` | Gỡ role |
-
-**Private helper:**
-```csharp
-static UserDto MapToDto(AppUser user)
-// Map entity → DTO, lấy DepartmentName từ navigation property
-// Roles = UserRoles.Select(ur => ur.Role.RoleName)
+```text
+ApiGateway/ApiGateway.csproj
+Frontend/HauDocumentApp.csproj
+IdentityService/src/IdentityService.API/IdentityService.API.csproj
+IdentityService/src/IdentityService.Core/IdentityService.Core.csproj
+IdentityService/src/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj
+DocumentService/src/DocumentService.API/DocumentService.API.csproj
+DocumentService/src/DocumentService.Core/DocumentService.Core.csproj
+DocumentService/src/DocumentService.Infrastructure/DocumentService.Infrastructure.csproj
+SignService/src/SignService.API/SignService.API.csproj
+SignService/src/SignService.Core/SignService.Core.csproj
+SignService/src/SignService.Infrastructure/SignService.Infrastructure.csproj
 ```
 
-**Validation trong CreateUserAsync:**
-```
-1. Check username chưa tồn tại
-2. Check email chưa tồn tại (nếu có)
-3. Check department tồn tại (nếu có DepartmentId)
-4. Check từng roleId trong RoleIds tồn tại
-5. BCrypt.HashPassword(password, workFactor: 12)
-6. Tạo AppUser với MustChangePassword = true
+Test project:
+
+```text
+IdentityService/tests/IdentityService.Tests
+DocumentService/tests/DocumentService.Tests
+SignService/tests/SignService.Tests
 ```
 
----
+## 2. ApiGateway
 
-### 3. DepartmentService.cs
-**Namespace:** `IdentityService.Infrastructure.Services`
-**Implements:** `IDepartmentService`
-**Dependencies:** `IDepartmentRepository`
+File chính:
 
-| Hàm | Tham số | Trả về | Mô tả |
-|---|---|---|---|
-| `GetAllDepartmentsAsync` | — | `Task<IEnumerable<DepartmentDto>>` | Flat list tất cả phòng ban |
-| `GetDepartmentTreeAsync` | — | `Task<IEnumerable<DepartmentDto>>` | Cây phân cấp — lấy roots (ParentId=null), đệ quy gắn Children |
-| `GetDepartmentByIdAsync` | `Guid id` | `Task<DepartmentDto>` | Lấy theo ID |
-| `CreateDepartmentAsync` | `CreateDepartmentDto dto` | `Task<DepartmentDto>` | Validate parent tồn tại, tạo mới, DeptCode tự động ToUpper() |
-| `UpdateDepartmentAsync` | `Guid id, CreateDepartmentDto dto` | `Task<DepartmentDto>` | Validate circular reference trước khi cập nhật ParentId |
-| `DeleteDepartmentAsync` | `Guid id` | `Task<bool>` | Xóa phòng ban |
-| `GetChildDepartmentsAsync` | `Guid? parentId` | `Task<IEnumerable<DepartmentDto>>` | Lấy danh sách con trực tiếp |
+- `ApiGateway/Program.cs`
+- `ApiGateway/appsettings.json`
 
-**Private methods:**
-```csharp
-async Task<bool> HasCircularReferenceAsync(Guid targetId, Guid proposedParentId)
-// Duyệt ngược chuỗi tổ tiên của proposedParent
-// Dùng HashSet<Guid> visited để tránh vô hạn khi DB đã corrupt
-// Return true nếu gặp lại targetId → circular reference
+Nhiệm vụ:
 
-static DepartmentDto MapToDto(Department d)
-// Map phẳng, không có Children
+- Cấu hình JWT Bearer.
+- Cấu hình YARP reverse proxy từ `ReverseProxy` section.
+- Cấu hình rate limit bằng `AspNetCoreRateLimit`.
+- Map `/health`, `/swagger`, `/`.
+- Route cuối cùng bằng `app.MapReverseProxy()`.
 
-static DepartmentDto MapToDtoWithChildren(Department d)
-// Map đệ quy — gọi lại chính nó cho d.Children
-```
+Route YARP nằm trong `appsettings.json`:
 
-**Thuật toán HasCircularReferenceAsync:**
-```
-Input: targetId = HAU(1), proposedParentId = PhongTH(2)
-1. proposedParentId == targetId? → No
-2. visited = {}; currentId = PhongTH(2)
-3. Loop:
-   - visited.Add(2) ✓
-   - current = PhongTH → ParentId = HAU(1)
-   - current.ParentId == targetId(1)? → YES → return true → throw 400
-```
-
----
-
-### 4. TokenService.cs
-**Namespace:** `IdentityService.Infrastructure.Services`
-**Implements:** `ITokenService`
-**Dependencies:** `IConfiguration`
-
-| Hàm | Tham số | Trả về | Mô tả |
-|---|---|---|---|
-| `GenerateAccessToken` | `AppUser user, IEnumerable<string> roles` | `string` | Tạo JWT HS256 với claims đầy đủ |
-| `GenerateRefreshToken` | — | `string` | 32 bytes ngẫu nhiên → Base64 |
-| `ValidateTokenAsync` | `string token` | `Task<bool>` | Kiểm tra chữ ký, issuer, audience, lifetime (ClockSkew=0) |
-| `GetPrincipalFromExpiredToken` | `string token` | `ClaimsPrincipal?` | Validate chữ ký nhưng BỎ QUA expiry — dùng khi refresh token |
-
-**JWT Claims trong GenerateAccessToken:**
-```
-sub         = user.Id (GUID)
-jti         = Guid.NewGuid() (unique per token)
-iat         = Unix timestamp
-nameid      = user.Id
-username    = user.Username  (custom claim)
-name        = user.FullName
-email       = user.Email (nếu có)
-role        = mỗi role một claim riêng (nhiều role → nhiều claim)
-```
-
----
-
-### 5. EmailService.cs
-**Namespace:** `IdentityService.Infrastructure.Services`
-**Implements:** `IEmailService`
-**Dependencies:** `IConfiguration`, MailKit, MimeKit
-
-| Hàm | Tham số | Trả về | Mô tả |
-|---|---|---|---|
-| `SendPasswordResetEmailAsync` | `string toEmail, string toName, string otp` | `Task` | Gửi OTP qua Gmail SMTP (StartTLS port 587), HTML + plaintext fallback |
-
-**Cấu hình đọc từ appsettings.json:**
-```json
-"EmailSettings": {
-  "SmtpHost": "smtp.gmail.com",
-  "SmtpPort": "587",
-  "Username": "...",
-  "Password": "...(App Password)...",
-  "FromName": "HAU Documents"
-}
-```
-
----
-
-## 🗂️ II. IdentityService — Repository Layer
-
-### UserRepository.cs
-**Implements:** `IUserRepository`
-**Note:** Mọi query đều `Include(UserRoles.Role)` + `Include(Department)` để load navigation properties
-
-| Hàm | SQL tương đương | Ghi chú |
-|---|---|---|
-| `GetByIdAsync(Guid id)` | `SELECT ... WHERE Id = @id` | Include roles + department |
-| `GetByUsernameAsync(string)` | `SELECT ... WHERE Username = @u` | Case-sensitive |
-| `GetByEmailAsync(string)` | `SELECT ... WHERE Email = @e` | |
-| `GetAllAsync(page, pageSize, search?)` | `SELECT ... WHERE ... LIKE ... ORDER BY Username OFFSET ... LIMIT ...` | Tìm theo username/fullname/email |
-| `CreateAsync(AppUser)` | `INSERT INTO AppUsers` | Sau khi insert, re-fetch để load navigation props |
-| `UpdateAsync(AppUser)` | `UPDATE AppUsers` | |
-| `DeleteAsync(Guid)` | `DELETE FROM AppUsers WHERE Id = @id` | |
-| `AssignRoleAsync(Guid, Guid)` | `INSERT INTO AppUserRoles` | Idempotent — kiểm tra đã tồn tại trước |
-| `RemoveRoleAsync(Guid, Guid)` | `DELETE FROM AppUserRoles` | |
-| `GetUserRolesAsync(Guid)` | `SELECT RoleName FROM AppUserRoles JOIN AppRoles` | |
-
----
-
-## 🗂️ III. Frontend — Services Layer (C# Blazor)
-
-### AuthService.cs (Frontend)
-**File:** `Frontend/Services/AuthService.cs`
-
-| Hàm | Trả về | Mô tả |
-|---|---|---|
-| `LoginAsync(username, password)` | `(bool Success, bool MustChangePassword, string? Error)` | POST /api/auth/login, lưu token vào localStorage |
-| `LogoutAsync()` | `Task` | Xóa token khỏi localStorage, notify auth state |
-| `ChangePasswordAsync(dto)` | `(bool Success, string? Error)` | POST /api/auth/change-password (cần JWT) |
-| `ForgotPasswordAsync(email)` | `(bool Success, string? Error)` | POST /api/auth/forgot-password |
-| `ResetPasswordAsync(dto)` | `(bool Success, string? Error)` | POST /api/auth/reset-password |
-| `IsAuthenticatedAsync()` | `Task<bool>` | Kiểm tra token còn hạn |
-| `GetCurrentUserAsync()` | `Task<ClaimsPrincipal?>` | Parse JWT claims |
-| `GetRoleAsync()` | `Task<string?>` | Lấy ClaimTypes.Role |
-| `GetUserNameAsync()` | `Task<string?>` | Lấy ClaimTypes.Name |
-| `GetUserIdAsync()` | `Task<string?>` | Lấy sub/nameid claim |
-
-### AdminService.cs (Frontend)
-**File:** `Frontend/Services/AdminService.cs`
-
-| Hàm | Endpoint | Mô tả |
-|---|---|---|
-| `GetUsersAsync(page, pageSize, search?)` | GET /api/users | Phân trang |
-| `GetUserAsync(Guid id)` | GET /api/users/{id} | |
-| `CreateUserAsync(CreateUserDto)` | GET /api/roles → POST /api/users | Tự chuyển Role name → RoleId GUID |
-| `UpdateUserAsync(Guid, UpdateUserDto)` | PUT /api/users/{id} | |
-| `DeleteUserAsync(Guid)` | DELETE /api/users/{id} | |
-| `GetDepartmentsAsync()` | GET /api/departments | Flat list |
-| `GetDepartmentTreeAsync()` | GET /api/departments/tree | Cây phân cấp |
-| `CreateDepartmentAsync(dto)` | POST /api/departments | |
-| `UpdateDepartmentAsync(Guid, dto)` | PUT /api/departments/{id} | |
-| `DeleteDepartmentAsync(Guid)` | DELETE /api/departments/{id} | |
-| `GetRolesAsync()` | GET /api/roles | |
-
-### ApiService.cs (Frontend)
-**File:** `Frontend/Services/ApiService.cs`
-
-| Hàm | Mô tả |
+| Route | Cluster |
 |---|---|
-| `GetAsync<T>(url)` | GET request, SmartDeserialize kết quả |
-| `PostAsync<T>(url, body?)` | POST request, SmartDeserialize kết quả |
-| `PutAsync<T>(url, body?)` | PUT request |
-| `PatchAsync<T>(url, body?)` | PATCH request |
-| `DeleteAsync(url)` | DELETE request |
-| `PostFormAsync(url, content)` | POST multipart/form-data |
-| `SmartDeserialize<T>(json)` | Nếu JSON có field `"success"` → unwrap `.data`; ngược lại deserialize trực tiếp |
+| `/api/auth/{**catch-all}` | `identity-cluster` |
+| `/api/users/{**catch-all}` | `identity-cluster` |
+| `/api/roles/{**catch-all}` | `identity-cluster` |
+| `/api/departments/{**catch-all}` | `identity-cluster` |
+| `/api/documents/{**catch-all}` | `document-cluster` |
+| `/api/signatures/{**catch-all}` | `sign-cluster` |
+| `/api/ocr/{**catch-all}` | `ocr-cluster` |
 
-**Xử lý 401:** Tự động redirect về `/login`
+## 3. IdentityService
 
----
+### Core
 
-## 🗂️ IV. OCRService — Python/FastAPI
+Entities:
 
-### engine.py — OcrEngine
+- `AppUser`
+- `AppRole`
+- `AppUserRole`
+- `Department`
+- `PasswordResetToken`
 
-| Hàm | Tham số | Trả về | Mô tả |
-|---|---|---|---|
-| `__init__` | `language="vi", use_gpu=False` | — | Khởi tạo PaddleOCR với tiếng Việt, angle classifier |
-| `extract_raw` | `image_path: str` | `list` | Kết quả thô PaddleOCR: `[[[box, (text, confidence)], ...]]` |
-| `extract_lines` | `image_path: str` | `list[dict]` | Chuẩn hóa thành `[{text, confidence, box}]` |
+DTO nhóm chính:
 
-### extractor.py — Bóc tách trường
+- Auth: login, refresh token, validate token, change password, forgot/reset password.
+- Users: create/update/user dto.
+- Roles.
+- Departments.
 
-| Hàm | Trả về | Pattern/Logic |
-|---|---|---|
-| `extract_doc_number(lines)` | `str?` | Regex: `\d{1,4}/[A-Z]{2,}-[A-Z]{2,}` — VD: `123/QD-HAU` |
-| `extract_issued_date(lines)` | `date?` | Regex 2 dạng: `DD/MM/YYYY` hoặc `ngày X tháng Y năm Z` |
-| `extract_title(lines)` | `str?` | Tìm sau từ khóa: `V/v`, `Về việc`, `Trích yếu`, `Kính gửi` |
-| `extract_issuing_org(lines)` | `str?` | 10 dòng đầu, chứa từ khóa tổ chức, confidence > 0.7 |
-| `extract_fields(lines)` | `dict` | Gọi tất cả 4 hàm trên, trả `{doc_number, issued_date, title, issuing_org}` |
+Interfaces:
 
-### kafka_consumer.py
+- Repository: `IUserRepository`, `IRoleRepository`, `IDepartmentRepository`, `IPasswordResetRepository`.
+- Service: `IAuthService`, `IUserService`, `IRoleService`, `IDepartmentService`, `ITokenService`, `IEmailService`.
 
-| Hàm | Mô tả |
-|---|---|
-| `start_consumer(process_fn)` | Khởi động background thread lắng nghe Kafka topic `document.uploaded` |
-| `stop_consumer()` | Đặt `_running = False`, thread tự thoát |
+### Infrastructure
 
-**Kafka message payload:**
-```json
-{ "doc_id": "uuid", "minio_path": "file.pdf", "token": "JWT..." }
+File chính:
+
+- `Data/AppDbContext.cs`
+- `Extensions/ServiceCollectionExtensions.cs`
+- `Repositories/UserRepository.cs`
+- `Repositories/RoleRepository.cs`
+- `Repositories/DepartmentRepository.cs`
+- `Repositories/PasswordResetRepository.cs`
+- `Services/AuthService.cs`
+- `Services/TokenService.cs`
+- `Services/UserService.cs`
+- `Services/RoleService.cs`
+- `Services/DepartmentService.cs`
+- `Services/EmailService.cs`
+
+`AppDbContext` dùng `HasData()` để seed roles, departments và admin.
+
+### API
+
+Controllers:
+
+- `AuthController`: `/api/auth`
+- `UsersController`: `/api/users`
+- `RolesController`: `/api/roles`
+- `DepartmentsController`: `/api/departments`
+
+Middleware:
+
+- `ExceptionHandlingMiddleware`
+
+Startup:
+
+- `Program.cs` gọi `AddInfrastructure()`.
+- Auth pipeline: `UseAuthentication()`, `UseAuthorization()`.
+- Database init: `EnsureCreatedAsync()` nếu không phải môi trường `Testing`.
+
+## 4. DocumentService
+
+### Core
+
+Entities:
+
+- `Document`
+- `DocumentType`
+- `DocumentProcess`
+- `DocumentStatus`
+- `DocumentAction`
+
+DTO:
+
+- `CreateDocumentDto`
+- `DocumentDto`
+- `DocumentProcessDto`
+- `DocumentQueryParams`
+- `DocumentTypeDto`
+- `RejectDocumentDto`
+- `UpdateOcrDto`
+- `WorkflowActionDto`
+
+Interfaces:
+
+- `IDocumentService`
+- `IDocumentRepository`
+- `IDocumentTypeRepository`
+- `IDocumentProcessRepository`
+- `IFileStorageService`
+- `IKafkaProducerService`
+
+### Infrastructure
+
+File chính:
+
+- `Data/AppDbContext.cs`
+- `Extensions/ServiceCollectionExtensions.cs`
+- `Repositories/DocumentRepository.cs`
+- `Repositories/DocumentTypeRepository.cs`
+- `Repositories/DocumentProcessRepository.cs`
+- `Services/DocumentService.cs`
+- `Services/MinioStorageService.cs`
+- `Services/KafkaProducerService.cs`
+
+Luồng upload:
+
+```text
+DocumentsController.UploadFile
+  -> DocumentService.UploadFileAsync
+  -> MinioStorageService.UploadFileAsync
+  -> document.MinioPath = "documents/{storedFileName}"
+  -> KafkaProducerService.PublishDocumentUploadedAsync(...)
 ```
 
----
+Luồng OCR update:
 
-## 🗂️ V. Entities & DTOs quan trọng
-
-### AppUser (Entity)
-```csharp
-Guid     Id
-string   Username          // UNIQUE, max 50
-string   PasswordHash      // BCrypt
-string   FullName          // max 100
-string?  Email             // UNIQUE
-string?  PhoneNumber
-Guid?    DepartmentId      // FK → Departments
-bool     IsActive          // default true
-bool     MustChangePassword // true khi admin tạo mới
-DateTime CreatedAt
-
-// Navigation
-ICollection<AppUserRole> UserRoles
-Department?              Department
+```text
+PATCH /api/documents/{id}/ocr
+  -> UpdateOcrDto
+  -> DocumentService.UpdateOcrDataAsync
+  -> cập nhật DocNumber, Title, IssuedDate, OcrDataRaw
+  -> tạo DocumentProcess action UpdateOCR
 ```
 
-### LoginResponseDto
-```csharp
-string       AccessToken
-string       RefreshToken
-Guid         UserId
-string       Username
-string       FullName
-List<string> Roles
-bool         MustChangePassword  // ← quan trọng: frontend check để redirect /first-login
+Workflow:
+
+```text
+SubmitForReviewAsync: Draft -> PendingDeptReview
+DeptSignAsync: PendingDeptReview -> PendingDirectorSign
+DirectorSignAsync: PendingDirectorSign -> DirectorSigned
+PublishAsync: DirectorSigned -> Published
+RejectAsync: pending states -> Rejected
+AssignAsync: ghi DocumentProcess, không đổi status
 ```
 
-### PagedResult<T>
-```csharp
-List<T> Items
-int     TotalCount
-int     Page
-int     PageSize
-int     TotalPages        // = ceil(TotalCount / PageSize)
-bool    HasNextPage
-bool    HasPreviousPage
+`DocumentStatus.DeptSigned` có khai báo trong code và được cho phép reject, nhưng luồng hiện tại không dừng ở trạng thái này mà chuyển thẳng sang `PendingDirectorSign`.
+
+### API
+
+Controller:
+
+- `DocumentsController`: `/api/documents`
+
+Startup:
+
+- `Program.cs` gọi `AddInfrastructure()`.
+- Auth bằng JWT Bearer.
+- Tự chạy `db.Database.MigrateAsync()`.
+- Có global exception handler map lỗi domain sang HTTP status.
+
+## 5. SignService
+
+### Core
+
+Entities:
+
+- `Signature`
+- `SignatureType`
+- `UserCertificate`
+
+DTO:
+
+- `SignRequestDto`
+- `SignResultDto`
+- `SignatureDto`
+- `VerifyResultDto`
+- `IssueCertificateDto`
+- `CertificateDto`
+
+Interfaces:
+
+- `ISignService`
+- `ISignatureRepository`
+- `IDocumentFileRepository`
+- `ICertificateService`
+- `IPdfSigningService`
+- `IMinioService`
+
+### Infrastructure
+
+File chính:
+
+- `Data/AppDbContext.cs`
+- `Data/DocumentFileRecord.cs`
+- `Extensions/ServiceCollectionExtensions.cs`
+- `Repositories/SignatureRepository.cs`
+- `Repositories/DocumentFileRepository.cs`
+- `Services/SignService.cs`
+- `Services/PdfSigningService.cs`
+- `Services/CertificateService.cs`
+- `Services/MinioService.cs`
+
+Luồng ký:
+
+```text
+SignaturesController.PersonalSign / LegalSeal
+  -> SignService.PersonalSignAsync / LegalSealAsync
+  -> kiểm tra certificate user
+  -> kiểm tra chữ ký đã tồn tại chưa
+  -> đọc Documents.MinioPath theo DocId
+  -> chuẩn hóa "documents/{storedFileName}" thành object "{storedFileName}"
+  -> tải PDF từ MinIO theo object thật
+  -> PdfSigningService.SignPdfAsync
+  -> upload lại PDF đã ký
+  -> lưu Signature vào PostgreSQL
 ```
 
-### ApiResponse<T>
-```csharp
-bool         Success
-string?      Message
-T?           Data
-List<string> Errors
+Luồng certificate:
 
-// Factory methods:
-static ApiResponse<T> Ok(T data, string message)
-static ApiResponse<T> Fail(string message)
-static ApiResponse<T> Fail(List<string> errors)
+```text
+Program.cs startup
+  -> CertificateService.InitializeRootCaAsync()
+  -> tạo certs/rootca.pfx nếu chưa có
+
+POST /api/signatures/certificates/issue
+  -> CertificateService.IssueCertificateAsync
+  -> tạo PFX user trong certs/{userId}.pfx
 ```
+
+### API
+
+Controller:
+
+- `SignaturesController`: `/api/signatures`
+
+Authorization:
+
+- `personal-sign`: `Manager,Admin`
+- `legal-seal`: `BoardOfDirectors,Admin`
+- `certificates/issue`: `Admin`
+
+Startup:
+
+- Tự chạy EF migration.
+- Tự khởi tạo Root CA.
+- Auth bằng JWT Bearer.
+
+## 6. OCRService
+
+File chính:
+
+- `app/main.py`
+- `app/config.py`
+- `app/api/routes.py`
+- `app/ocr/engine.py`
+- `app/ocr/extractor.py`
+- `app/services/ocr_processor.py`
+- `app/services/minio_service.py`
+- `app/services/document_service.py`
+- `app/services/kafka_consumer.py`
+
+Luồng REST:
+
+```text
+POST /api/ocr/process
+  -> ocr_processor.process_document(doc_id, minio_path, token)
+  -> minio_service.download_file(minio_path)
+  -> pdf2image.convert_from_bytes
+  -> OcrEngine.extract_lines
+  -> extractor.extract_fields
+  -> document_service.update_ocr_result(...)
+```
+
+Luồng upload test:
+
+```text
+POST /api/ocr/process-upload
+  -> nhận UploadFile
+  -> convert PDF bytes sang ảnh
+  -> OCR
+  -> trả OcrResponse
+```
+
+Kafka:
+
+- `kafka_consumer.start_consumer(process_fn)` chạy background thread.
+- Topic mặc định: `document.uploaded`.
+- Payload kỳ vọng: `{ "doc_id": "...", "minio_path": "...", "token": "..." }`.
+
+## 7. Frontend
+
+File chính:
+
+- `Program.cs`: đăng ký DI, HTTP client, auth, service.
+- `Dockerfile`: build Blazor WebAssembly bằng .NET SDK, cài `python3` + `wasm-tools`, sau đó serve static files bằng Nginx.
+- `App.razor`: `AuthorizeRouteView`.
+- `Auth/CustomAuthStateProvider.cs`: parse JWT từ localStorage.
+- `Services/ApiService.cs`: GET/POST/PUT/PATCH/DELETE + SmartDeserialize.
+- `Services/AuthService.cs`: login/logout/change/forgot/reset password.
+- `Services/AdminService.cs`: user, department, role, certificate.
+- `Services/DocumentService.cs`: document workflow.
+- `Services/SignatureService.cs`: signature API, gửi `SignRequestDto` đúng backend và map thao tác UI sang endpoint ký.
+
+Pages:
+
+- `Pages/Login.razor`
+- `Pages/FirstLogin.razor`
+- `Pages/ForgotPassword.razor`
+- `Pages/ResetPassword.razor`
+- `Pages/Dashboard.razor`
+- `Pages/Admin/Users.razor`
+- `Pages/Admin/Departments.razor`
+- `Pages/Admin/Certificates.razor`
+- `Pages/Documents/Index.razor`
+- `Pages/Documents/Create.razor`
+- `Pages/Documents/Detail.razor`
+- `Pages/Signatures/Index.razor`
+
+## 8. Điểm cần chú ý khi sửa code
+
+- Backend route hiện là `/api/...`, không dùng `/api/v1`.
+- Gateway là YARP, config route nằm trong `ApiGateway/appsettings.json`.
+- Identity dùng `EnsureCreatedAsync()`, Document/Sign dùng EF migrations.
+- Frontend Docker build đã cài `wasm-tools`; nếu publish frontend trên máy host thì máy host cũng nên cài workload này.
+- `ApiService.SmartDeserialize()` đã xử lý cả response trực tiếp và response bọc `ApiResponse<T>`.
+- Luồng OCR tự động cần token hợp lệ để PATCH về DocumentService.
+- Luồng ký số backend đã thống nhất MinIO object path bằng cách SignService đọc `Documents.MinioPath`.
+- Frontend ký số hiện lấy `SignerId`/`SignerName` từ JWT và gửi `DocId`, `SignerId`, `SignerName`, `Reason` đúng `SignRequestDto` backend.

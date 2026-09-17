@@ -191,7 +191,6 @@ F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\refs\System.Drawing.dll
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\refs\System.Drawing.Primitives.dll
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\refs\System.Dynamic.Runtime.dll
-F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\refs\System.Formats.Asn1.dll
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\refs\System.Formats.Tar.dll
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\refs\System.Globalization.Calendars.dll
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\refs\System.Globalization.dll
@@ -487,3 +486,10 @@ F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\obj\Debug\
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\obj\Debug\net9.0\IdentityService.Tests.pdb
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\obj\Debug\net9.0\IdentityService.Tests.genruntimeconfig.cache
 F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\obj\Debug\net9.0\ref\IdentityService.Tests.dll
+F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
+F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\MailKit.dll
+F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\MimeKit.dll
+F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\Microsoft.Bcl.Cryptography.dll
+F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\System.Formats.Asn1.dll
+F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\System.Security.Cryptography.Pkcs.dll
+F:\DigitalSign_OCRProject\IdentityService\tests\IdentityService.Tests\bin\Debug\net9.0\runtimes\win\lib\net9.0\System.Security.Cryptography.Pkcs.dll

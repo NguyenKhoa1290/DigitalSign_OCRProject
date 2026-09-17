@@ -7,6 +7,7 @@ using IdentityService.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
@@ -33,7 +34,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     {
         var client = CreateClient();
         var request = new LoginRequestDto { Username = "admin", Password = "Admin@123" };
-        var response = await client.PostAsJsonAsync("/api/v1/auth/login", request);
+        var response = await client.PostAsJsonAsync("/api/auth/login", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -51,7 +52,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     {
         var client = CreateClient();
         var request = new LoginRequestDto { Username = "admin", Password = "WrongPassword" };
-        var response = await client.PostAsJsonAsync("/api/v1/auth/login", request);
+        var response = await client.PostAsJsonAsync("/api/auth/login", request);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -60,7 +61,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     {
         var client = CreateClient();
         var request = new { Username = "", Password = "" };
-        var response = await client.PostAsJsonAsync("/api/v1/auth/login", request);
+        var response = await client.PostAsJsonAsync("/api/auth/login", request);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -69,14 +70,14 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     {
         var client = CreateClient();
         // First login
-        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequestDto { Username = "admin", Password = "Admin@123" });
         var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         // Then validate
         var validateRequest = new ValidateTokenRequestDto { Token = loginContent!.AccessToken };
-        var validateResponse = await client.PostAsJsonAsync("/api/v1/auth/validate-token", validateRequest);
+        var validateResponse = await client.PostAsJsonAsync("/api/auth/validate-token", validateRequest);
 
         validateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await validateResponse.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(
@@ -89,7 +90,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     {
         var client = CreateClient();
         var request = new ValidateTokenRequestDto { Token = "not.a.valid.jwt" };
-        var response = await client.PostAsJsonAsync("/api/v1/auth/validate-token", request);
+        var response = await client.PostAsJsonAsync("/api/auth/validate-token", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(
@@ -101,7 +102,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task Logout_WithValidToken_ShouldReturn200()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequestDto { Username = "admin", Password = "Admin@123" });
         var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -109,7 +110,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
 
-        var response = await client.PostAsync("/api/v1/auth/logout", null);
+        var response = await client.PostAsync("/api/auth/logout", null);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -117,7 +118,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task GetAllUsers_WithoutAuth_ShouldReturn401()
     {
         var client = CreateClient();
-        var response = await client.GetAsync("/api/v1/users");
+        var response = await client.GetAsync("/api/users");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -125,7 +126,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task GetAllUsers_WithAdminToken_ShouldReturn200()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequestDto { Username = "admin", Password = "Admin@123" });
         var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -133,7 +134,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
 
-        var response = await client.GetAsync("/api/v1/users");
+        var response = await client.GetAsync("/api/users");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -141,7 +142,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task GetDepartments_WithAuth_ShouldReturn200WithSeededData()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequestDto { Username = "admin", Password = "Admin@123" });
         var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -149,7 +150,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
 
-        var response = await client.GetAsync("/api/v1/departments");
+        var response = await client.GetAsync("/api/departments");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -157,7 +158,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task GetRoles_WithAuth_ShouldReturn200()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
             new LoginRequestDto { Username = "admin", Password = "Admin@123" });
         var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -165,7 +166,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
 
-        var response = await client.GetAsync("/api/v1/roles");
+        var response = await client.GetAsync("/api/roles");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -184,7 +185,7 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
 /// </summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
-    private static readonly string DbName = $"IntegrationTestDb_{Guid.NewGuid()}";
+    private readonly string _dbName = $"IntegrationTestDb_{Guid.NewGuid()}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -192,18 +193,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // Remove ALL DbContext related service descriptors
-            var descriptorsToRemove = services
-                .Where(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)
-                         || d.ServiceType == typeof(DbContextOptions))
-                .ToList();
-
-            foreach (var d in descriptorsToRemove)
-                services.Remove(d);
+            // Replace production PostgreSQL DbContext with InMemory DbContext.
+            services.RemoveAll<AppDbContext>();
+            services.RemoveAll<DbContextOptions<AppDbContext>>();
+            services.RemoveAll<DbContextOptions>();
+            services.RemoveAll<IDbContextOptionsConfiguration<AppDbContext>>();
 
             // Register fresh InMemory DbContext
             services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase(DbName));
+                options.UseInMemoryDatabase(_dbName));
         });
     }
 

@@ -22,7 +22,7 @@ public class UsersControllerIntegrationTests : IClassFixture<CustomWebApplicatio
 
     private async Task<string> GetAdminTokenAsync()
     {
-        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login",
             new LoginRequestDto { Username = "admin", Password = "Admin@123" });
         var content = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -38,13 +38,13 @@ public class UsersControllerIntegrationTests : IClassFixture<CustomWebApplicatio
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/v1/users/me");
+        var response = await _client.GetAsync("/api/users/me");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var user = await response.Content.ReadFromJsonAsync<UserDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        user!.Username.Should().Be("admin");
+        var content = await response.Content.ReadAsStringAsync();
+        using var json = JsonDocument.Parse(content);
+        json.RootElement.GetProperty("data").GetProperty("username").GetString().Should().Be("admin");
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class UsersControllerIntegrationTests : IClassFixture<CustomWebApplicatio
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync($"/api/v1/users/{Guid.NewGuid()}");
+        var response = await _client.GetAsync($"/api/users/{Guid.NewGuid()}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -65,7 +65,7 @@ public class UsersControllerIntegrationTests : IClassFixture<CustomWebApplicatio
     [Fact]
     public async Task CreateUser_WithoutAuth_ShouldReturn401()
     {
-        var response = await _client.PostAsJsonAsync("/api/v1/users",
+        var response = await _client.PostAsJsonAsync("/api/users",
             new CreateUserDto { Username = "test", Password = "test", FullName = "Test" });
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

@@ -14,13 +14,22 @@ public class AuthServiceTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<ITokenService> _tokenServiceMock;
+    private readonly Mock<IPasswordResetRepository> _passwordResetRepositoryMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
     private readonly IAuthService _authService;
 
     public AuthServiceTests()
     {
         _userRepositoryMock = new Mock<IUserRepository>();
         _tokenServiceMock = new Mock<ITokenService>();
-        _authService = new AuthService(_userRepositoryMock.Object, _tokenServiceMock.Object);
+        _passwordResetRepositoryMock = new Mock<IPasswordResetRepository>();
+        _emailServiceMock = new Mock<IEmailService>();
+
+        _authService = new AuthService(
+            _userRepositoryMock.Object,
+            _tokenServiceMock.Object,
+            _passwordResetRepositoryMock.Object,
+            _emailServiceMock.Object);
     }
 
     private static AppUser CreateTestUser(bool isActive = true)

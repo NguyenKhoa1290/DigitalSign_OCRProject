@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SignService.Core.DTOs;
 using SignService.Core.Entities;
@@ -12,20 +13,26 @@ public class SignService : ISignService
     private readonly ICertificateService _certService;
     private readonly IPdfSigningService _pdfSigningService;
     private readonly IMinioService _minioService;
+    private readonly IDocumentFileRepository _documentFileRepository;
     private readonly ILogger<SignService> _logger;
+    private readonly string _minioBucket;
 
     public SignService(
         ISignatureRepository signatureRepo,
         ICertificateService certService,
         IPdfSigningService pdfSigningService,
         IMinioService minioService,
+        IDocumentFileRepository documentFileRepository,
+        IConfiguration config,
         ILogger<SignService> logger)
     {
         _signatureRepo = signatureRepo;
         _certService = certService;
         _pdfSigningService = pdfSigningService;
         _minioService = minioService;
+        _documentFileRepository = documentFileRepository;
         _logger = logger;
+        _minioBucket = config["MinioSettings:Bucket"] ?? "documents";
     }
 
     public async Task<SignResultDto> PersonalSignAsync(SignRequestDto request)
@@ -60,8 +67,8 @@ public class SignService : ISignService
         if (alreadySigned)
             throw new AlreadySignedException(signatureType);
 
-        // Tải PDF từ MinIO
-        string objectName = $"{request.DocId}.pdf";
+        // Tải PDF từ MinIO theo đường dẫn thật DocumentService đã lưu.
+        string objectName = await ResolveDocumentObjectNameAsync(request.DocId);
         byte[] pdfBytes;
         try
         {
@@ -86,7 +93,7 @@ public class SignService : ISignService
             signerName,
             reason);
 
-        // Ghi đè MinIO
+        // Ghi đè đúng object gốc trên MinIO để các service khác tiếp tục dùng cùng path.
         await _minioService.UploadFileAsync(objectName, signedPdf, "application/pdf");
 
         // Lưu DB
@@ -115,7 +122,7 @@ public class SignService : ISignService
     {
         _logger.LogInformation("Xác minh chữ ký văn bản {DocId}", docId);
 
-        string objectName = $"{docId}.pdf";
+        string objectName = await ResolveDocumentObjectNameAsync(docId);
         byte[] pdfBytes;
         try
         {
@@ -210,4 +217,42 @@ public class SignService : ISignService
         SignatureType.LegalSeal => "Ký pháp nhân (Ban Giám hiệu)",
         _ => signatureType
     };
+
+    private async Task<string> ResolveDocumentObjectNameAsync(Guid docId)
+    {
+        var minioPath = await _documentFileRepository.GetMinioPathAsync(docId);
+        if (string.IsNullOrWhiteSpace(minioPath))
+        {
+            _logger.LogWarning("Không tìm thấy MinioPath của văn bản {DocId}", docId);
+            throw new DocumentNotFoundException(docId);
+        }
+
+        var objectName = NormalizeObjectName(minioPath);
+        if (string.IsNullOrWhiteSpace(objectName))
+        {
+            _logger.LogWarning("MinioPath của văn bản {DocId} không hợp lệ: {MinioPath}", docId, minioPath);
+            throw new DocumentNotFoundException(docId);
+        }
+
+        _logger.LogInformation("Resolved MinIO object cho văn bản {DocId}: {MinioPath} -> {ObjectName}",
+            docId, minioPath, objectName);
+
+        return objectName;
+    }
+
+    private string NormalizeObjectName(string minioPath)
+    {
+        var path = minioPath.Trim().Replace('\\', '/');
+
+        if (Uri.TryCreate(path, UriKind.Absolute, out var uri))
+            path = uri.AbsolutePath.TrimStart('/');
+
+        path = path.TrimStart('/');
+
+        var bucketPrefix = $"{_minioBucket.Trim('/')}/";
+        if (path.StartsWith(bucketPrefix, StringComparison.OrdinalIgnoreCase))
+            path = path[bucketPrefix.Length..];
+
+        return path;
+    }
 }

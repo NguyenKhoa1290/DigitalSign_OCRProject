@@ -1,0 +1,240 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hau_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1111"
+      POSTGRES_DB: DigitalSign_OCR
+    ports:
+      - "5432:5432"
+    volumes:
+      - hau_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d DigitalSign_OCR"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: hau_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - hau_minio_data:/data
+    restart: unless-stopped
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    container_name: hau_minio_init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 2; done;
+      mc mb -p local/documents || true;
+      "
+
+  kafka:
+    image: apache/kafka:3.7.2
+    container_name: hau_kafka
+    environment:
+      CLUSTER_ID: 5L6g3nShT-eMCtK--X86sw
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:29092"
+    volumes:
+      - hau_kafka_data:/tmp/kraft-combined-logs
+    restart: unless-stopped
+
+  identity-service:
+    build:
+      context: ./IdentityService
+      dockerfile: Dockerfile
+    image: hau/identity-service:local
+    container_name: hau_identity_service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable
+      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
+      JwtSettings__Issuer: IdentityService
+      JwtSettings__Audience: HAU-MicroservicesClients
+      JwtSettings__ExpiryMinutes: 60
+      JwtSettings__RefreshTokenExpiryDays: 7
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5048:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  document-service:
+    build:
+      context: .
+      dockerfile: DocumentService/Dockerfile
+    image: hau/document-service:local
+    container_name: hau_document_service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable
+      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
+      JwtSettings__Issuer: IdentityService
+      JwtSettings__Audience: HAU-MicroservicesClients
+      MinioSettings__Endpoint: minio:9000
+      MinioSettings__AccessKey: minioadmin
+      MinioSettings__SecretKey: minioadmin
+      MinioSettings__UseSSL: "false"
+      MinioSettings__DefaultBucket: documents
+      KafkaSettings__Enabled: "true"
+      KafkaSettings__BootstrapServers: kafka:9092
+      KafkaSettings__TopicDocumentUploaded: document.uploaded
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+    ports:
+      - "5049:8080"
+    restart: unless-stopped
+
+  sign-service:
+    build:
+      context: .
+      dockerfile: SignService/Dockerfile
+    image: hau/sign-service:local
+    container_name: hau_sign_service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable
+      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
+      JwtSettings__Issuer: IdentityService
+      JwtSettings__Audience: HAU-MicroservicesClients
+      MinioSettings__Endpoint: minio:9000
+      MinioSettings__AccessKey: minioadmin
+      MinioSettings__SecretKey: minioadmin
+      MinioSettings__UseSSL: "false"
+      MinioSettings__Bucket: documents
+      CertificateSettings__CertsDirectory: /app/certs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "5050:8080"
+    volumes:
+      - hau_sign_certs:/app/certs
+    restart: unless-stopped
+
+  ocr-service:
+    build:
+      context: .
+      dockerfile: OCRService/Dockerfile
+    image: hau/ocr-service:local
+    container_name: hau_ocr_service
+    environment:
+      PORT: 5051
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_USE_SSL: "false"
+      MINIO_BUCKET: documents
+      DOCUMENT_SERVICE_URL: http://document-service:8080
+      KAFKA_ENABLED: "true"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC_DOCUMENT_UPLOADED: document.uploaded
+      KAFKA_CONSUMER_GROUP: ocr-service-group
+      OCR_LANGUAGE: vi
+      OCR_USE_GPU: "false"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+      document-service:
+        condition: service_started
+    ports:
+      - "5051:5051"
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ApiGateway/Dockerfile
+    image: hau/api-gateway:local
+    container_name: hau_api_gateway
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
+      JwtSettings__Issuer: IdentityService
+      JwtSettings__Audience: HAU-MicroservicesClients
+      ReverseProxy__Clusters__identity-cluster__Destinations__identity-1__Address: http://identity-service:8080/
+      ReverseProxy__Clusters__document-cluster__Destinations__document-1__Address: http://document-service:8080/
+      ReverseProxy__Clusters__sign-cluster__Destinations__sign-1__Address: http://sign-service:8080/
+      ReverseProxy__Clusters__ocr-cluster__Destinations__ocr-1__Address: http://ocr-service:5051/
+    depends_on:
+      identity-service:
+        condition: service_started
+      document-service:
+        condition: service_started
+      sign-service:
+        condition: service_started
+      ocr-service:
+        condition: service_started
+    ports:
+      - "5000:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Frontend/Dockerfile
+    image: hau/frontend:local
+    container_name: hau_frontend
+    depends_on:
+      api-gateway:
+        condition: service_started
+    ports:
+      - "5227:80"
+    restart: unless-stopped
+
+volumes:
+  hau_postgres_data:
+  hau_minio_data:
+  hau_kafka_data:
+  hau_sign_certs:

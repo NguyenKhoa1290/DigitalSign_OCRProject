@@ -95,7 +95,7 @@ Bắt đầu từ một project .NET 9 trống. Nhiệm vụ đầu tiên là x�
 **Backend:**
 - Thêm `MustChangePassword` vào entity `AppUser`
 - Tạo entity `PasswordResetToken` (lưu SHA-256 hash của OTP, không lưu plain text)
-- Cài MailKit 4.8.0 + MimeKit 4.8.0 vào Infrastructure project
+- Ban đầu cài MailKit 4.8.0 + MimeKit 4.8.0 vào Infrastructure project; sau đã nâng lên 4.18.0 ở Công việc số 3 để xử lý cảnh báo bảo mật.
 - Implement `EmailService.cs` — HTML email template đẹp gửi OTP qua Gmail SMTP
 - Implement `PasswordResetRepository.cs` — tạo/lấy/vô hiệu hóa tokens
 - Mở rộng `AuthService.cs` thêm 3 methods:
@@ -206,6 +206,55 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## 🗓️ Cập nhật tài liệu — 14/09/2026
+### Đồng bộ tài liệu với code thực tế
+
+**Bối cảnh:** Các tài liệu cũ còn nhiều thông tin lệch với code hiện tại:
+- Một số nơi ghi Gateway dùng Ocelot, trong khi code dùng YARP.
+- Một số nơi ghi route `/api/v1/...`, trong khi controller hiện dùng `/api/...`.
+- Workflow văn bản cũ ghi `Draft → PendingReview → Approved → Published`, trong khi code hiện dùng luồng ký nháy/ký BGH.
+- TODO cũ vẫn ghi DocumentService, SignService, OCRService chưa làm, trong khi backend các service này đã có.
+
+**Đã cập nhật:**
+- `Claude.md` — viết lại tổng quan dự án theo code hiện tại.
+- `tiendo/1_kien_truc.md` — cập nhật kiến trúc, port, route Gateway, workflow, service notes.
+- `tiendo/2_da_lam.md` — cập nhật danh sách tính năng đã làm và TODO thực tế.
+- `tiendo/4_cau_truc_code.md` — bổ sung bản đồ code cho Gateway, DocumentService, SignService, OCRService, Frontend.
+- `tiendo/5_co_so_ha_tang_db.md` — cập nhật chiến lược DB, MinIO, Kafka, JWT.
+- `IdentityService/README.md` và `OCRService/README.md` — sửa route/encoding/thông tin chạy theo code.
+
+**Điểm tích hợp được ghi chú rõ:**
+- `DocumentService` lưu file MinIO bằng tên GUID ngẫu nhiên và `MinioPath = documents/{storedFileName}`.
+- `SignService` khi đó còn tìm PDF theo `{docId}.pdf`; vấn đề này đã được xử lý ở Công việc số 1 ngày 16/09/2026.
+- Kafka event OCR hiện gửi token rỗng, nên cần bổ sung service-token/JWT nếu muốn OCR tự PATCH về DocumentService.
+
+---
+
+## 🗓️ Đóng gói Docker — 16/09/2026
+### Triển khai thử full stack bằng Docker Compose
+
+**Đã làm:**
+- Bổ sung Dockerfile cho ApiGateway, DocumentService, SignService, OCRService và Frontend.
+- Mở rộng `docker-compose.yml` ở root để chạy full stack: PostgreSQL, MinIO, Kafka, IdentityService, DocumentService, SignService, OCRService, ApiGateway, Frontend.
+- Chuyển PostgreSQL/MinIO/Kafka local về `localhost` cho cấu hình dev; trong Docker dùng hostname nội bộ `postgres`, `minio`, `kafka`.
+- Đổi MinIO sang image `quay.io/minio/*` và Kafka sang `apache/kafka:3.7.2`.
+- Thêm `TRIEN_KHAI_DOCKER.md` hướng dẫn mang source/image/data sang máy khác.
+- Bổ sung README cho ApiGateway, DocumentService, SignService, Frontend.
+
+**Đã kiểm tra:**
+- `docker compose build` build thành công toàn bộ app image.
+- `docker compose up -d` chạy được full stack.
+- Health endpoint Gateway, Identity, OCR và Frontend trả 200.
+- Login seed `admin / Admin@123` qua Gateway thành công.
+- MinIO có bucket `documents`, Kafka có topic `document.uploaded`.
+
+**Lưu ý còn lại:**
+- Khi migrate dữ liệu thật cần backup thêm volume `hau_sign_certs`.
+- OCR Kafka vẫn cần service-token/JWT hợp lệ để tự PATCH kết quả về DocumentService.
+- Frontend ký số khi đó cần đồng bộ DTO với backend SignService; vấn đề này đã được xử lý ở công việc tiếp theo ngày 16/09/2026.
+
+---
+
 ## 📊 Tổng Kết
 
 | Thời điểm | Việc làm |
@@ -218,10 +267,120 @@ Trong quá trình viết tài liệu phát hiện:
 | 17/07/2026 tối | Fix lỗi column database (PascalCase vs lowercase) |
 | 18/07/2026 | Fix login response, fix tạo user 400, fix toast z-index |
 | 04/09/2026 | Viết tài liệu dự án (tiendo/) |
+| 14/09/2026 | Đồng bộ tài liệu với code thực tế |
+| 16/09/2026 | Đóng gói Docker full stack và bổ sung hướng dẫn triển khai |
+| 16/09/2026 | Chốt quy trình làm việc: code → build → Docker → test case → ghi test case → báo cáo |
+| 16/09/2026 | Công việc số 1: sửa SignService đọc `Documents.MinioPath`, build/test/Docker/API ký nháy end-to-end pass |
+| 16/09/2026 | Công việc số 2: sửa frontend ký số gửi đúng DTO backend, build/test/Docker/API payload frontend pass |
+| 16/09/2026 | Công việc số 3: nâng `MailKit`/`MimeKit`, cài `wasm-tools`, bổ sung Python cho Docker frontend và build/test pass |
 
-**Tổng số lỗi đã fix:** 6
-**Tổng số tính năng đã làm:** 4 nhóm lớn
-**Còn lại:** Frontend OCR, DocumentService, SignService, JWT blacklist, Refresh token persist
+**Trạng thái hiện tại:** IdentityService, DocumentService, SignService, OCRService backend, API Gateway và Frontend đều đã có code chính.
+
+**Còn lại đáng chú ý:** service-token cho OCR Kafka, frontend OCR nếu cần, JWT blacklist và refresh token persist, kiểm thử UI ký số thủ công trên trình duyệt với role thật.
+
+---
+
+## 🗓️ Công việc số 1 — 16/09/2026
+### Sửa luồng SignService dùng đúng file MinIO của DocumentService
+
+**Vấn đề:**
+- DocumentService upload PDF vào bucket `documents` với tên GUID ngẫu nhiên và lưu DB dạng `MinioPath = documents/{storedFileName}`.
+- SignService trước đó tự suy đoán object `{docId}.pdf`, nên không tìm được file thật khi chạy end-to-end.
+
+**Đã sửa code:**
+- Thêm `IDocumentFileRepository` trong SignService Core.
+- Thêm `DocumentFileRecord` và mapping read-only sang bảng `Documents` bằng `ExcludeFromMigrations()`.
+- Thêm `DocumentFileRepository` để đọc `MinioPath` theo `DocId`.
+- Cập nhật `SignService` để normalize `documents/{storedFileName}` thành `{storedFileName}`, dùng cho cả ký và verify.
+- Sửa `UsersController.GetCurrentUser()` đọc thêm `ClaimTypes.NameIdentifier`.
+- Cập nhật integration test IdentityService theo route thực tế `/api/...` và response wrapper hiện tại.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass. Cảnh báo `NU1902` cho `MailKit`/`MimeKit` đã được xử lý ở Công việc số 3.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build`: pass 29/29.
+- `docker compose build identity-service sign-service`: pass.
+- `docker compose up -d identity-service sign-service`: container chạy lại, `identity-service` healthy, `sign-service` up.
+- API Docker/Gateway `TC-SIGN-001`: tạo văn bản, upload PDF, cấp certificate, ký nháy, verify chữ ký đều pass.
+
+**Kết quả test API chính:**
+- `DocId`: `68ca7361-149e-42b9-b8ec-da9b1f040a4e`
+- `MinioPath`: `documents/c7e57808-de01-461a-8e0a-578c24d88bdb.pdf`
+- `SignatureId`: `dc468d0b-5fc9-41c2-831e-51ac06e28529`
+- Verify: `isValid = true`, `totalSignatures = 1`
+
+**Bằng chứng log SignService:**
+- Resolve path: `documents/c7e57808-de01-461a-8e0a-578c24d88bdb.pdf -> c7e57808-de01-461a-8e0a-578c24d88bdb.pdf`.
+
+---
+
+## 🗓️ Công việc số 2 — 16/09/2026
+### Sửa frontend ký số gửi đúng DTO backend
+
+**Vấn đề:**
+- Frontend trước đó gọi SignService bằng payload `{ DocumentId, Comment }`.
+- Backend `SignRequestDto` yêu cầu `DocId`, `SignerId`, có thể nhận thêm `SignerName`, `Reason`.
+- `SignatureService.SignAsync()` chưa map đúng `DirectorSign` sang endpoint `legal-seal`.
+
+**Đã sửa code:**
+- Cập nhật `Frontend/Models/SignatureDto.cs` thêm `DocId`, `SignerId`, `SignatureTypeDisplay`, `SignResultDto`.
+- Cập nhật `SignRequestDto` frontend có `DocId`, `SignerId`, `SignerName`, `Reason`.
+- Cập nhật `Frontend/Services/SignatureService.cs`:
+  - `DeptSign`/mặc định → `POST /api/signatures/personal-sign`.
+  - `DirectorSign`/`LegalSeal` → `POST /api/signatures/legal-seal`.
+  - Model verify khớp `VerifyResultDto` backend.
+- Cập nhật `Frontend/Pages/Signatures/Index.razor` lấy `SignerId`/`SignerName` từ JWT qua `AuthService`.
+- Cho phép role `Admin` vào màn ký số để khớp quyền backend và tiện test/dev.
+- Cập nhật link từ trang chi tiết văn bản để `Admin` mở được màn chữ ký.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build`: pass 29/29.
+- `docker compose build frontend`: pass.
+- `docker compose up -d frontend`: pass.
+- `Invoke-WebRequest http://localhost:5227`: HTTP 200.
+- API Docker/Gateway `TC-FE-SIGN-002`: payload giống frontend mới ký nháy + ký pháp nhân + verify đều pass.
+
+**Kết quả test API chính:**
+- `DocId`: `53b45b16-6898-46a2-95af-f3c372e1744e`
+- `MinioPath`: `documents/c8706004-aa77-4dcb-97b0-ca0c5b1d26cd.pdf`
+- `PersonalSignatureId`: `2a572a2b-81ba-4a52-ba9e-008bb4b94561`
+- `LegalSignatureId`: `49286c39-f890-4163-b53a-0e2945191ec9`
+- Verify: `isValid = true`, `totalSignatures = 2`, `hasPersonalSignature = true`, `hasLegalSeal = true`.
+
+---
+
+## 🗓️ Công việc số 3 — 16/09/2026
+### Nâng MailKit/MimeKit và cài wasm-tools cho Blazor WASM
+
+**Vấn đề:**
+- `MailKit` và `MimeKit` 4.8.0 bị cảnh báo bảo mật `NU1902`.
+- Docker build frontend trước đó publish Blazor WASM không có `wasm-tools`, nên phải publish không tối ưu.
+- Khi cài `wasm-tools` trong Docker, Emscripten cần `python` trong build image.
+
+**Đã sửa code/cấu hình:**
+- Nâng `MailKit` lên `4.18.0`.
+- Nâng `MimeKit` lên `4.18.0`.
+- Sửa `EmailService` để validate `EmailSettings:Username` và `EmailSettings:Password`, tránh truyền null vào MailKit/MimeKit API.
+- Cài local workload `wasm-tools`.
+- Cập nhật `Frontend/Dockerfile`:
+  - Cài `python3` và symlink `/usr/bin/python`.
+  - Cài `dotnet workload install wasm-tools` trong build stage.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet workload list`: đã có `wasm-tools`.
+- `dotnet list IdentityService.Infrastructure.csproj package --vulnerable --include-transitive`: không còn package vulnerable.
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass 0 warning/0 error.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build`: pass 29/29.
+- `docker compose build identity-service frontend`: pass sau khi bổ sung `python3` cho frontend image.
+- `docker compose up -d identity-service frontend`: pass.
+- `GET http://localhost:5048/health`: HTTP 200.
+- `GET http://localhost:5227`: HTTP 200.
+- Login seed `admin / Admin@123` qua Gateway: pass.
+
+**Ghi chú:**
+- Lần đầu build frontend sau khi thêm `wasm-tools` bị lỗi `unable to find python in $PATH`; đã xử lý bằng cách cài `python3` trong Dockerfile.
+- Cài `wasm-tools` local bằng .NET workload installer cũng cập nhật các workload đã có sẵn trên máy như Android/iOS/MAUI manifests/packs.
+- Chưa test gửi email thật qua SMTP vì cần credential/app password hợp lệ và thao tác này có thể gửi email ra ngoài.
 
 ---
 

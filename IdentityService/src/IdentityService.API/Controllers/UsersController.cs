@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using IdentityService.Core.Common;
 using IdentityService.Core.DTOs.Users;
 using IdentityService.Core.Services;
@@ -77,7 +78,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserDto request)
     {
-        var currentUserId = User.FindFirst("sub")?.Value ?? User.FindFirst("nameid")?.Value;
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("nameid")?.Value;
         var isAdmin = User.IsInRole("Admin");
         if (!isAdmin && currentUserId != id.ToString())
             return Forbid();
@@ -132,7 +135,9 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst("sub")?.Value ?? User.FindFirst("nameid")?.Value;
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value
+                     ?? User.FindFirst("nameid")?.Value;
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
             return Unauthorized();
 

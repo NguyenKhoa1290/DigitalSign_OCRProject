@@ -1,219 +1,181 @@
-# 🏛️ Hệ thống Quản lý Công văn - Trường ĐH Kiến Trúc Hà Nội
-> Microservices Architecture | ASP.NET Core .NET 9 | PostgreSQL | MinIO | Kafka | Ocelot
+# HAU DigitalSign OCR
 
----
+> Hệ thống quản lý công văn số hóa, OCR và ký số cho Trường Đại học Kiến Trúc Hà Nội.
 
-## 📐 Kiến trúc tổng thể
+## Trạng thái theo code hiện tại
 
-```
-Client (Web/Mobile)
-        │
-        ▼
-  ┌─────────────┐
-  │ API Gateway │  ← Ocelot / YARP
-  │  :8080      │  (Routing, Auth, Rate Limit, Load Balance)
-  └──────┬──────┘
-         │
-    ┌────┴────────────────────────┐
-    │                             │
-    ▼                             ▼
-┌──────────────┐          ┌──────────────────┐
-│IdentityService│         │ DocumentService   │  ← REST (sync)
-│   :5048      │          │   :5049          │
-└──────────────┘          └──────┬───────────┘
-                                 │
-                                 ▼ publish event
-                          ┌─────────────┐
-                          │    Kafka    │  ← Message Broker (async)
-                          └──────┬──────┘
-                                 │ subscribe
-                   ┌─────────────┴──────────────┐
-                   ▼                             ▼
-            ┌────────────┐             ┌──────────────────┐
-            │OCR Service │             │Notification      │
-            │   :5050    │             │Service   :5051   │
-            └────────────┘             └──────────────────┘
+| Thành phần | Công nghệ | Port dev | Trạng thái |
+|---|---|---:|---|
+| Frontend | Blazor WebAssembly .NET 9 | 5227 | Đã có màn hình auth, dashboard, admin, documents, signatures |
+| API Gateway | ASP.NET Core + YARP | 5000 | Đã route JWT/rate limit đến các service |
+| IdentityService | ASP.NET Core .NET 9, EF Core, PostgreSQL | 5048 | Đã có auth, user, role, department, OTP reset |
+| DocumentService | ASP.NET Core .NET 9, EF Core migrations, MinIO, Kafka producer | 5049 | Đã có CRUD, upload, OCR update, workflow |
+| SignService | ASP.NET Core .NET 9, iText7, BouncyCastle, MinIO | 5050 | Đã có cấp certificate, ký PDF, verify chữ ký |
+| OCRService | Python FastAPI, PaddleOCR, pdf2image, MinIO, Kafka consumer | 5051 | Đã có OCR backend, chưa có màn hình OCR riêng |
+
+## Kiến trúc tổng thể
+
+```text
+Blazor WebAssembly
+        |
+        v
+API Gateway :5000 (YARP, JWT validation, rate limit)
+        |
+        +--> IdentityService :5048  -> PostgreSQL
+        +--> DocumentService :5049  -> PostgreSQL + MinIO + Kafka producer
+        +--> SignService     :5050  -> PostgreSQL + MinIO + local certs/
+        +--> OCRService      :5051  -> MinIO + DocumentService PATCH /api/documents/{id}/ocr
 ```
 
----
+## Route chính qua Gateway
 
-## 🗂️ Lộ trình phát triển
-
-| Giai đoạn | Service | Trạng thái |
+| Path | Service đích | Auth |
 |---|---|---|
-| Tuần 1 | **Identity Service** | ✅ HOÀN THÀNH |
-| Tuần 2 | **Document Service** | 🔄 TIẾP THEO |
-| Tuần 3 | **OCR Service** | ⏳ Chờ |
-| Tuần 4 | **API Gateway + Kafka** | ⏳ Chờ |
+| `/api/auth/**` | IdentityService | Anonymous |
+| `/api/users/**` | IdentityService | JWT |
+| `/api/roles/**` | IdentityService | JWT |
+| `/api/departments/**` | IdentityService | JWT |
+| `/api/documents/**` | DocumentService | JWT |
+| `/api/signatures/**` | SignService | JWT |
+| `/api/ocr/**` | OCRService | JWT |
 
----
+Lưu ý: code hiện dùng route `/api/...`, không dùng `/api/v1/...`.
 
-## ✅ Identity Service (HOÀN THÀNH)
+## Workflow văn bản
 
-### Thông tin kết nối
-| Thuộc tính | Giá trị |
+Workflow hiện tại nằm trong `DocumentService.Core.Entities.DocumentStatus`:
+
+```text
+Draft
+  -> PendingDeptReview
+  -> DeptSigned (trạng thái có khai báo trong code)
+  -> PendingDirectorSign
+  -> DirectorSigned
+  -> Published
+```
+
+Lưu ý: code hiện tại khai báo `DeptSigned`, nhưng hàm `DeptSignAsync` đang chuyển thẳng từ `PendingDeptReview` sang `PendingDirectorSign`. Có nhánh `Rejected` khi từ chối ở các trạng thái pending. Action log nằm trong `DocumentProcess` với các action: `Submit`, `DeptSign`, `DirectorSign`, `Reject`, `Publish`, `Assign`, `UpdateOCR`.
+
+## API chính
+
+### IdentityService
+
+```text
+POST   /api/auth/login
+POST   /api/auth/logout
+POST   /api/auth/refresh-token
+POST   /api/auth/validate-token
+POST   /api/auth/change-password
+POST   /api/auth/forgot-password
+POST   /api/auth/reset-password
+
+GET    /api/users
+GET    /api/users/{id}
+POST   /api/users
+PUT    /api/users/{id}
+DELETE /api/users/{id}
+POST   /api/users/{id}/roles/{roleId}
+DELETE /api/users/{id}/roles/{roleId}
+GET    /api/users/me
+
+GET    /api/roles
+GET    /api/roles/{id}
+GET    /api/departments
+GET    /api/departments/tree
+GET    /api/departments/{id}
+GET    /api/departments/{id}/children
+POST   /api/departments
+PUT    /api/departments/{id}
+DELETE /api/departments/{id}
+```
+
+### DocumentService
+
+```text
+GET    /api/documents
+POST   /api/documents
+GET    /api/documents/types
+GET    /api/documents/{id}
+DELETE /api/documents/{id}
+POST   /api/documents/{id}/upload
+PATCH  /api/documents/{id}/ocr
+POST   /api/documents/{id}/submit
+POST   /api/documents/{id}/dept-sign
+POST   /api/documents/{id}/director-sign
+POST   /api/documents/{id}/reject
+POST   /api/documents/{id}/publish
+POST   /api/documents/{id}/assign
+```
+
+### SignService
+
+```text
+POST   /api/signatures/personal-sign
+POST   /api/signatures/legal-seal
+GET    /api/signatures/document/{docId}
+GET    /api/signatures/document/{docId}/verify
+POST   /api/signatures/certificates/issue
+GET    /api/signatures/certificates/{userId}
+```
+
+### OCRService
+
+```text
+POST   /api/ocr/process
+POST   /api/ocr/process-upload
+GET    /api/ocr/health
+```
+
+## Dữ liệu và hạ tầng
+
+| Thành phần | Ghi chú |
 |---|---|
-| URL | `http://localhost:5048` |
-| Swagger | `http://localhost:5048` (root) |
-| Database | PostgreSQL @ `192.168.50.10:5432` |
-| Database Name | `DigitalSign_OCR` |
-| User DB | `postgres` / `1111` |
+| PostgreSQL | Docker local `localhost:5432`, database `DigitalSign_OCR` |
+| MinIO | Bucket mặc định `documents` |
+| Kafka | Topic `document.uploaded`, có thể tắt bằng cấu hình |
+| JWT | Issuer `IdentityService`, audience `HAU-MicroservicesClients` |
+| Password | BCrypt work factor 12 |
+| OTP reset | SHA-256 hash, hết hạn 15 phút, dùng một lần |
 
-### Tài khoản mặc định
-| Thuộc tính | Giá trị |
-|---|---|
-| Username | `admin` |
-| Password | `Admin@123` |
-| Role | `Admin` |
+## Ghi chú tích hợp quan trọng
 
-### Endpoints chính
-```
-POST   /api/v1/auth/login           Đăng nhập, trả JWT
-POST   /api/v1/auth/refresh-token   Làm mới token
-POST   /api/v1/auth/validate-token  Xác thực token
-POST   /api/v1/auth/logout          Đăng xuất
+- `DocumentService` upload file lên MinIO bằng tên GUID ngẫu nhiên và lưu `MinioPath = "documents/{storedFileName}"`.
+- `DocumentService` publish Kafka event `document.uploaded` với `minio_path = storedFileName`; hiện `authToken` đang gửi rỗng.
+- `OCRService` chỉ tự PATCH kết quả về `DocumentService` nếu request/Kafka event có token hợp lệ.
+- `SignService` đọc `Documents.MinioPath`, bỏ prefix bucket `documents/` khi cần, rồi tải/lưu lại đúng object PDF trên MinIO. Luồng này đã pass test Docker/API `TC-SIGN-001`.
+- Frontend ký số đã gửi đúng `SignRequestDto` backend (`DocId`, `SignerId`, `SignerName`, `Reason`) và payload này đã pass test Docker/API `TC-FE-SIGN-002`.
 
-GET    /api/v1/users                Danh sách user (cần JWT)
-POST   /api/v1/users                Tạo user mới
-GET    /api/v1/users/{id}           Chi tiết user
-PUT    /api/v1/users/{id}           Cập nhật user
-DELETE /api/v1/users/{id}           Xóa user
-GET    /api/v1/users/me             Thông tin user hiện tại
+## Cách chạy nhanh
 
-GET    /api/v1/roles                Danh sách roles
-GET    /api/v1/departments          Danh sách phòng ban
-GET    /health                      Health check
-```
+### Chạy toàn bộ bằng Docker
 
-### Roles hệ thống
-| Role | Mô tả |
-|---|---|
-| `Admin` | Quản trị viên, toàn quyền |
-| `Clerk` | Chuyên viên văn thư |
-| `Specialist` | Chuyên viên nghiệp vụ |
-| `Manager` | Trưởng/Phó phòng |
-| `BoardOfDirectors` | Ban Giám hiệu |
+File `docker-compose.yml` ở root hiện chạy full stack: PostgreSQL, MinIO, Kafka, các backend service, Gateway và Frontend.
 
-### Cấu trúc project
-```
-IdentityService/
-├── src/
-│   ├── IdentityService.Core/           # Entities, Interfaces, DTOs, Exceptions
-│   ├── IdentityService.Infrastructure/ # EF Core, Repositories, Services
-│   └── IdentityService.API/            # Controllers, Middleware, Program.cs
-└── tests/
-    └── IdentityService.Tests/          # Unit + Integration Tests
-```
-
-### Chạy service
 ```bash
-cd IdentityService
-dotnet run --project src/IdentityService.API
+docker compose up -d
 ```
 
----
+Frontend sẽ chạy ở `http://localhost:5227`, Gateway ở `http://localhost:5000`. Xem chi tiết trong `TRIEN_KHAI_DOCKER.md`.
 
-## ✅ Document Service (HOÀN THÀNH)
+### Chạy dev mixed: Docker chỉ bật hạ tầng
 
-### Thông tin kết nối
-| Thuộc tính | Giá trị |
-|---|---|
-| URL | `http://localhost:5049` |
-| Swagger | `http://localhost:5049` |
-| Database | PostgreSQL @ `192.168.50.10:5432` (cùng DB `DigitalSign_OCR`) |
-| File Storage | MinIO @ `192.168.50.10:9000` (S3 API) |
-| MinIO Console | `http://192.168.50.10:9001` |
-| MinIO Credentials | `minioadmin` / `minioadmin` |
-| MinIO Bucket | `documents` |
+Nếu muốn chạy service bằng `dotnet run`/`uvicorn` để debug code, chỉ bật hạ tầng:
 
-### Endpoints chính
-```
-GET    /api/documents                        Danh sách công văn (phân trang, lọc)
-POST   /api/documents                        Tạo công văn mới (Draft)
-GET    /api/documents/{id}                   Chi tiết công văn
-GET    /api/documents/code/{code}            Tìm theo mã công văn
-PUT    /api/documents/{id}                   Cập nhật (chỉ khi Draft)
-DELETE /api/documents/{id}                   Xóa mềm (chỉ khi Draft/Rejected)
-
-POST   /api/documents/{id}/submit            Gửi chờ duyệt (Draft → PendingReview)
-POST   /api/documents/{id}/approve           Phê duyệt (PendingReview → Approved)
-POST   /api/documents/{id}/reject            Từ chối (PendingReview → Rejected)
-POST   /api/documents/{id}/publish           Phát hành (Approved → Published)
-
-GET    /api/documents/{id}/attachments       Danh sách file đính kèm
-POST   /api/documents/{id}/attachments       Upload file (max 50MB)
-GET    /api/documents/{id}/attachments/{aid}/download      Tải file
-GET    /api/documents/{id}/attachments/{aid}/presigned-url URL tạm thời (1h)
-DELETE /api/documents/{id}/attachments/{aid}               Xóa file
-```
-
-### Workflow công văn
-```
-Draft → PendingReview → Approved → Published
-                    ↘ Rejected
-```
-
-### Chạy service
 ```bash
-cd DocumentService
-dotnet run --project src/DocumentService.API
+docker compose up -d postgres minio kafka minio-init
 ```
 
+PostgreSQL sẽ chạy ở `localhost:5432`, MinIO API ở `localhost:9000`, MinIO Console ở `http://localhost:9001`, Kafka ở `localhost:9092`.
 
----
+```bash
+dotnet run --project ApiGateway/ApiGateway.csproj
+dotnet run --project IdentityService/src/IdentityService.API/IdentityService.API.csproj
+dotnet run --project DocumentService/src/DocumentService.API/DocumentService.API.csproj
+dotnet run --project SignService/src/SignService.API/SignService.API.csproj
+dotnet run --project Frontend/HauDocumentApp.csproj
+```
 
-## 🔧 API Gateway (Ocelot)
-
-### Chức năng
-| Chức năng | Mô tả |
-|---|---|
-| **Routing** | `/api/identity/*` → `:5048`, `/api/documents/*` → `:5049` |
-| **Authentication** | Validate JWT một lần, forward thông tin user |
-| **Rate Limiting** | Giới hạn request/phút per user |
-| **Load Balancing** | Phân tải khi scale nhiều instance |
-
----
-
-## 📨 Kafka (Message Broker)
-
-### Khi nào dùng Kafka
-| Pattern | Ví dụ |
-|---|---|
-| **Async events** | Upload xong → OCR tự động xử lý |
-| **Decoupling** | DocumentService không cần biết OCR Service |
-| **Fan-out** | 1 event → nhiều service nhận cùng lúc |
-| **Reliability** | Message không mất dù service tạm restart |
-
-### Topics dự kiến
-| Topic | Producer | Consumer |
-|---|---|---|
-| `document.uploaded` | DocumentService | OCR Service, Notification Service |
-| `document.ocr.completed` | OCR Service | DocumentService, Notification Service |
-| `user.created` | IdentityService | Notification Service |
-
----
-
-## 🛠️ Tech Stack
-
-| Thành phần | Công nghệ |
-|---|---|
-| Framework | ASP.NET Core `.NET 9` |
-| ORM | Entity Framework Core + Npgsql |
-| Database | PostgreSQL `9.0.1` |
-| Auth | JWT Bearer + BCrypt |
-| File Storage | MinIO |
-| Message Broker | Apache Kafka |
-| API Gateway | Ocelot |
-| Logging | Serilog |
-| Testing | xUnit + Moq + FluentAssertions |
-| API Docs | Swagger / Swashbuckle |
-
----
-
-## 📝 Ghi chú cấu hình
-
-- **Connection String:** `Host=192.168.50.10;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable`
-- **JWT Key:** `HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!`
-- **JWT Issuer:** `IdentityService`
-- **JWT Audience:** `HAU-MicroservicesClients`
-- **Token expiry:** 60 phút | Refresh token: 7 ngày
+```bash
+cd OCRService
+uvicorn app.main:app --host 0.0.0.0 --port 5051 --reload
+```

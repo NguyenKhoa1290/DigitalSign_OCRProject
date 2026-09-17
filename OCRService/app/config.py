@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     port: int = 5051
 
     # MinIO
-    minio_endpoint: str = "192.168.50.10:9000"
+    minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
     minio_use_ssl: bool = False
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # Kafka (optional)
     kafka_enabled: bool = False
-    kafka_bootstrap_servers: str = "192.168.50.10:9092"
+    kafka_bootstrap_servers: str = "localhost:9092"
     kafka_topic_document_uploaded: str = "document.uploaded"
     kafka_consumer_group: str = "ocr-service-group"
 

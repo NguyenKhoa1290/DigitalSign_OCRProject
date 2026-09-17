@@ -20,11 +20,14 @@ public class EmailService : IEmailService
     public async Task SendPasswordResetEmailAsync(string toEmail, string toName, string otp)
     {
         var settings = _configuration.GetSection("EmailSettings");
+        var smtpHost = settings["SmtpHost"] ?? "smtp.gmail.com";
+        var smtpPort = int.Parse(settings["SmtpPort"] ?? "587");
+        var username = GetRequiredSetting(settings, "Username");
+        var password = GetRequiredSetting(settings, "Password");
+        var fromName = settings["FromName"] ?? "HAU Documents";
 
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(
-            settings["FromName"] ?? "HAU Documents",
-            settings["Username"]));
+        message.From.Add(new MailboxAddress(fromName, username));
         message.To.Add(new MailboxAddress(toName, toEmail));
         message.Subject = "[HAU Documents] Mã OTP khôi phục mật khẩu";
 
@@ -62,15 +65,22 @@ public class EmailService : IEmailService
 
         using var client = new SmtpClient();
         await client.ConnectAsync(
-            settings["SmtpHost"] ?? "smtp.gmail.com",
-            int.Parse(settings["SmtpPort"] ?? "587"),
+            smtpHost,
+            smtpPort,
             SecureSocketOptions.StartTls);
 
-        await client.AuthenticateAsync(
-            settings["Username"],
-            settings["Password"]);
+        await client.AuthenticateAsync(username, password);
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
+    }
+
+    private static string GetRequiredSetting(IConfigurationSection settings, string key)
+    {
+        var value = settings[key];
+        if (string.IsNullOrWhiteSpace(value))
+            throw new InvalidOperationException($"EmailSettings:{key} is not configured.");
+
+        return value;
     }
 }

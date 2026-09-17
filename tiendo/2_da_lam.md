@@ -1,267 +1,225 @@
-﻿# 📋 Nhật Ký Công Việc — Những Gì Đã Làm
+# Những Gì Đã Làm
 
-> Ghi lại toàn bộ các tính năng, sửa lỗi và cải tiến đã thực hiện trong dự án HAU DigitalSign OCR.
+> Cập nhật theo code hiện tại trong repository.
 
----
+## 1. IdentityService
 
-## 1. 🏗️ Xây Dựng IdentityService từ Đầu (Clean Architecture)
+### Kiến trúc
 
-### Core Layer — `IdentityService.Core`
+- Tách 3 layer: `IdentityService.Core`, `IdentityService.Infrastructure`, `IdentityService.API`.
+- Dùng EF Core 9 + Npgsql.
+- Dùng JWT Bearer HS256.
+- Dùng BCrypt work factor 12 cho mật khẩu.
+- Có global exception middleware.
 
-**Entities:**
-- `AppUser.cs` — người dùng với đầy đủ fields + navigation properties
-- `AppRole.cs` — vai trò
-- `AppUserRole.cs` — junction table user ↔ role
-- `Department.cs` — phòng ban, self-referencing tree (ParentId)
-- `PasswordResetToken.cs` — token OTP khôi phục mật khẩu (thêm sau)
+### Entity và dữ liệu
 
-**DTOs:**
-- Auth: LoginRequestDto, LoginResponseDto (có MustChangePassword), RefreshTokenRequestDto, ValidateTokenRequestDto/ResponseDto
-- Auth (bổ sung): ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto
-- Users: CreateUserDto (RoleIds), UpdateUserDto, UserDto
-- Departments: DepartmentDto (có Children recursive), CreateDepartmentDto
-- Roles: RoleDto
+- `AppUser`: user hệ thống, có `MustChangePassword`.
+- `AppRole`: vai trò.
+- `AppUserRole`: bảng nối user-role.
+- `Department`: cây phòng ban self-reference bằng `ParentId`.
+- `PasswordResetToken`: OTP reset password, lưu hash SHA-256.
 
-**Interfaces:** IUserRepository, IRoleRepository, IDepartmentRepository, ITokenService, IPasswordResetRepository (thêm sau), IEmailService (thêm sau)
+Seed data:
 
-**Service interfaces:** IAuthService, IUserService, IRoleService, IDepartmentService
+- 5 roles: `Admin`, `Clerk`, `Specialist`, `Manager`, `BoardOfDirectors`.
+- 2 departments: HAU root và Phòng Tổng hợp.
+- 1 admin user mặc định.
 
-**Common:** ApiResponse<T> (static factory Ok/Fail), PagedResult<T>
+### Auth và onboarding
 
-**Exceptions:** IdentityServiceException (base), UserNotFoundException, InvalidCredentialsException, UserAlreadyExistsException, RoleNotFoundException, DepartmentNotFoundException, AccountLockedException, TokenExpiredException
+- Login trả `AccessToken`, `RefreshToken`, user info, roles, `MustChangePassword`.
+- Admin tạo user mới thì user bị bắt đổi mật khẩu lần đầu.
+- User đổi mật khẩu có thể cập nhật email/SĐT.
+- Forgot password gửi OTP qua email.
+- Reset password xác thực OTP hash và vô hiệu hóa token đã dùng.
+- Logout hiện vẫn là stub, chưa có JWT blacklist.
+- Refresh token hiện sinh mới nhưng chưa persist DB.
 
----
+### User, role, department
 
-### Infrastructure Layer — `IdentityService.Infrastructure`
+- CRUD user.
+- Gán/gỡ role cho user.
+- CRUD department.
+- Lấy cây department bằng `/api/departments/tree`.
+- Có chống vòng lặp khi đổi `ParentId`.
 
-**AppDbContext.cs:**
-- Cấu hình EF Core với PostgreSQL (Npgsql)
-- Composite PK cho AppUserRole
-- Unique index cho Username, Email, DeptCode
-- Seed data: 5 roles, 2 departments (HAU root + Phòng Tổng hợp), 1 admin user
-- `EnsureCreatedAsync()` thay vì Migration (đơn giản cho môi trường dev)
+## 2. ApiGateway
 
-**Repositories:**
-- `UserRepository.cs` — GetByUsernameAsync include UserRoles.Role, phân trang tìm kiếm
-- `RoleRepository.cs`
-- `DepartmentRepository.cs` — GetChildrenAsync đệ quy
-- `PasswordResetRepository.cs` — tạo/lấy/vô hiệu hóa OTP tokens
+- Dùng ASP.NET Core + YARP Reverse Proxy.
+- Port dev: `5000`.
+- Validate JWT tại gateway cho các route cần auth.
+- Cho anonymous với `/api/auth/**`.
+- Có rate limit:
+  - Mặc định 120 request/phút.
+  - Login 10 request/phút.
+- Route đến:
+  - IdentityService `:5048`
+  - DocumentService `:5049`
+  - SignService `:5050`
+  - OCRService `:5051`
 
-**Services:**
-- `TokenService.cs` — JWT HS256, GenerateAccessToken (claims: sub, username, email, role, jti), GenerateRefreshToken (crypto random), ValidateTokenAsync, GetPrincipalFromExpiredToken
-- `AuthService.cs` — Login, RefreshToken, ValidateToken, Logout (stub), ChangePassword, ForgotPassword (OTP), ResetPassword (verify OTP)
-- `EmailService.cs` — Gmail SMTP via MailKit, HTML email template đẹp cho OTP
-- `UserService.cs` — CRUD + BCrypt hash password
-- `RoleService.cs`, `DepartmentService.cs`
+## 3. DocumentService
 
-**Extensions:**
-- `ServiceCollectionExtensions.cs` — đăng ký toàn bộ DI (DbContext, Repositories, Services)
+### Kiến trúc
 
----
+- Tách 3 layer: `DocumentService.Core`, `DocumentService.Infrastructure`, `DocumentService.API`.
+- Dùng EF Core migrations và tự `MigrateAsync()` khi startup.
+- Dùng JWT Bearer để validate token do IdentityService phát hành.
+- Dùng MinIO để lưu PDF.
+- Có Kafka producer cho event OCR.
 
-### API Layer — `IdentityService.API`
+### Entity và DTO
 
-**Controllers:**
-- `AuthController.cs` — 7 endpoints:
-  - POST /api/auth/login
-  - POST /api/auth/logout (Authorize)
-  - POST /api/auth/refresh-token
-  - POST /api/auth/validate-token
-  - POST /api/auth/change-password (Authorize)
-  - POST /api/auth/forgot-password (Anonymous)
-  - POST /api/auth/reset-password (Anonymous)
-- `UsersController.cs` — CRUD + assign/remove role
-- `RolesController.cs`, `DepartmentsController.cs`
+- `Document`: metadata văn bản, `DocNumber`, `Title`, `IssuedDate`, `MinioPath`, `OcrDataRaw`, `Status`, `DocTypeId`.
+- `DocumentType`: loại văn bản.
+- `DocumentProcess`: lịch sử xử lý văn bản.
+- `DocumentStatus`: `Draft`, `PendingDeptReview`, `DeptSigned`, `PendingDirectorSign`, `DirectorSigned`, `Published`, `Rejected`.
+- `DocumentAction`: `Submit`, `DeptSign`, `DirectorSign`, `Reject`, `Publish`, `Assign`, `UpdateOCR`.
 
-**Middleware:**
-- `ExceptionHandlingMiddleware.cs` — bắt exception → map sang HTTP status:
-  - UserNotFoundException → 404
-  - InvalidCredentialsException → 401
-  - UserAlreadyExistsException → 409
-  - IdentityServiceException → 400
-  - Others → 500
+### API đã có
 
----
-
-## 2. 🌳 Tính Năng Cây Phòng Ban
-
-### Backend — `DepartmentService.cs`
-
-- `GetDepartmentTreeAsync()` — trả về cấu trúc cây với `Children` đệ quy
-- `HasCircularReferenceAsync()` — kiểm tra vòng lặp trước khi cập nhật ParentId (tránh A→B→A)
-
-### Frontend — `Departments.razor`
-
-- Hiển thị cây phân cấp (parent + children) đúng cấu trúc
-- UI phòng ban hiện 2 dòng song song khi có quan hệ cha-con
-
----
-
-## 3. 🔐 Luồng Onboarding & Khôi Phục Mật Khẩu
-
-### Yêu cầu nghiệp vụ:
-- Admin tạo user với mật khẩu tạm → user đăng nhập lần đầu bị bắt đổi mật khẩu
-- User có thể thêm email/SĐT khi đổi mật khẩu lần đầu (dùng để khôi phục sau)
-- Quên mật khẩu → OTP gửi qua email Gmail → nhập OTP + mật khẩu mới
-
-### Những gì đã làm:
-
-**Database (SQL migration thủ công — không dùng EF Migration):**
-```sql
-ALTER TABLE "AppUsers" ADD COLUMN IF NOT EXISTS "MustChangePassword" BOOLEAN NOT NULL DEFAULT false;
-
-CREATE TABLE IF NOT EXISTS "PasswordResetTokens" (
-    "Id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "UserId" UUID NOT NULL,
-    "TokenHash" VARCHAR(64) NOT NULL,
-    "ExpiresAt" TIMESTAMP NOT NULL,
-    "IsUsed" BOOLEAN NOT NULL DEFAULT false,
-    "CreatedAt" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-    CONSTRAINT "PK_PasswordResetTokens" PRIMARY KEY ("Id"),
-    CONSTRAINT "FK_PasswordResetTokens_AppUsers" FOREIGN KEY ("UserId") REFERENCES "AppUsers"("Id") ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS "IX_PasswordResetTokens_UserId_IsUsed"
-    ON "PasswordResetTokens" ("UserId", "IsUsed");
+```text
+GET    /api/documents
+POST   /api/documents
+GET    /api/documents/types
+GET    /api/documents/{id}
+DELETE /api/documents/{id}
+POST   /api/documents/{id}/upload
+PATCH  /api/documents/{id}/ocr
+POST   /api/documents/{id}/submit
+POST   /api/documents/{id}/dept-sign
+POST   /api/documents/{id}/director-sign
+POST   /api/documents/{id}/reject
+POST   /api/documents/{id}/publish
+POST   /api/documents/{id}/assign
 ```
 
-> Lưu ý: Tên cột phải dùng PascalCase có dấu ngoặc kép để khớp với EF Core (PostgreSQL phân biệt hoa/thường khi quoted).
+### Workflow hiện tại
 
-**Backend bổ sung:**
-- `AppUser.MustChangePassword` field
-- `PasswordResetToken` entity
-- `IEmailService`, `IPasswordResetRepository` interfaces
-- `ChangePasswordDto`, `ForgotPasswordDto`, `ResetPasswordDto`
-- `LoginResponseDto.MustChangePassword` field
-- `EmailService.cs` — gửi OTP qua Gmail SMTP (MailKit + MimeKit)
-- `PasswordResetRepository.cs` — CreateAsync, GetValidTokenAsync, InvalidateAllAsync
-- `AuthService.cs` — 3 methods mới: ChangePasswordAsync, ForgotPasswordAsync, ResetPasswordAsync
-  - OTP: `RandomNumberGenerator.GetInt32(100000, 999999)` — crypto secure
-  - Lưu `SHA256(OTP)` vào DB, không lưu plain text
-- `UserService.CreateUserAsync` — set `MustChangePassword = true` cho mọi user mới
-- `appsettings.json` — thêm EmailSettings section (SmtpHost, SmtpPort, Username, Password, FromName)
-- NuGet: thêm MailKit 4.8.0, MimeKit 4.8.0 vào Infrastructure.csproj
+```text
+Draft
+  -> PendingDeptReview
+  -> DeptSigned (đã khai báo trong code)
+  -> PendingDirectorSign
+  -> DirectorSigned
+  -> Published
+```
 
-**Frontend bổ sung:**
-- `LoginResponse.cs` — thêm `MustChangePassword` property
-- `PasswordModels.cs` — ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest
-- `AuthService.cs` — cập nhật `LoginAsync` trả `(bool Success, bool MustChangePassword, string? Error)`, thêm ChangePasswordAsync, ForgotPasswordAsync, ResetPasswordAsync
-- `Login.razor` — thêm link "Quên mật khẩu?", redirect đến /first-login khi MustChangePassword=true
-- `FirstLogin.razor` — trang đổi mật khẩu bắt buộc, có thanh đo độ mạnh password, ô nhập email/SĐT tùy chọn
-- `ForgotPassword.razor` — nhập email, luôn trả thành công (tránh user enumeration)
-- `ResetPassword.razor` — nhập OTP 6 số (font lớn) + mật khẩu mới
+Lưu ý: implementation hiện tại của `DeptSignAsync` đang chuyển thẳng từ `PendingDeptReview` sang `PendingDirectorSign`; `DeptSigned` tồn tại trong status constants nhưng chưa được dùng như trạng thái dừng riêng.
 
----
+Reject được cho phép ở các trạng thái pending:
 
-## 4. 🐛 Sửa Lỗi
+```text
+PendingDeptReview / DeptSigned / PendingDirectorSign -> Rejected
+```
 
-### Lỗi build ban đầu (interface mismatch)
-- **Vấn đề:** `UserRepository` có thêm tham số `CancellationToken` nhưng `IUserRepository` không có
-- **Fix:** Bỏ `CancellationToken` khỏi UserRepository để khớp interface
-- **Vấn đề:** `UserService` dùng tên method sai (không khớp `IUserService`: GetAllUsersAsync, GetUserByIdAsync, CreateUserAsync...)
-- **Fix:** Đổi tên method trong UserService theo đúng interface
-- **Vấn đề:** `DepartmentService` tên method không khớp `IDepartmentService`
-- **Fix:** Đổi tên thành GetAllDepartmentsAsync, GetDepartmentTreeAsync, CreateDepartmentAsync...
+### Upload và OCR
 
-### Lỗi cột database
-- **Vấn đề:** SQL tạo cột `must_change_password` (lowercase) nhưng EF Core query `"MustChangePassword"` (PascalCase quoted)
-- **Fix:** Đổi SQL thành `ALTER TABLE "AppUsers" ADD COLUMN "MustChangePassword" ...` (có ngoặc kép PascalCase)
+- Upload file lên MinIO bucket `documents`.
+- File được lưu bằng tên GUID ngẫu nhiên, `MinioPath = "documents/{storedFileName}"`.
+- Sau upload, service publish Kafka event `document.uploaded` nếu Kafka bật.
+- OCR result cập nhật bằng `PATCH /api/documents/{id}/ocr`.
 
-### Frontend báo "phản hồi không hợp lệ" khi login
-- **Vấn đề:** `ApiService.PostAsync` deserialize `LoginResponseDto` như `ApiResponse<LoginResponse>` (wrapper) nhưng backend trả trực tiếp
-- **Fix:** Deserialize thẳng `ReadFromJsonAsync<LoginResponse>()`, bỏ wrapper class
+Điểm cần hoàn thiện:
 
-### Tạo user trả 400
-- **Vấn đề 1:** Frontend gửi `Role: "Clerk"` (string) nhưng backend nhận `RoleIds: List<Guid>` → role không được gán
-- **Fix:** `AdminService.CreateUserAsync` gọi `GET /api/roles` trước để tìm GUID theo tên, rồi gửi đúng format
-- **Vấn đề 2:** Form không validate `Username` và `Password` trước khi gửi → backend reject (empty string fail [Required])
-- **Fix:** Thêm validation trong `Users.razor.SaveUser()` — check username, password >= 6 ký tự
+- Kafka event hiện gửi `authToken` rỗng, nên OCR auto-update DocumentService cần bổ sung cơ chế service-token/JWT hợp lệ.
 
-### Toast bị che bởi modal
-- **Vấn đề:** `modal-overlay` có `z-index: 1000`, Blazored.Toast mặc định thấp hơn → toast ẩn sau modal
-- **Fix:** Thêm CSS `.blazored-toast-container { z-index: 10000 !important; }` vào app.css
+## 4. OCRService
 
----
+### Backend đã có
 
-## 5. 📦 Dependencies Đã Thêm
+- FastAPI app.
+- PaddleOCR engine tiếng Việt.
+- Chuyển PDF sang ảnh bằng `pdf2image`.
+- Tải file PDF từ MinIO.
+- Kafka consumer tùy chọn.
+- Gọi lại DocumentService để cập nhật OCR result.
 
-**Backend (NuGet):**
-- `MailKit 4.8.0` — SMTP client
-- `MimeKit 4.8.0` — Email builder
+### API đã có
 
-**Frontend (NuGet):**
-- `Blazored.LocalStorage` — JWT storage
-- `Blazored.Toast` — Notifications
+```text
+POST /api/ocr/process
+POST /api/ocr/process-upload
+GET  /api/ocr/health
+```
 
----
+### Trường bóc tách
 
+- `doc_number`
+- `issued_date`
+- `title`
+- `issuing_org`
+- `ocr_data_raw`
 
----
+Điểm cần hoàn thiện:
 
-## 7. 🔍 OCR Service (Backend — Python/FastAPI)
+- Chưa có màn hình frontend riêng để xem/kiểm tra kết quả OCR.
+- Luồng Kafka tự động cần token/service-token hợp lệ để PATCH về DocumentService.
 
-> Luu y: Day la phan duoc lam truoc khi su dung tro ly AI trong du an.
-> Frontend cho OCR chua duoc lam — chi co backend.
+## 5. SignService
 
-### Cong nghe su dung:
-- **FastAPI** — REST API framework (Python)
-- **PaddleOCR** — nhan dien ky tu tieng Viet (hieu qua cao voi van ban hanh chinh)
-- **pdf2image** — chuyen doi PDF sang anh (DPI 200) de OCR
-- **MinIO** — object storage luu file PDF
-- **Kafka** — message queue (tu dong kich hoat OCR khi co file moi)
+### Backend đã có
 
-### Files da lam:
+- Tách 3 layer: `SignService.Core`, `SignService.Infrastructure`, `SignService.API`.
+- Dùng EF Core migrations và tự `MigrateAsync()` khi startup.
+- Dùng iText7 + BouncyCastle để ký PDF.
+- Tạo Root CA nội bộ nếu chưa có.
+- Cấp certificate cho user.
+- Lưu metadata chữ ký vào PostgreSQL.
+- Dùng MinIO để tải/lưu PDF đã ký.
+- Đọc `Documents.MinioPath` từ database dùng chung để tải đúng object PDF do DocumentService upload.
 
-**app/main.py**
-- FastAPI app, CORS middleware
-- Lifespan: khoi dong Kafka consumer khi service bat dau, dung khi tat
+### API đã có
 
-**app/api/routes.py — 3 endpoints:**
-- POST /api/ocr/process — nhan { doc_id, minio_path, token }, chay OCR, tra ket qua
-- POST /api/ocr/process-upload — upload PDF truc tiep, chay OCR (dung de test)
-- GET /api/ocr/health — health check
+```text
+POST /api/signatures/personal-sign
+POST /api/signatures/legal-seal
+GET  /api/signatures/document/{docId}
+GET  /api/signatures/document/{docId}/verify
+POST /api/signatures/certificates/issue
+GET  /api/signatures/certificates/{userId}
+```
 
-**app/ocr/engine.py — OcrEngine class:**
-- Wrapper PaddleOCR voi tieng Viet (lang="vi", use_angle_cls=True)
-- extract_raw() — lay ket qua tho tu PaddleOCR
-- extract_lines() — chuyen thanh list { text, confidence, box }
+### Rule ký
 
-**app/ocr/extractor.py — Boc tach truong thong tin:**
-- extract_doc_number() — Regex nhan dang so hieu: 123/QD-HAU, 456/CV-CNTT
-- extract_issued_date() — Nhan dang ngay: DD/MM/YYYY hoac 
-gay X thang Y nam Z
-- extract_title() — Tim trich yeu sau cac tu khoa: V/v, Ve viec, Trich yeu, Kinh gui
-- extract_issuing_org() — Lay co quan tu 10 dong dau trang (confidence > 0.7)
-- extract_fields() — Goi tat ca, tra ve dict ket qua
+- `personal-sign`: role `Manager` hoặc `Admin`.
+- `legal-seal`: role `BoardOfDirectors` hoặc `Admin`.
+- `legal-seal` yêu cầu văn bản đã có `PersonalSignature`.
+- Mỗi document chỉ có một chữ ký mỗi loại.
 
-**app/services/ocr_processor.py:**
-- Ham chinh xu ly: tai PDF tu MinIO → chuyen anh → OCR → boc tach → goi DocumentService
+Điểm cần hoàn thiện:
 
-**app/services/minio_service.py:**
-- Ket noi MinIO, tai file PDF theo object name
+- Luồng UI ký số nên tiếp tục được kiểm thử thủ công trên trình duyệt với nhiều role thật (`Manager`, `BoardOfDirectors`) khi có dữ liệu người dùng tương ứng.
 
-**app/services/kafka_consumer.py:**
-- Consumer chay trong background thread (daemon)
-- Lang nghe topic document.uploaded
-- Payload: { doc_id, minio_path, token }
-- Co the bat/tat qua bien moi truong KAFKA_ENABLED
+## 6. Frontend
 
-**app/services/document_service.py:**
-- Goi HTTP den DocumentService de cap nhat ket qua OCR sau khi xu ly xong
+### Đã có
 
-### Trang thai:
-- [x] Backend hoan chinh
-- [ ] Frontend chua co (can bo sung trang xem/kiem tra ket qua OCR)
-- [ ] Chua tich hop vao luong chinh cua ung dung (can DocumentService publish Kafka event)
+- Blazor WebAssembly .NET 9.
+- Base API trỏ đến Gateway `http://localhost:5000/`.
+- JWT lưu trong localStorage.
+- `CustomAuthStateProvider` parse JWT và kiểm tra expiry.
+- `ApiService.SmartDeserialize()` unwrap được response có dạng `ApiResponse<T>`.
+- Frontend ký số đã gửi đúng DTO backend: `DocId`, `SignerId`, `SignerName`, `Reason`; map `DeptSign -> personal-sign`, `DirectorSign -> legal-seal`.
 
-## 6. 🗺️ Những Gì Chưa Làm / TODO
+### Màn hình chính
 
-- [ ] JWT blacklist khi logout (hiện là stub)
-- [ ] Refresh token lưu DB (hiện không persist)
-- [ ] DocumentService: CRUD công văn đến/đi
-- [ ] SignService: PKI ký số
-- [ ] OCRService: nhận dạng văn bản
-- [ ] Email verification khi thêm email mới
-- [ ] 2FA (Two-Factor Authentication)
-- [ ] Audit log (ai làm gì, khi nào)
+- Login.
+- First login/change password.
+- Forgot password.
+- Reset password.
+- Dashboard.
+- Admin Users.
+- Admin Departments.
+- Admin Certificates.
+- Documents list/create/detail.
+- Signatures page.
 
+## 7. Những việc còn lại
+
+- Bổ sung service-token/JWT cho OCRService khi chạy Kafka tự động.
+- Thêm màn hình frontend riêng cho OCR result nếu cần.
+- Persist refresh token và/hoặc thêm JWT blacklist khi logout.
+- Rà soát secrets trong `appsettings*.json` trước khi deploy.
+- Bổ sung test cho DocumentService, SignService và flow tích hợp.

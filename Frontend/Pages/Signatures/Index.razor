@@ -1,6 +1,6 @@
 @page "/signatures"
 @page "/signatures/{DocId:guid}"
-@attribute [Authorize(Roles = "Manager,BoardOfDirectors")]
+@attribute [Authorize(Roles = "Manager,BoardOfDirectors,Admin")]
 @inject SignatureService SignatureService
 @inject DocumentService DocumentService
 @inject AuthService AuthService
@@ -52,7 +52,7 @@
 
                     <!-- Sign Buttons -->
                     <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
-                        @if (_role == "Manager" && _document.Status == "PendingDeptReview")
+                        @if (CanPersonalSign)
                         {
                             <button class="btn btn-success" @onclick='() => ShowSignModal("DeptSign")' disabled="@_isActionLoading">
                                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -61,7 +61,7 @@
                                 Ký nháy (Manager)
                             </button>
                         }
-                        @if (_role == "BoardOfDirectors" && (_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned"))
+                        @if (CanLegalSeal)
                         {
                             <button class="btn btn-primary" @onclick='() => ShowSignModal("DirectorSign")' disabled="@_isActionLoading">
                                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -119,8 +119,8 @@
                                     </svg>
                                 </div>
                                 <div class="sig-info">
-                                    <div class="sig-name">@sig.SignerName</div>
-                                    <div class="sig-meta">@sig.SignatureType • @sig.SignedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="sig-name">@GetSignatureSignerText(sig)</div>
+                                    <div class="sig-meta">@GetSignatureTypeText(sig) • @sig.SignedAt.ToString("dd/MM/yyyy HH:mm")</div>
                                     @if (!string.IsNullOrEmpty(sig.CertificateSubject))
                                     {
                                         <div class="sig-meta">@sig.CertificateSubject</div>
@@ -214,6 +214,15 @@ else
     private string? _pinCode;
     private string _signComment = "";
 
+    private bool CanPersonalSign =>
+        _document != null &&
+        ((_role == "Manager" && _document.Status == "PendingDeptReview") || _role == "Admin");
+
+    private bool CanLegalSeal =>
+        _document != null &&
+        ((_role == "BoardOfDirectors" && (_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned")) ||
+         _role == "Admin");
+
     protected override async Task OnInitializedAsync()
     {
         _role = await AuthService.GetRoleAsync();
@@ -241,15 +250,38 @@ else
         if (!DocId.HasValue) return;
         _isActionLoading = true;
 
-        var req = new SignRequestDto { SignatureType = _signType, PinCode = _pinCode, Comment = _signComment };
-        var result = await SignatureService.SignAsync(DocId.Value, req);
+        var userIdText = await AuthService.GetUserIdAsync();
+        if (!Guid.TryParse(userIdText, out var signerId))
+        {
+            _isActionLoading = false;
+            Toast.ShowError("Không xác định được người ký từ token đăng nhập.");
+            return;
+        }
+
+        var signerName = await AuthService.GetUserNameAsync();
+        var reason = string.IsNullOrWhiteSpace(_signComment)
+            ? (_signType == "DirectorSign" ? "Ký pháp nhân" : "Ký nháy")
+            : _signComment.Trim();
+
+        var req = new SignRequestDto
+        {
+            DocId = DocId.Value,
+            SignerId = signerId,
+            SignerName = signerName,
+            Reason = reason,
+            SignatureType = _signType,
+            PinCode = _pinCode,
+            Comment = _signComment
+        };
+
+        var result = await SignatureService.SignAsync(req);
 
         _isActionLoading = false;
         _showSignModal = false;
 
         if (result != null)
         {
-            Toast.ShowSuccess("Ký số thành công!");
+            Toast.ShowSuccess(string.IsNullOrWhiteSpace(result.Message) ? "Ký số thành công!" : result.Message);
             _document = await DocumentService.GetDocumentAsync(DocId.Value);
             _signatures = await SignatureService.GetSignaturesAsync(DocId.Value);
         }
@@ -265,5 +297,26 @@ else
         _isActionLoading = true;
         _verifyResult = await SignatureService.VerifyAsync(DocId.Value);
         _isActionLoading = false;
+    }
+
+    private static string GetSignatureSignerText(SignatureDto sig)
+    {
+        if (!string.IsNullOrWhiteSpace(sig.SignerName))
+            return sig.SignerName;
+
+        return sig.SignerId == Guid.Empty ? "Người ký" : $"Người ký: {sig.SignerId}";
+    }
+
+    private static string GetSignatureTypeText(SignatureDto sig)
+    {
+        if (!string.IsNullOrWhiteSpace(sig.SignatureTypeDisplay))
+            return sig.SignatureTypeDisplay;
+
+        return sig.SignatureType switch
+        {
+            "PersonalSignature" => "Ký nháy",
+            "LegalSeal" => "Ký pháp nhân",
+            _ => sig.SignatureType
+        };
     }
 }

@@ -1,129 +1,189 @@
-# Identity Service - Hệ thống Quản lý Công văn HAU
+# Identity Service
 
-Dịch vụ xác thực và phân quyền (Identity Service) cho Hệ thống Thông tin Hỗ trợ Quản lý Công văn Đi và Đến của Trường Đại học Kiến Trúc Hà Nội.
+Dịch vụ xác thực và phân quyền cho hệ thống HAU DigitalSign OCR.
 
-## 🏗 Kiến trúc
+## Kiến trúc
 
-```
+```text
 IdentityService/
 ├── src/
-│   ├── IdentityService.API/           # ASP.NET Core Web API (controllers, middleware)
-│   ├── IdentityService.Core/          # Domain entities, interfaces, DTOs
-│   └── IdentityService.Infrastructure/# EF Core, JWT, BCrypt implementations
+│   ├── IdentityService.API/             Controllers, middleware, Program.cs
+│   ├── IdentityService.Core/            Entities, DTOs, interfaces, exceptions
+│   └── IdentityService.Infrastructure/  EF Core, repositories, services
 ├── tests/
-│   └── IdentityService.Tests/         # Unit & Integration tests
-├── Dockerfile                         # Multi-stage Docker build
-├── docker-compose.yml                 # PostgreSQL + API stack
-└── IdentityService.sln
+│   └── IdentityService.Tests/
+├── Dockerfile
+├── docker-compose.yml
+└── IdentityService.slnx
 ```
 
-## 🚀 Chạy nhanh
+## Chạy local
 
-### Với Docker (khuyến nghị)
+```bash
+cd IdentityService
+dotnet restore
+dotnet run --project src/IdentityService.API
+```
+
+Port dev theo `launchSettings.json`:
+
+```text
+http://localhost:5048
+```
+
+Swagger UI chạy ở root khi môi trường là Development/Docker:
+
+```text
+http://localhost:5048
+```
+
+## Chạy bằng Docker
+
+Khuyến nghị chạy từ root repository bằng compose full stack:
+
+```bash
+docker compose up -d identity-service
+```
+
+Hoặc chạy toàn bộ hệ thống:
+
+```bash
+docker compose up -d
+```
+
+File `IdentityService/docker-compose.yml` là cấu hình độc lập/legacy chỉ cho IdentityService + PostgreSQL riêng, không đại diện cho cấu hình tích hợp qua Gateway hiện tại.
+
+Nếu vẫn muốn chạy cấu hình độc lập này:
 
 ```bash
 cd IdentityService
 docker-compose up --build
 ```
 
-API sẽ khởi động tại: http://localhost:5001  
-Swagger UI: http://localhost:5001 (trang chủ)
+Lưu ý: kiểm tra lại environment variables trước khi chạy, vì cấu hình local trong repo có thể khác cấu hình qua Gateway.
 
-### Chạy cục bộ (local)
+## API endpoints
 
-```bash
-# Cần PostgreSQL đang chạy tại localhost:5432
-cd IdentityService
-dotnet restore
-dotnet run --project src/IdentityService.API
-```
+Route hiện tại là `/api/...`, không dùng `/api/v1/...`.
 
-## 📋 API Endpoints
-
-### 🔐 Authentication (`/api/v1/auth`)
+### Authentication - `/api/auth`
 
 | Method | Endpoint | Mô tả | Auth |
-|--------|----------|-------|------|
-| POST | `/login` | Đăng nhập, nhận JWT Token | Public |
-| POST | `/refresh-token` | Làm mới Access Token | Public |
-| POST | `/validate-token` | Kiểm tra Token (dùng bởi Gateway) | Public |
-| POST | `/logout` | Đăng xuất | Bearer Token |
+|---|---|---|---|
+| POST | `/login` | Đăng nhập, nhận JWT và refresh token | Public |
+| POST | `/refresh-token` | Làm mới token | Public |
+| POST | `/validate-token` | Kiểm tra token | Public |
+| POST | `/logout` | Đăng xuất, hiện là stub | Bearer |
+| POST | `/change-password` | Đổi mật khẩu, dùng cho first login | Bearer |
+| POST | `/forgot-password` | Gửi OTP reset password qua email | Public |
+| POST | `/reset-password` | Đặt lại mật khẩu bằng OTP | Public |
 
-### 👥 Users (`/api/v1/users`)
+## Email reset password
 
-| Method | Endpoint | Mô tả | Role |
-|--------|----------|-------|------|
-| GET | `/` | Danh sách users (có phân trang) | Admin |
-| GET | `/{id}` | Lấy user theo ID | Authenticated |
-| GET | `/me` | Thông tin user hiện tại | Authenticated |
-| POST | `/` | Tạo tài khoản mới | Admin |
-| PUT | `/{id}` | Cập nhật thông tin | Admin hoặc chính user |
-| DELETE | `/{id}` | Xóa tài khoản | Admin |
-| POST | `/{id}/roles/{roleId}` | Gán vai trò | Admin |
-| DELETE | `/{id}/roles/{roleId}` | Thu hồi vai trò | Admin |
+IdentityService gửi OTP reset password bằng MailKit/MimeKit `4.18.0`.
 
-### 🏢 Departments (`/api/v1/departments`)
-
-| Method | Endpoint | Mô tả | Role |
-|--------|----------|-------|------|
-| GET | `/` | Danh sách tất cả đơn vị | Authenticated |
-| GET | `/{id}` | Lấy đơn vị theo ID | Authenticated |
-| GET | `/{id}/children` | Đơn vị con | Authenticated |
-| POST | `/` | Tạo đơn vị mới | Admin |
-| PUT | `/{id}` | Cập nhật đơn vị | Admin |
-| DELETE | `/{id}` | Xóa đơn vị | Admin |
-
-### 🎭 Roles (`/api/v1/roles`)
-
-| Method | Endpoint | Mô tả | Role |
-|--------|----------|-------|------|
-| GET | `/` | Danh sách vai trò | Authenticated |
-| GET | `/{id}` | Lấy vai trò theo ID | Authenticated |
-
-## 🔑 Tài khoản mặc định
-
-| Username | Password | Role |
-|----------|----------|------|
-| `admin` | `Admin@123456` | Admin |
-
-## 🎭 Danh sách Vai trò (RBAC)
-
-| Role | Tiếng Việt |
-|------|-----------|
-| `Admin` | Quản trị viên |
-| `Clerk` | Văn thư |
-| `Specialist` | Chuyên viên |
-| `Manager` | Lãnh đạo Phòng |
-| `BoardOfDirectors` | Ban Giám hiệu |
-
-## 🧪 Chạy Tests
-
-```bash
-cd IdentityService
-dotnet test --verbosity normal
-```
-
-## ⚙️ Cấu hình JWT
-
-Trong `appsettings.json`:
+Cấu hình nằm trong section `EmailSettings`:
 
 ```json
 {
-  "JwtSettings": {
-    "Key": "your-secret-key-min-32-chars",
-    "Issuer": "IdentityService",
-    "Audience": "HAU-MicroservicesClients",
-    "ExpiryMinutes": 60
+  "EmailSettings": {
+    "SmtpHost": "smtp.gmail.com",
+    "SmtpPort": "587",
+    "Username": "<smtp-user>",
+    "Password": "<smtp-app-password>",
+    "FromName": "HAU Documents"
   }
 }
 ```
 
-## 🐳 Environment Variables (Docker)
+`Username` và `Password` là bắt buộc khi gửi mail. Không commit credential thật vào repo; khi triển khai nên đưa qua environment variables hoặc secret manager.
 
-| Biến | Mô tả |
-|------|-------|
-| `ConnectionStrings__DefaultConnection` | Connection string PostgreSQL |
-| `JwtSettings__Key` | Khóa bí mật JWT |
-| `JwtSettings__Issuer` | Issuer của JWT |
-| `JwtSettings__Audience` | Audience của JWT |
-| `JwtSettings__ExpiryMinutes` | Thời gian hết hạn token (phút) |
+### Users - `/api/users`
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| GET | `/` | Danh sách user, phân trang/tìm kiếm |
+| GET | `/{id}` | Lấy user theo ID |
+| GET | `/me` | Thông tin user hiện tại |
+| POST | `/` | Tạo user |
+| PUT | `/{id}` | Cập nhật user |
+| DELETE | `/{id}` | Xóa user |
+| POST | `/{id}/roles/{roleId}` | Gán role |
+| DELETE | `/{id}/roles/{roleId}` | Gỡ role |
+
+### Departments - `/api/departments`
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| GET | `/` | Danh sách phòng ban dạng flat list |
+| GET | `/tree` | Cây phòng ban |
+| GET | `/{id}` | Lấy phòng ban theo ID |
+| GET | `/{id}/children` | Lấy phòng ban con |
+| POST | `/` | Tạo phòng ban |
+| PUT | `/{id}` | Cập nhật phòng ban |
+| DELETE | `/{id}` | Xóa phòng ban |
+
+### Roles - `/api/roles`
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| GET | `/` | Danh sách role |
+| GET | `/{id}` | Lấy role theo ID |
+
+## Roles
+
+| Role | Ý nghĩa |
+|---|---|
+| `Admin` | Quản trị viên |
+| `Clerk` | Văn thư |
+| `Specialist` | Chuyên viên |
+| `Manager` | Lãnh đạo phòng |
+| `BoardOfDirectors` | Ban Giám hiệu |
+
+## Tài khoản seed
+
+| Username | Password seed | Role |
+|---|---|---|
+| `admin` | `Admin@123` | Admin |
+
+## Database
+
+IdentityService hiện dùng:
+
+```csharp
+await context.Database.EnsureCreatedAsync();
+```
+
+Điều này nghĩa là:
+
+- Lần đầu chạy sẽ tạo schema và seed data.
+- Khi entity thay đổi sau khi DB đã tồn tại, schema không tự cập nhật.
+- Nếu thêm cột/bảng mới, cần SQL thủ công hoặc chuyển sang EF migrations.
+
+Các bảng chính:
+
+- `AppUsers`
+- `AppRoles`
+- `AppUserRoles`
+- `Departments`
+- `PasswordResetTokens`
+
+## JWT
+
+Các service khác validate JWT theo cấu hình:
+
+```json
+{
+  "JwtSettings": {
+    "Issuer": "IdentityService",
+    "Audience": "HAU-MicroservicesClients"
+  }
+}
+```
+
+## Test
+
+```bash
+cd IdentityService
+dotnet test
+```

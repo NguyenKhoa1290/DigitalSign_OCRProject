@@ -11,39 +11,57 @@ public class SignatureService
     public async Task<List<SignatureDto>?> GetSignaturesAsync(Guid documentId)
         => await _api.GetAsync<List<SignatureDto>>($"api/signatures/document/{documentId}");
 
-    // POST api/signatures/personal-sign → ký cá nhân (Trưởng phòng / BGH)
-    public async Task<SignatureDto?> PersonalSignAsync(Guid documentId, string? comment = null)
-        => await _api.PostAsync<SignatureDto>("api/signatures/personal-sign", new { DocumentId = documentId, Comment = comment });
+    // POST api/signatures/personal-sign → ký nháy (Manager/Admin)
+    public async Task<SignResultDto?> PersonalSignAsync(SignRequestDto request)
+        => await _api.PostAsync<SignResultDto>("api/signatures/personal-sign", request);
 
-    // POST api/signatures/legal-seal → đóng dấu pháp nhân (sau khi có đủ chữ ký)
-    public async Task<SignatureDto?> LegalSealAsync(Guid documentId, string? comment = null)
-        => await _api.PostAsync<SignatureDto>("api/signatures/legal-seal", new { DocumentId = documentId, Comment = comment });
+    // POST api/signatures/legal-seal → ký pháp nhân (sau khi đã có chữ ký nháy)
+    public async Task<SignResultDto?> LegalSealAsync(SignRequestDto request)
+        => await _api.PostAsync<SignResultDto>("api/signatures/legal-seal", request);
 
     // GET api/signatures/document/{docId}/verify → xác minh chữ ký
     public async Task<SignatureVerifyResult?> VerifyAsync(Guid documentId)
         => await _api.GetAsync<SignatureVerifyResult>($"api/signatures/document/{documentId}/verify");
 
-    // Backward-compat: gọi personal-sign hay legal-seal theo SignatureType
-    public async Task<SignatureDto?> SignAsync(Guid documentId, SignRequestDto request)
+    // Gọi personal-sign hay legal-seal theo loại thao tác trên UI.
+    public async Task<SignResultDto?> SignAsync(SignRequestDto request)
     {
-        if (request.SignatureType?.Equals("LegalSeal", StringComparison.OrdinalIgnoreCase) == true)
-            return await LegalSealAsync(documentId, request.Comment);
-        return await PersonalSignAsync(documentId, request.Comment);
+        if (request.SignatureType?.Equals("LegalSeal", StringComparison.OrdinalIgnoreCase) == true ||
+            request.SignatureType?.Equals("DirectorSign", StringComparison.OrdinalIgnoreCase) == true)
+            return await LegalSealAsync(request);
+
+        return await PersonalSignAsync(request);
     }
 }
 
 public class SignatureVerifyResult
 {
-    public bool AllValid { get; set; }
+    public Guid DocId { get; set; }
+    public bool IsValid { get; set; }
+    public bool AllValid => IsValid;
     public int TotalSignatures { get; set; }
-    public int ValidSignatures { get; set; }
-    public List<SignatureVerifyDetail> Details { get; set; } = new();
+    public int ValidSignatures => Signatures.Count(s => s.IsValid);
+    public bool HasPersonalSignature { get; set; }
+    public bool HasLegalSeal { get; set; }
+    public List<SignatureVerifyDetail> Signatures { get; set; } = new();
+    public List<SignatureVerifyDetail> Details
+    {
+        get => Signatures;
+        set => Signatures = value ?? new();
+    }
 }
 
 public class SignatureVerifyDetail
 {
     public Guid SignatureId { get; set; }
     public string SignerName { get; set; } = string.Empty;
-    public bool IsValid { get; set; }
+    public string SignatureType { get; set; } = string.Empty;
+    public DateTime SignedAt { get; set; }
+    public bool IsIntact { get; set; }
+    public bool IsValid
+    {
+        get => IsIntact;
+        set => IsIntact = value;
+    }
     public string? FailReason { get; set; }
 }

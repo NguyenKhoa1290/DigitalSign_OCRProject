@@ -5,14 +5,14 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
 # Copy solution and project files first (for layer caching)
-COPY IdentityService.sln ./
+COPY IdentityService.slnx ./
 COPY src/IdentityService.API/IdentityService.API.csproj ./src/IdentityService.API/
 COPY src/IdentityService.Core/IdentityService.Core.csproj ./src/IdentityService.Core/
 COPY src/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj ./src/IdentityService.Infrastructure/
 COPY tests/IdentityService.Tests/IdentityService.Tests.csproj ./tests/IdentityService.Tests/
 
 # Restore NuGet packages
-RUN dotnet restore
+RUN dotnet restore src/IdentityService.API/IdentityService.API.csproj
 
 # Copy all source code
 COPY src/ ./src/

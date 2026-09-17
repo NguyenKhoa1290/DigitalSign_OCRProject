@@ -6,27 +6,38 @@
     <members>
         <member name="T:IdentityService.API.Controllers.AuthController">
             <summary>
-            Authentication endpoints: Login, Logout, Refresh Token, Validate Token
+            Authentication endpoints: Login, Logout, Refresh Token, Validate Token,
+            Change Password, Forgot Password, Reset Password.
             </summary>
         </member>
         <member name="M:IdentityService.API.Controllers.AuthController.Login(IdentityService.Core.DTOs.Auth.LoginRequestDto)">
-            <summary>
-            Đăng nhập hệ thống. Trả về JWT Access Token và Refresh Token.
-            </summary>
+            <summary>Đăng nhập hệ thống. Trả về JWT + MustChangePassword flag.</summary>
         </member>
         <member name="M:IdentityService.API.Controllers.AuthController.RefreshToken(IdentityService.Core.DTOs.Auth.RefreshTokenRequestDto)">
-            <summary>
-            Làm mới Access Token bằng Refresh Token.
-            </summary>
+            <summary>Làm mới Access Token bằng Refresh Token.</summary>
         </member>
         <member name="M:IdentityService.API.Controllers.AuthController.ValidateToken(IdentityService.Core.DTOs.Auth.ValidateTokenRequestDto)">
-            <summary>
-            Kiểm tra tính hợp lệ của Token (được dùng bởi API Gateway).
-            </summary>
+            <summary>Kiểm tra tính hợp lệ của Token (dùng bởi API Gateway).</summary>
         </member>
         <member name="M:IdentityService.API.Controllers.AuthController.Logout">
+            <summary>Đăng xuất - vô hiệu hóa phiên làm việc hiện tại.</summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.ChangePassword(IdentityService.Core.DTOs.Auth.ChangePasswordDto)">
             <summary>
-            Đăng xuất - vô hiệu hóa phiên làm việc hiện tại.
+            Đổi mật khẩu (dùng cho lần đầu đăng nhập bắt buộc lẫn đổi thông thường).
+            Kèm cập nhật email/SĐT tùy chọn (để dùng khôi phục mật khẩu sau này).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.ForgotPassword(IdentityService.Core.DTOs.Auth.ForgotPasswordDto)">
+            <summary>
+            Gửi OTP 6 chữ số về email để khôi phục mật khẩu.
+            Luôn trả 200 OK dù email có tồn tại hay không (tránh user enumeration).
+            </summary>
+        </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.ResetPassword(IdentityService.Core.DTOs.Auth.ResetPasswordDto)">
+            <summary>
+            Xác thực OTP và đặt lại mật khẩu mới.
+            OTP hết hạn sau 15 phút hoặc sau khi đã dùng.
             </summary>
         </member>
         <member name="T:IdentityService.API.Controllers.DepartmentsController">

@@ -1,0 +1,306 @@
+@page "/documents/{Id:guid}/ocr"
+@attribute [Authorize]
+@using System.Text.Json.Nodes
+@inject DocumentService DocumentService
+@inject NavigationManager NavManager
+@inject IToastService Toast
+
+<PageTitle>Kết quả OCR - HAU</PageTitle>
+
+@if (_isLoading)
+{
+    <LoadingSpinner Message="Đang tải kết quả OCR..." />
+}
+else if (_document == null)
+{
+    <div class="empty-state">
+        <p class="empty-state-title">Không tìm thấy công văn</p>
+        <a href="/documents" class="btn btn-primary" style="margin-top:12px">Quay lại danh sách</a>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Kết quả OCR</h1>
+            <p class="page-subtitle">@_document.Title</p>
+        </div>
+        <div class="page-actions">
+            <a href="/documents/@Id" class="btn btn-outline">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Chi tiết công văn
+            </a>
+            <button class="btn btn-outline" @onclick="Reload">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Tải lại
+            </button>
+        </div>
+    </div>
+
+    @if (!_document.HasOcrData)
+    {
+        <div class="empty-state table-wrapper">
+            <div class="empty-state-icon">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+                </svg>
+            </div>
+            <p class="empty-state-title">Chưa có dữ liệu OCR</p>
+            <p class="empty-state-desc">Hãy upload PDF và chờ Kafka/OCRService xử lý, hoặc chạy OCR thủ công từ trang chi tiết công văn.</p>
+        </div>
+    }
+    else
+    {
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:20px;">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Trường OCR đã bóc tách</span></div>
+                    <div class="card-body">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Số hiệu</div>
+                                <div class="detail-value">@FirstNotBlank(_document.DocNumber, GetExtracted("doc_number", "docNumber"))</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Ngày ban hành</div>
+                                <div class="detail-value">@FirstNotBlank(_document.IssuedDate?.ToString("dd/MM/yyyy"), GetExtracted("issued_date", "issuedDate"))</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Cơ quan ban hành</div>
+                                <div class="detail-value">@FirstNotBlank(GetExtracted("issuing_org", "issuingOrg"), "—")</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Số trang / dòng nhận diện</div>
+                                <div class="detail-value">@_pageCount trang • @_lines.Count dòng</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:14px;">
+                            <div class="detail-label">Tiêu đề/trích yếu OCR</div>
+                            <div style="margin-top:6px;padding:14px 16px;border:1px solid var(--color-border-light);background:var(--color-bg);border-radius:var(--radius-md);line-height:1.6;">
+                                @FirstNotBlank(GetExtracted("title"), _document.Title)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Dòng text nhận diện</span>
+                        <span style="font-size:12px;color:var(--color-text-muted);">@_lines.Count dòng</span>
+                    </div>
+                    <div class="card-body">
+                        @if (_lines.Count == 0)
+                        {
+                            <p style="color:var(--color-text-secondary);">Không tìm thấy danh sách dòng trong JSON OCR.</p>
+                        }
+                        else
+                        {
+                            <div style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;">
+                                @foreach (var line in _lines)
+                                {
+                                    <div style="display:grid;grid-template-columns:70px minmax(0,1fr) 90px;gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--color-border-light);border-radius:var(--radius-sm);background:var(--color-bg);">
+                                        <span style="font-size:12px;color:var(--color-text-muted);">Trang @line.Page</span>
+                                        <span style="white-space:pre-wrap;">@line.Text</span>
+                                        <span style="font-size:12px;color:var(--color-text-muted);text-align:right;">@FormatConfidence(line.Confidence)</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Raw OCR JSON</span></div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(_parseError))
+                        {
+                            <div class="badge badge-red" style="margin-bottom:10px;">JSON không parse được: @_parseError</div>
+                        }
+                        <pre style="font-size:12.5px;white-space:pre-wrap;font-family:Consolas, monospace;color:var(--color-text-secondary);max-height:360px;overflow-y:auto;background:var(--color-bg);border:1px solid var(--color-border-light);border-radius:var(--radius-md);padding:14px;">@_prettyRaw</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:20px;">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Thông tin công văn</span></div>
+                    <div class="card-body">
+                        <div style="display:flex;flex-direction:column;gap:12px;">
+                            <div>
+                                <div class="detail-label">Trạng thái</div>
+                                <div style="margin-top:4px;"><StatusBadge Status="@_document.Status" /></div>
+                            </div>
+                            <div>
+                                <div class="detail-label">Loại văn bản</div>
+                                <div class="detail-value">@(_document.DocumentTypeName ?? "—")</div>
+                            </div>
+                            <div>
+                                <div class="detail-label">MinIO path</div>
+                                <div class="detail-value" style="word-break:break-all;">@(_document.MinioPath ?? "—")</div>
+                            </div>
+                            <div>
+                                <div class="detail-label">Cập nhật lần cuối</div>
+                                <div class="detail-value">@_document.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Lịch sử OCR</span></div>
+                    <div class="card-body">
+                        @{
+                            var ocrProcesses = _document.Processes
+                                .Where(p => p.Action == "UpdateOCR" || p.Action == "OCR")
+                                .OrderByDescending(p => p.Timestamp)
+                                .ToList();
+                        }
+
+                        @if (ocrProcesses.Count == 0)
+                        {
+                            <p style="color:var(--color-text-secondary);">Chưa có log UpdateOCR.</p>
+                        }
+                        else
+                        {
+                            <div class="timeline">
+                                @foreach (var proc in ocrProcesses)
+                                {
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-time">@proc.Timestamp.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="timeline-title">@proc.Action</div>
+                                        @if (!string.IsNullOrWhiteSpace(proc.Comment))
+                                        {
+                                            <div class="timeline-desc">@proc.Comment</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private DocumentDto? _document;
+    private bool _isLoading = true;
+    private string _prettyRaw = string.Empty;
+    private string? _parseError;
+    private JsonObject? _ocrRoot;
+    private int _pageCount;
+    private readonly List<OcrLineView> _lines = new();
+
+    protected override async Task OnInitializedAsync() => await LoadDocument();
+
+    private async Task Reload()
+    {
+        await LoadDocument();
+        Toast.ShowSuccess("Đã tải lại kết quả OCR.");
+    }
+
+    private async Task LoadDocument()
+    {
+        _isLoading = true;
+        _document = await DocumentService.GetDocumentAsync(Id);
+        ParseOcrData();
+        _isLoading = false;
+    }
+
+    private void ParseOcrData()
+    {
+        _ocrRoot = null;
+        _parseError = null;
+        _pageCount = 0;
+        _lines.Clear();
+        _prettyRaw = _document?.OcrDataRaw ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_document?.OcrDataRaw))
+            return;
+
+        try
+        {
+            var node = JsonNode.Parse(_document.OcrDataRaw);
+            if (node is not JsonObject root)
+                return;
+
+            _ocrRoot = root;
+            _prettyRaw = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+
+            if (root["pages"] is JsonArray pages)
+            {
+                _pageCount = pages.Count;
+                foreach (var pageNode in pages.OfType<JsonObject>())
+                {
+                    var pageNumber = ReadInt(pageNode, "page") ?? 0;
+                    if (pageNode["lines"] is not JsonArray pageLines) continue;
+
+                    foreach (var lineNode in pageLines.OfType<JsonObject>())
+                    {
+                        var text = ReadString(lineNode, "text");
+                        if (string.IsNullOrWhiteSpace(text)) continue;
+
+                        _lines.Add(new OcrLineView(
+                            Page: pageNumber,
+                            Text: text,
+                            Confidence: ReadDouble(lineNode, "confidence")));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _parseError = ex.Message;
+        }
+    }
+
+    private string? GetExtracted(params string[] keys)
+    {
+        if (_ocrRoot?["extracted"] is not JsonObject extracted)
+            return null;
+
+        foreach (var key in keys)
+        {
+            var value = ReadString(extracted, key);
+            if (!string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+
+        return null;
+    }
+
+    private static string FirstNotBlank(params string?[] values)
+        => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? "—";
+
+    private static string FormatConfidence(double? confidence)
+        => confidence.HasValue ? $"{confidence.Value:P0}" : "—";
+
+    private static string? ReadString(JsonObject obj, string key)
+    {
+        var node = obj[key];
+        return node?.GetValue<object>()?.ToString();
+    }
+
+    private static int? ReadInt(JsonObject obj, string key)
+    {
+        try { return obj[key]?.GetValue<int>(); }
+        catch { return null; }
+    }
+
+    private static double? ReadDouble(JsonObject obj, string key)
+    {
+        try { return obj[key]?.GetValue<double>(); }
+        catch { return null; }
+    }
+
+    private sealed record OcrLineView(int Page, string Text, double? Confidence);
+}

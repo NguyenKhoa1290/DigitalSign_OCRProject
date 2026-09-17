@@ -277,7 +277,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 **Trạng thái hiện tại:** IdentityService, DocumentService, SignService, OCRService backend, API Gateway và Frontend đều đã có code chính.
 
-**Còn lại đáng chú ý:** frontend OCR nếu cần, JWT blacklist và refresh token persist, kiểm thử UI ký số thủ công trên trình duyệt với role thật.
+**Còn lại đáng chú ý:** JWT blacklist và refresh token persist, kiểm thử UI ký số thủ công trên trình duyệt với role thật.
 
 ---
 
@@ -418,7 +418,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 **Ghi chú:**
 - Lần đầu `docker compose build` bị kéo dài ở bước OCR `pip install`; đã dừng build tổng và build lại riêng `docker compose build ocr-service`, sau đó pass.
-- Docker frontend publish vẫn còn warning `Users._formDepartmentId` chưa được gán; warning không chặn build/deploy.
+- Docker frontend publish lúc đó còn warning `Users._formDepartmentId` chưa được gán; warning không chặn build/deploy và đã được xử lý ở Công việc số 6.
 - Vì Docker data mới, volume dữ liệu là môi trường mới rỗng; nếu cần dữ liệu thật phải restore backup PostgreSQL/MinIO/certs.
 
 ---
@@ -442,7 +442,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Cập nhật `.env.example`, README OCR và tài liệu triển khai.
 
 **Đã kiểm tra theo quy trình:**
-- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass; còn warning cũ `Frontend/Pages/Admin/Users.razor(198,19)`.
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass; lúc đó còn warning cũ `Frontend/Pages/Admin/Users.razor(198,19)`, đã được xử lý ở Công việc số 6.
 - `python -m compileall OCRService\app`: pass.
 - `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build`: pass 29/29.
 - `docker compose build document-service ocr-service`: pass.
@@ -464,6 +464,52 @@ Trong quá trình viết tài liệu phát hiện:
 **Ghi chú:**
 - Token dev trong repo chỉ dùng local/demo. Khi triển khai thật cần đổi `ServiceAuth__OcrServiceToken` và `SERVICE_TOKEN` sang giá trị bí mật mới, đồng bộ giữa hai service.
 - Chưa chạy full OCR bằng PaddleOCR qua Kafka upload thật trong hạng mục này; test tập trung vào cơ chế auth và đường PATCH nội bộ từ OCRService sang DocumentService.
+
+---
+
+## 🗓️ Công việc số 6 — 17/09/2026
+### Thêm màn hình frontend xem kết quả OCR
+
+**Vấn đề:**
+- Backend DocumentService trả `DocNumber`, `DocTypeName`, `OcrDataRaw`, `Processes`, nhưng frontend model cũ đang đọc một số tên khác như `DocumentNumber`, `DocumentTypeName`, `OcrText`, `ProcessHistory`.
+- Trang chi tiết công văn có khối “Nội dung OCR” nhưng chưa đọc đúng field OCR thực tế.
+- Nút “Chạy OCR” trước đó chỉ trả success giả, chưa gọi OCRService.
+- Build frontend còn warning cũ `_formDepartmentId` không được gán.
+
+**Đã sửa code:**
+- Cập nhật `Frontend/Models/DocumentDto.cs`:
+  - Thêm field backend thật `DocNumber`, `DocTypeName`, `MinioPath`, `OcrDataRaw`, `Processes`.
+  - Thêm alias tương thích `DocumentNumber`, `DocumentTypeName`, `FileUrl`, `OcrText`, `ProcessHistory`.
+  - Thêm `MinioObjectName` để bỏ prefix bucket `documents/` trước khi gọi OCRService.
+- Cập nhật `Frontend/Models/DocumentTypeDto.cs` để map `TypeName` từ backend và vẫn giữ alias `Name` cho UI cũ.
+- Cập nhật `Frontend/Services/DocumentService.cs`:
+  - `RunOcrAsync` gọi thật `POST api/ocr/process` qua Gateway.
+  - Payload gồm `doc_id`, `minio_path`, `token=""`; OCRService sẽ fallback sang `SERVICE_TOKEN`.
+- Thêm trang `Frontend/Pages/Documents/OcrResult.razor` tại route `/documents/{id}/ocr`.
+- Cập nhật `Frontend/Pages/Documents/Detail.razor`:
+  - Thêm nút “Kết quả OCR”.
+  - Hiển thị tóm tắt OCR từ `OcrDataRaw`.
+- Sửa warning frontend bằng cách bỏ field `_formDepartmentId` không được gán trong `Users.razor`.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass 0 warning/0 error.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build`: pass 29/29.
+- `docker compose build frontend`: pass.
+- `docker compose up -d frontend`: pass.
+- `GET http://localhost:5227`: HTTP 200.
+- `docker compose ps frontend api-gateway document-service ocr-service`: các container liên quan đều `Up`.
+- Test API/frontend route `TC-FE-OCR-006`: pass.
+
+**Kết quả test chính:**
+- `DocId`: `1273624e-2816-4bef-adf7-74fc636f2241`.
+- PATCH OCR test bằng service-token: success.
+- Gateway `GET /api/documents/{docId}` trả `docNumber = OCR-FE-006-20260917222721`.
+- `ocrDataRaw` có dữ liệu JSON.
+- Frontend route `GET http://localhost:5227/documents/{docId}/ocr`: HTTP 200.
+
+**Ghi chú:**
+- Test này kiểm tra route frontend và dữ liệu OCR mẫu đã có trong DocumentService.
+- Chưa chạy full OCR PaddleOCR trên file PDF thật trong hạng mục này vì phần đó tốn thời gian/model và thuộc kiểm thử chất lượng OCR riêng.
 
 ---
 

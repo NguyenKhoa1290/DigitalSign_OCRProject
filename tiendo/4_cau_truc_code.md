@@ -357,6 +357,7 @@ File chính:
 - `Services/AuthService.cs`: login/logout/change/forgot/reset password.
 - `Services/AdminService.cs`: user, department, role, certificate.
 - `Services/DocumentService.cs`: document workflow.
+  - `RunOcrAsync` gọi `api/ocr/process` qua Gateway, lấy object name từ `DocumentDto.MinioPath`.
 - `Services/SignatureService.cs`: signature API, gửi `SignRequestDto` đúng backend và map thao tác UI sang endpoint ký.
 
 Pages:
@@ -372,6 +373,7 @@ Pages:
 - `Pages/Documents/Index.razor`
 - `Pages/Documents/Create.razor`
 - `Pages/Documents/Detail.razor`
+- `Pages/Documents/OcrResult.razor`
 - `Pages/Signatures/Index.razor`
 
 ## 8. Điểm cần chú ý khi sửa code
@@ -381,6 +383,7 @@ Pages:
 - Identity dùng `EnsureCreatedAsync()`, Document/Sign dùng EF migrations.
 - Frontend Docker build đã cài `wasm-tools`; nếu publish frontend trên máy host thì máy host cũng nên cài workload này.
 - `ApiService.SmartDeserialize()` đã xử lý cả response trực tiếp và response bọc `ApiResponse<T>`.
+- Frontend `DocumentDto` có alias để tương thích backend hiện tại: `DocNumber`/`DocumentNumber`, `DocTypeName`/`DocumentTypeName`, `OcrDataRaw`/`OcrText`, `Processes`/`ProcessHistory`.
 - Luồng OCR tự động dùng JWT nếu Kafka/request có token; nếu token rỗng thì dùng `SERVICE_TOKEN` để PATCH về DocumentService.
 - Luồng ký số backend đã thống nhất MinIO object path bằng cách SignService đọc `Documents.MinioPath`.
 - Frontend ký số hiện lấy `SignerId`/`SignerName` từ JWT và gửi `DocId`, `SignerId`, `SignerName`, `Reason` đúng `SignRequestDto` backend.

@@ -185,6 +185,8 @@ Frontend là Blazor WebAssembly:
 - Lưu JWT trong localStorage.
 - `CustomAuthStateProvider` parse JWT claims.
 - `ApiService.SmartDeserialize()` tự unwrap `ApiResponse<T>` nếu backend trả wrapper.
+- Màn chi tiết công văn có link xem kết quả OCR tại `/documents/{id}/ocr`.
+- Màn OCR đọc `OcrDataRaw`, hiển thị trường bóc tách, dòng text, raw JSON và lịch sử `UpdateOCR`.
 - Màn ký số lấy `SignerId`/`SignerName` từ JWT và gửi đúng `SignRequestDto` backend.
 - Có màn hình login, first login, forgot/reset password, dashboard, admin users/departments/certificates, documents, signatures.
 

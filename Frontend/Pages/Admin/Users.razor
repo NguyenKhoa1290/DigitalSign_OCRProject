@@ -195,7 +195,6 @@ else
     private bool _isSaving;
     private UserDto? _editingUser;
     private string _formFullName = "", _formUsername = "", _formEmail = "", _formPassword = "", _formRole = "", _formPhone = "";
-    private Guid? _formDepartmentId;
     private bool _formIsActive = true;
 
     private bool _showDeleteConfirm;
@@ -267,8 +266,7 @@ else
                     Username     = _formUsername,
                     Email        = _formEmail,
                     Password     = _formPassword,
-                    Role         = _formRole,
-                    DepartmentId = _formDepartmentId
+                    Role         = _formRole
                 };
                 var result = await AdminService.CreateUserAsync(dto);
                 if (result != null) { Toast.ShowSuccess("Tạo người dùng thành công! Người dùng sẽ được yêu cầu đổi mật khẩu lần đầu đăng nhập."); _showFormModal = false; await LoadUsers(); }

@@ -45,9 +45,21 @@ public class DocumentService
     public async Task<bool> AssignDocumentAsync(Guid id, Guid assignedToId, string? comment = null)
     { try { await _api.PostAsync<object>($"api/documents/{id}/assign", new { assignedToId, comment }); return true; } catch { return false; } }
 
-    // RunOcr: không có endpoint riêng trong DocumentService
-    // OCR tự động chạy qua Kafka sau khi upload
-    public Task<bool> RunOcrAsync(Guid id) => Task.FromResult(true);
+    public async Task<bool> RunOcrAsync(Guid id)
+    {
+        var document = await GetDocumentAsync(id);
+        if (document is null || string.IsNullOrWhiteSpace(document.MinioObjectName))
+            return false;
+
+        var result = await _api.PostAsync<object>("api/ocr/process", new
+        {
+            doc_id = id.ToString(),
+            minio_path = document.MinioObjectName,
+            token = string.Empty
+        });
+
+        return result is not null;
+    }
 
     // GET api/documents/types  (route trong DocumentsController)
     public async Task<List<DocumentTypeDto>?> GetDocumentTypesAsync()

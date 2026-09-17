@@ -63,6 +63,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEluZGV4LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[F:/DigitalSign_OCRProject/Frontend/Pages/Documents/OcrResult.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXE9jclJlc3VsdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [F:/DigitalSign_OCRProject/Frontend/Pages/FirstLogin.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRmlyc3RMb2dpbi5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 

@@ -298,7 +298,7 @@ docker run --rm --network digitalsign_ocrproject_default --entrypoint /bin/sh qu
 - Đã tạo hướng dẫn phục hồi: `HUONG_DAN_KHOI_PHUC_DOCKER_WSL2.md`.
 - Đã bổ sung link hướng dẫn này vào `TRIEN_KHAI_DOCKER.md`.
 - Vì Docker data mới, volume hiện tại là dữ liệu mới rỗng. Nếu cần dữ liệu thật, restore backup PostgreSQL/MinIO/`hau_sign_certs`.
-- Docker frontend publish có warning `Users._formDepartmentId` chưa được gán; warning không chặn deploy.
+- Docker frontend publish lúc đó có warning `Users._formDepartmentId` chưa được gán; warning không chặn deploy và đã được xử lý ở `TC-FE-OCR-006`.
 
 ## TC-OCR-AUTH-005 — OCRService dùng service-token để cập nhật DocumentService
 
@@ -375,7 +375,7 @@ Header: X-Service-Token: hau-dev-ocr-service-token
 
 | Lệnh | Kết quả |
 |---|---|
-| `dotnet build .\HAU_DigitalSign_OCR.slnx` | Pass; còn warning cũ `Users._formDepartmentId` |
+| `dotnet build .\HAU_DigitalSign_OCR.slnx` | Pass; còn warning cũ `Users._formDepartmentId`, đã xử lý ở `TC-FE-OCR-006` |
 | `python -m compileall OCRService\app` | Pass |
 | `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build` | Pass 29/29 |
 | `docker compose build document-service ocr-service` | Pass |
@@ -386,3 +386,98 @@ Header: X-Service-Token: hau-dev-ocr-service-token
 
 - Test này xác nhận cơ chế auth service-to-service và đường gọi từ OCR container sang DocumentService.
 - Chưa chạy full OCR bằng PaddleOCR qua Kafka upload thật trong test này; phần đó có thể test riêng khi cần kiểm tra chất lượng bóc tách OCR.
+
+## TC-FE-OCR-006 — Frontend hiển thị kết quả OCR từ `OcrDataRaw`
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 17/09/2026 |
+| Phạm vi | Frontend Blazor + DocumentService API + Docker frontend |
+| Mục tiêu | Xác nhận frontend có route riêng xem kết quả OCR và model frontend đọc đúng field OCR thực tế backend trả về |
+| Kết quả | Pass |
+
+### Điều kiện trước test
+
+- Docker stack đang chạy.
+- `frontend` đã được build/recreate từ code mới.
+- DocumentService có endpoint `PATCH /api/documents/{id}/ocr` hoạt động với `X-Service-Token`.
+- Có seed user `admin / Admin@123`.
+
+### Các thay đổi chính đã test
+
+- Thêm route frontend `/documents/{id}/ocr`.
+- `DocumentDto` frontend đọc đúng `DocNumber`, `DocTypeName`, `MinioPath`, `OcrDataRaw`, `Processes`.
+- Giữ alias tương thích cho code UI cũ: `DocumentNumber`, `DocumentTypeName`, `OcrText`, `ProcessHistory`.
+- `DocumentService.RunOcrAsync` frontend gọi thật `POST api/ocr/process`.
+- Trang chi tiết công văn có nút “Kết quả OCR”.
+- Xử lý warning `_formDepartmentId` trong `Users.razor`.
+
+### Các bước đã chạy
+
+1. Build code:
+
+```powershell
+dotnet build .\HAU_DigitalSign_OCR.slnx
+```
+
+2. Chạy test tự động:
+
+```powershell
+dotnet test .\HAU_DigitalSign_OCR.slnx --no-build
+```
+
+3. Build/redeploy frontend Docker:
+
+```powershell
+docker compose build frontend
+docker compose up -d frontend
+```
+
+4. Kiểm tra frontend:
+
+```powershell
+Invoke-WebRequest http://localhost:5227 -UseBasicParsing
+docker compose ps frontend api-gateway document-service ocr-service
+```
+
+5. Login admin qua Gateway.
+6. Tạo document test qua Gateway.
+7. PATCH OCR test bằng service-token với JSON OCR mẫu gồm:
+   - `pages[0].lines`
+   - `extracted.doc_number`
+   - `extracted.issued_date`
+   - `extracted.title`
+   - `extracted.issuing_org`
+8. Verify document qua Gateway.
+9. Gọi frontend route:
+
+```text
+GET http://localhost:5227/documents/{docId}/ocr
+```
+
+### Dữ liệu/kết quả chính
+
+| Trường | Giá trị |
+|---|---|
+| `DocId` | `1273624e-2816-4bef-adf7-74fc636f2241` |
+| PATCH OCR test | `success = true` |
+| `VerifiedDocNumber` | `OCR-FE-006-20260917222721` |
+| `HasOcrDataRaw` | `true` |
+| `ProcessCount` | `2` |
+| Frontend route `/documents/{docId}/ocr` | HTTP 200 |
+
+### Build/test liên quan
+
+| Lệnh | Kết quả |
+|---|---|
+| `dotnet build .\HAU_DigitalSign_OCR.slnx` | Pass 0 warning/0 error |
+| `dotnet test .\HAU_DigitalSign_OCR.slnx --no-build` | Pass 29/29 |
+| `docker compose build frontend` | Pass |
+| `docker compose up -d frontend` | Pass |
+| `GET http://localhost:5227` | HTTP 200 |
+| `docker compose ps frontend api-gateway document-service ocr-service` | Các container liên quan `Up` |
+
+### Ghi chú
+
+- Test này xác nhận màn hình frontend có thể nhận và hiển thị dữ liệu OCR đã được lưu trong DocumentService.
+- Chưa chạy full PaddleOCR trên file PDF thật trong test này; phần đó nên tách thành test chất lượng OCR riêng.

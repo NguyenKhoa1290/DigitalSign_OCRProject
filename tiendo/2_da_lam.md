@@ -153,9 +153,10 @@ GET  /api/ocr/health
 - `issuing_org`
 - `ocr_data_raw`
 
-Điểm cần hoàn thiện:
+Tình trạng frontend:
 
-- Chưa có màn hình frontend riêng để xem/kiểm tra kết quả OCR.
+- Đã có màn hình riêng `/documents/{id}/ocr` để xem/kiểm tra kết quả OCR.
+- Màn hình đọc `OcrDataRaw`, hiển thị trường bóc tách, dòng text nhận diện, raw JSON và lịch sử `UpdateOCR`.
 
 ## 5. SignService
 
@@ -214,11 +215,11 @@ GET  /api/signatures/certificates/{userId}
 - Admin Departments.
 - Admin Certificates.
 - Documents list/create/detail.
+- Documents OCR result.
 - Signatures page.
 
 ## 7. Những việc còn lại
 
-- Thêm màn hình frontend riêng cho OCR result nếu cần.
 - Persist refresh token và/hoặc thêm JWT blacklist khi logout.
 - Rà soát secrets trong `appsettings*.json` trước khi deploy.
 - Bổ sung test cho DocumentService, SignService và flow tích hợp.

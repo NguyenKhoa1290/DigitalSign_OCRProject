@@ -11,7 +11,7 @@
 | IdentityService | ASP.NET Core .NET 9, EF Core, PostgreSQL | 5048 | Đã có auth, user, role, department, OTP reset |
 | DocumentService | ASP.NET Core .NET 9, EF Core migrations, MinIO, Kafka producer | 5049 | Đã có CRUD, upload, OCR update, workflow |
 | SignService | ASP.NET Core .NET 9, iText7, BouncyCastle, MinIO | 5050 | Đã có cấp certificate, ký PDF, verify chữ ký |
-| OCRService | Python FastAPI, PaddleOCR, pdf2image, MinIO, Kafka consumer | 5051 | Đã có OCR backend, chưa có màn hình OCR riêng |
+| OCRService | Python FastAPI, PaddleOCR, pdf2image, MinIO, Kafka consumer | 5051 | Đã có OCR backend và màn hình xem kết quả OCR trên frontend |
 
 ## Kiến trúc tổng thể
 
@@ -143,6 +143,7 @@ GET    /api/ocr/health
 - `DocumentService` publish Kafka event `document.uploaded` với `minio_path = storedFileName`; hiện `authToken` đang gửi rỗng.
 - `OCRService` dùng JWT nếu request/Kafka event có token; nếu token rỗng thì fallback sang `SERVICE_TOKEN` và PATCH về `DocumentService` bằng header `X-Service-Token`.
 - `SERVICE_TOKEN` của OCRService phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
+- Frontend có route `/documents/{id}/ocr` để xem `OcrDataRaw`, trường bóc tách, dòng text nhận diện và lịch sử `UpdateOCR`.
 - `SignService` đọc `Documents.MinioPath`, bỏ prefix bucket `documents/` khi cần, rồi tải/lưu lại đúng object PDF trên MinIO. Luồng này đã pass test Docker/API `TC-SIGN-001`.
 - Frontend ký số đã gửi đúng `SignRequestDto` backend (`DocId`, `SignerId`, `SignerName`, `Reason`) và payload này đã pass test Docker/API `TC-FE-SIGN-002`.
 

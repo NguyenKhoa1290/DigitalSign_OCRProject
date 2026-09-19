@@ -7,6 +7,7 @@ using IdentityService.Core.Entities;
 using IdentityService.Core.Exceptions;
 using IdentityService.Core.Interfaces;
 using IdentityService.Core.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace IdentityService.Infrastructure.Services;
 
@@ -18,18 +19,29 @@ public class AuthService : IAuthService
     private readonly IUserRepository         _userRepository;
     private readonly ITokenService           _tokenService;
     private readonly IPasswordResetRepository _resetRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IRevokedAccessTokenRepository _revokedAccessTokenRepository;
     private readonly IEmailService           _emailService;
+    private readonly int _refreshTokenExpiryDays;
 
     public AuthService(
         IUserRepository          userRepository,
         ITokenService            tokenService,
         IPasswordResetRepository resetRepository,
-        IEmailService            emailService)
+        IRefreshTokenRepository refreshTokenRepository,
+        IRevokedAccessTokenRepository revokedAccessTokenRepository,
+        IEmailService emailService,
+        IConfiguration configuration)
     {
-        _userRepository  = userRepository;
-        _tokenService    = tokenService;
+        _userRepository = userRepository;
+        _tokenService = tokenService;
         _resetRepository = resetRepository;
-        _emailService    = emailService;
+        _refreshTokenRepository = refreshTokenRepository;
+        _revokedAccessTokenRepository = revokedAccessTokenRepository;
+        _emailService = emailService;
+        _refreshTokenExpiryDays = int.TryParse(configuration["JwtSettings:RefreshTokenExpiryDays"], out var refreshTokenExpiryDays)
+            ? refreshTokenExpiryDays
+            : 7;
     }
 
     // ── Login ─────────────────────────────────────────────────────────────────
@@ -48,6 +60,15 @@ public class AuthService : IAuthService
         var roles        = user.UserRoles.Select(ur => ur.Role.RoleName).ToList();
         var accessToken  = _tokenService.GenerateAccessToken(user, roles);
         var refreshToken = _tokenService.GenerateRefreshToken();
+        var accessTokenJti = GetRequiredJti(accessToken);
+
+        await _refreshTokenRepository.CreateAsync(new RefreshToken
+        {
+            UserId = user.Id,
+            TokenHash = HashToken(refreshToken),
+            AccessTokenJti = accessTokenJti,
+            ExpiresAt = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays)
+        });
 
         return new LoginResponseDto
         {
@@ -65,12 +86,13 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request)
     {
-        var tokenService = (TokenService)_tokenService;
-        var principal = tokenService.GetPrincipalFromExpiredToken(request.AccessToken)
+        var principal = _tokenService.GetPrincipalFromExpiredToken(request.AccessToken)
             ?? throw new TokenExpiredException("Access token không hợp lệ hoặc không thể phân tích.");
 
         var username = principal.Claims.FirstOrDefault(c => c.Type == "username")?.Value
             ?? throw new TokenExpiredException("Không tìm thấy username trong token.");
+        var accessTokenJti = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value
+            ?? throw new TokenExpiredException("Không tìm thấy jti trong token.");
 
         var user = await _userRepository.GetByUsernameAsync(username)
             ?? throw new UserNotFoundException($"Không tìm thấy người dùng '{username}'.");
@@ -78,9 +100,26 @@ public class AuthService : IAuthService
         if (!user.IsActive)
             throw new AccountLockedException($"Tài khoản '{user.Username}' đã bị khoá.");
 
+        var refreshTokenHash = HashToken(request.RefreshToken);
+        var storedRefreshToken = await _refreshTokenRepository.GetActiveByHashAsync(user.Id, refreshTokenHash)
+            ?? throw new TokenExpiredException("Refresh token không hợp lệ hoặc đã bị thu hồi.");
+
+        if (!string.Equals(storedRefreshToken.AccessTokenJti, accessTokenJti, StringComparison.Ordinal))
+            throw new TokenExpiredException("Refresh token không khớp với access token.");
+
         var roles           = user.UserRoles.Select(ur => ur.Role.RoleName).ToList();
         var newAccessToken  = _tokenService.GenerateAccessToken(user, roles);
         var newRefreshToken = _tokenService.GenerateRefreshToken();
+        var newRefreshTokenHash = HashToken(newRefreshToken);
+
+        await _refreshTokenRepository.RevokeAsync(storedRefreshToken, newRefreshTokenHash);
+        await _refreshTokenRepository.CreateAsync(new RefreshToken
+        {
+            UserId = user.Id,
+            TokenHash = newRefreshTokenHash,
+            AccessTokenJti = GetRequiredJti(newAccessToken),
+            ExpiresAt = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays)
+        });
 
         return new LoginResponseDto
         {
@@ -107,8 +146,12 @@ public class AuthService : IAuthService
             var handler  = new JwtSecurityTokenHandler();
             var jwt      = handler.ReadJwtToken(request.Token);
             var userId   = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+            var jti      = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
             var username = jwt.Claims.FirstOrDefault(c => c.Type == "username")?.Value;
             var roles    = jwt.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+
+            if (!string.IsNullOrWhiteSpace(jti) && await _revokedAccessTokenRepository.IsRevokedAsync(jti))
+                return new ValidateTokenResponseDto { IsValid = false, Roles = new List<string>() };
 
             return new ValidateTokenResponseDto
             {
@@ -127,10 +170,32 @@ public class AuthService : IAuthService
 
     // ── Logout ────────────────────────────────────────────────────────────────
 
-    public Task LogoutAsync(string userId)
+    public async Task LogoutAsync(string accessToken)
     {
-        // TODO: Thêm JTI vào blacklist (Redis / DB)
-        return Task.CompletedTask;
+        var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken)
+            ?? throw new TokenExpiredException("Access token không hợp lệ hoặc không thể phân tích.");
+
+        var userIdValue = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value
+            ?? principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        var jti = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+        var expiresUnix = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+
+        if (!Guid.TryParse(userIdValue, out var userId) || string.IsNullOrWhiteSpace(jti))
+            throw new TokenExpiredException("Access token không đủ thông tin để đăng xuất.");
+
+        await _refreshTokenRepository.RevokeAllForUserAsync(userId);
+
+        var expiresAt = TryReadUnixTime(expiresUnix) ?? DateTime.UtcNow.AddMinutes(5);
+        if (expiresAt > DateTime.UtcNow)
+        {
+            await _revokedAccessTokenRepository.AddAsync(new RevokedAccessToken
+            {
+                UserId = userId,
+                Jti = jti,
+                ExpiresAt = expiresAt,
+                RevokedAt = DateTime.UtcNow
+            });
+        }
     }
 
     // ── Change Password ───────────────────────────────────────────────────────
@@ -234,4 +299,26 @@ public class AuthService : IAuthService
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(otp));
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
+
+    private static string HashToken(string token)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    private static string GetRequiredJti(string accessToken)
+    {
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+        return jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value
+            ?? throw new TokenExpiredException("Không tìm thấy jti trong access token.");
+    }
+
+    private static DateTime? TryReadUnixTime(string? value)
+    {
+        if (!long.TryParse(value, out var seconds))
+            return null;
+
+        return DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime;
+    }
+
 }

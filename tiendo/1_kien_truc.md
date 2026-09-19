@@ -47,8 +47,8 @@ F:\DigitalSign_OCRProject\
 | Service | Port | Vai trò |
 |---|---:|---|
 | Frontend | 5227 | UI Blazor, gọi API qua Gateway |
-| ApiGateway | 5000 | Reverse proxy, JWT validation, rate limiting |
-| IdentityService | 5048 | Đăng nhập, JWT, user, role, phòng ban, OTP reset |
+| ApiGateway | 5000 | Reverse proxy, JWT validation, blacklist validation, rate limiting |
+| IdentityService | 5048 | Đăng nhập, JWT, refresh token persist/rotate, logout blacklist, user, role, phòng ban, OTP reset |
 | DocumentService | 5049 | Metadata văn bản, upload PDF, workflow, nhận kết quả OCR |
 | SignService | 5050 | Cấp certificate, ký PDF, kiểm tra chữ ký |
 | OCRService | 5051 | OCR PDF từ MinIO hoặc upload test |
@@ -78,10 +78,15 @@ Kiến trúc Clean Architecture:
 Chức năng chính:
 
 - Login, logout, refresh token, validate token.
+- Refresh token lưu DB dạng SHA-256 hash, được rotate sau mỗi lần refresh.
+- Logout revoke refresh token active và blacklist access token theo `jti`.
+- Validate token kiểm tra thêm blacklist trong `RevokedAccessTokens`.
 - Đổi mật khẩu, bắt đổi mật khẩu lần đầu bằng `MustChangePassword`.
 - Quên mật khẩu qua OTP email, OTP lưu SHA-256 hash.
 - CRUD user, gán/gỡ role.
 - CRUD department và cây phòng ban, có chống vòng lặp parent-child.
+
+ApiGateway validate JWT cục bộ bằng signing key trước, sau đó gọi IdentityService `/api/auth/validate-token` để chặn token đã logout theo blacklist.
 
 Roles seed:
 

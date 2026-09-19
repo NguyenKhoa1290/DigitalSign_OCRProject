@@ -274,10 +274,13 @@ Trong quá trình viết tài liệu phát hiện:
 | 16/09/2026 | Công việc số 2: sửa frontend ký số gửi đúng DTO backend, build/test/Docker/API payload frontend pass |
 | 16/09/2026 | Công việc số 3: nâng `MailKit`/`MimeKit`, cài `wasm-tools`, bổ sung Python cho Docker frontend và build/test pass |
 | 17/09/2026 | Công việc số 4: khôi phục Docker Desktop WSL2 sau khi mất image, build lại full stack, deploy và ghi hướng dẫn phục hồi |
+| 19/09/2026 | Công việc số 7: persist refresh token, rotate token, blacklist logout; build/test/Docker smoke test pass |
+| 19/09/2026 | Công việc số 8: mở rộng ApiGateway kiểm tra blacklist qua IdentityService; build/test/Docker smoke test pass |
+| 19/09/2026 | Công việc số 9: sửa Gateway fallback khi IdentityService validate-token tạm lỗi; build/test/Docker smoke test pass |
 
 **Trạng thái hiện tại:** IdentityService, DocumentService, SignService, OCRService backend, API Gateway và Frontend đều đã có code chính.
 
-**Còn lại đáng chú ý:** JWT blacklist và refresh token persist, kiểm thử UI ký số thủ công trên trình duyệt với role thật.
+**Còn lại đáng chú ý:** kiểm thử UI ký số thủ công trên trình duyệt với role thật; tiếp tục bổ sung test tích hợp sâu cho DocumentService/SignService/OCRService khi cần.
 
 ---
 
@@ -510,6 +513,151 @@ Trong quá trình viết tài liệu phát hiện:
 **Ghi chú:**
 - Test này kiểm tra route frontend và dữ liệu OCR mẫu đã có trong DocumentService.
 - Chưa chạy full OCR PaddleOCR trên file PDF thật trong hạng mục này vì phần đó tốn thời gian/model và thuộc kiểm thử chất lượng OCR riêng.
+
+---
+
+## 🗓️ Công việc số 7 — 19/09/2026
+### Persist refresh token và blacklist JWT khi logout
+
+**Vấn đề:**
+- Trước đó login trả refresh token nhưng refresh token chưa được lưu DB.
+- `POST /api/auth/logout` mới trả thành công ở mức API, chưa revoke refresh token và chưa blacklist access token.
+- Khi refresh token không được persist/rotate, không kiểm soát được reuse refresh token cũ sau khi refresh/logout.
+
+**Đã sửa code:**
+- Thêm entity `RefreshToken`:
+  - Lưu `TokenHash` bằng SHA-256, không lưu plain text refresh token.
+  - Gắn với `UserId`, `AccessTokenJti`, `ExpiresAt`, `RevokedAt`, `ReplacedByTokenHash`.
+- Thêm entity `RevokedAccessToken`:
+  - Lưu `Jti`, `UserId`, `ExpiresAt`, `RevokedAt` cho access token đã logout.
+- Thêm repository:
+  - `RefreshTokenRepository`
+  - `RevokedAccessTokenRepository`
+- Cập nhật `AuthService`:
+  - Login lưu hash refresh token vào DB.
+  - Refresh token kiểm tra DB, revoke token cũ và tạo token mới.
+  - Reuse refresh token cũ sau khi rotate trả 401.
+  - Logout revoke toàn bộ refresh token active của user.
+  - Logout blacklist access token hiện tại nếu token còn hạn.
+  - Validate-token trả invalid nếu token đã bị blacklist.
+- Cập nhật `TokenService` thêm `GetPrincipalFromExpiredToken()` để refresh/logout đọc claim từ token đã hết hạn.
+- Cập nhật `AuthController.Logout()` để lấy bearer token hiện tại và chuyển xuống service.
+- Cập nhật `Program.cs`:
+  - JWT bearer `OnTokenValidated` kiểm tra bảng `RevokedAccessTokens`.
+  - Startup gọi `AuthStoreInitializer.EnsureAuthTablesAsync()` sau `EnsureCreatedAsync()`.
+- Thêm `AuthStoreInitializer` để tạo bổ sung bảng `RefreshTokens` và `RevokedAccessTokens` trên PostgreSQL đã tồn tại vì IdentityService đang dùng `EnsureCreatedAsync()`.
+- Bổ sung integration test cho:
+  - Refresh token được persist và rotate.
+  - Reuse refresh token cũ bị từ chối.
+  - Logout làm protected endpoint IdentityService trả 401 với token cũ.
+  - Logout làm `/api/auth/validate-token` trả `isValid=false`.
+  - Refresh token sau logout bị từ chối.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass 0 warning/0 error.
+- `dotnet test .\IdentityService\tests\IdentityService.Tests\IdentityService.Tests.csproj`: pass 29/29.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx`: pass 31/31.
+- Ban đầu Docker daemon chưa chạy; đã start Docker Desktop và xác nhận Docker server `29.5.3`.
+- `docker compose build identity-service`: pass.
+- `docker compose up -d identity-service api-gateway`: pass, `identity-service` healthy.
+- Smoke test qua Gateway: login, refresh-token, reuse refresh cũ 401, logout, validate-token invalid, `/api/users` với token logout 401, refresh sau logout 401.
+- Kiểm tra PostgreSQL: đã có bảng `RefreshTokens` và `RevokedAccessTokens`.
+
+**Kết quả:**
+- Phần code, automated test local, Docker build/redeploy và smoke test Gateway đã hoàn tất.
+- Sau smoke test, DB có 2 dòng `RefreshTokens` và 1 dòng `RevokedAccessTokens` từ dữ liệu test.
+
+**Ghi chú tích hợp:**
+- Blacklist hiện có hiệu lực trong IdentityService và endpoint `/api/auth/validate-token`.
+- Ở Công việc số 8, ApiGateway đã được mở rộng để gọi IdentityService `/api/auth/validate-token`, nên token đã logout bị chặn trước khi proxy sang Document/Sign/OCR.
+
+---
+
+## 🗓️ Công việc số 8 — 19/09/2026
+### ApiGateway kiểm tra blacklist token qua IdentityService
+
+**Vấn đề:**
+- Công việc số 7 đã blacklist access token trong IdentityService.
+- Tuy nhiên các route Document/Sign/OCR đi qua Gateway vẫn chỉ validate JWT local nếu Gateway không hỏi IdentityService, nên cần bổ sung bước kiểm tra blacklist tại Gateway.
+
+**Đã sửa code/cấu hình:**
+- Cập nhật `ApiGateway/Program.cs`:
+  - Thêm `HttpClient` named client `identity-token-validation`.
+  - Trong JWT `OnTokenValidated`, Gateway lấy bearer token hiện tại và gọi IdentityService `/api/auth/validate-token`.
+  - Nếu IdentityService trả `isValid=false`, Gateway `Fail()` token và trả 401.
+  - Ban đầu cấu hình fail closed khi IdentityService không sẵn sàng; việc này đã được sửa ở Công việc số 9 bằng cấu hình fail open có kiểm soát.
+- Cập nhật `ApiGateway/appsettings.json`:
+  - Thêm `AuthValidation:ValidateTokenUrl`.
+  - Thêm `AuthValidation:TimeoutSeconds`.
+- Cập nhật `docker-compose.yml`:
+  - Thêm `AuthValidation__ValidateTokenUrl=http://identity-service:8080/api/auth/validate-token`.
+  - Thêm `AuthValidation__TimeoutSeconds=3`.
+- Cập nhật `ApiGateway/README.md` và tài liệu `tiendo`.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass 0 warning/0 error.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx`: pass 31/31.
+- `docker compose config --quiet`: pass sau khi sửa indent YAML.
+- `docker compose build api-gateway`: pass.
+- `docker compose up -d api-gateway`: pass.
+- Gateway health `/health`: HTTP 200.
+- Smoke test `TC-GW-AUTH-008`: pass.
+
+**Kết quả test chính:**
+- Login `admin / Admin@123`: OK.
+- `GET /api/documents` trước logout với token hợp lệ: HTTP 200.
+- Logout: `Đăng xuất thành công`.
+- `POST /api/auth/validate-token` sau logout: `isValid=false`.
+- `GET /api/documents` sau logout với cùng token: HTTP 401 từ Gateway.
+
+**Ghi chú:**
+- Gateway hiện phụ thuộc IdentityService cho bước blacklist validation trên các request có JWT.
+- Sau Công việc số 9, nếu IdentityService không phản hồi trong `AuthValidation:TimeoutSeconds` và `AuthValidation:FailOpenOnValidationError=true`, Gateway fallback sang JWT local để tránh làm gián đoạn toàn bộ route downstream.
+
+---
+
+## 🗓️ Công việc số 9 — 19/09/2026
+### Sửa Gateway fallback khi IdentityService validate-token tạm lỗi
+
+**Vấn đề:**
+- Sau Công việc số 8, Gateway gọi IdentityService để kiểm tra blacklist.
+- Nếu IdentityService tạm dừng/timeout, Gateway fail closed và trả 401 cho mọi request có JWT, dù JWT vẫn hợp lệ local.
+- Điều này làm Document/Sign/OCR bị gián đoạn theo IdentityService.
+
+**Đã sửa code/cấu hình:**
+- Cập nhật `ApiGateway/Program.cs`:
+  - Thêm cấu hình `AuthValidation:FailOpenOnValidationError`.
+  - Nếu IdentityService validate-token trả lỗi HTTP, response thiếu `isValid`, hoặc timeout/exception:
+    - `FailOpenOnValidationError=true`: log warning và fallback sang JWT local.
+    - `FailOpenOnValidationError=false`: giữ hành vi fail closed.
+  - Nếu IdentityService phản hồi hợp lệ `isValid=false`, Gateway vẫn chặn 401 như trước.
+- Cập nhật `ApiGateway/appsettings.json`:
+  - `AuthValidation:FailOpenOnValidationError=true`.
+- Cập nhật `docker-compose.yml`:
+  - `AuthValidation__FailOpenOnValidationError=true`.
+- Cập nhật tài liệu Gateway và `tiendo`.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\HAU_DigitalSign_OCR.slnx`: pass 0 warning/0 error.
+- `dotnet test .\HAU_DigitalSign_OCR.slnx`: pass 31/31.
+- `docker compose config --quiet`: pass.
+- `docker compose build api-gateway`: pass.
+- `docker compose up -d api-gateway`: pass.
+- Smoke test blacklist `TC-GW-AUTH-008`: vẫn pass.
+- Smoke test fallback `TC-GW-AUTH-009`: pass.
+
+**Kết quả test chính:**
+- Khi IdentityService hoạt động:
+  - Token đã logout vẫn bị Gateway chặn 401 trên `/api/documents`.
+- Khi IdentityService tạm dừng:
+  - Login lấy token trước khi dừng IdentityService.
+  - `docker compose stop identity-service`.
+  - `GET /api/documents` qua Gateway với JWT hợp lệ vẫn trả HTTP 200 nhờ fallback local.
+  - `docker compose up -d identity-service` và health IdentityService trở lại HTTP 200.
+
+**Ghi chú:**
+- Đây là đánh đổi có chủ ý: khi IdentityService tạm lỗi, token đã logout có thể đi tiếp cho tới khi IdentityService phục hồi hoặc token hết hạn.
+- Đổi `AuthValidation:FailOpenOnValidationError=false` nếu muốn ưu tiên bảo mật tuyệt đối hơn tính sẵn sàng.
 
 ---
 

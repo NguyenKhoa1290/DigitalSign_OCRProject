@@ -58,7 +58,8 @@ Không đưa secret thật vào tài liệu public/deploy. Các file `appsetting
 Lưu ý quan trọng:
 
 - `EnsureCreatedAsync()` không cập nhật schema khi entity thay đổi sau lần tạo DB đầu tiên.
-- Nếu IdentityService đã tạo DB rồi mà thêm cột/bảng mới, cần chạy SQL thủ công hoặc chuyển sang migrations.
+- Nếu IdentityService đã tạo DB rồi mà thêm cột/bảng mới, cần chạy SQL thủ công, chuyển sang migrations, hoặc dùng initializer bổ sung có kiểm soát.
+- Hiện IdentityService có `AuthStoreInitializer.EnsureAuthTablesAsync()` để tạo thêm `RefreshTokens` và `RevokedAccessTokens` trên PostgreSQL Docker/local đã tồn tại.
 - DocumentService và SignService đã có migration folder và startup tự apply migration.
 
 ## IdentityService database
@@ -71,6 +72,8 @@ DbSet<AppRole> AppRoles
 DbSet<AppUserRole> AppUserRoles
 DbSet<Department> Departments
 DbSet<PasswordResetToken> PasswordResetTokens
+DbSet<RefreshToken> RefreshTokens
+DbSet<RevokedAccessToken> RevokedAccessTokens
 ```
 
 ### Bảng `AppUsers`
@@ -140,6 +143,43 @@ Index:
 
 ```text
 IX_PasswordResetTokens_UserId_IsUsed
+```
+
+### Bảng `RefreshTokens`
+
+| Column | Ghi chú |
+|---|---|
+| `Id` | UUID PK |
+| `UserId` | FK required sang `AppUsers`, cascade delete |
+| `TokenHash` | SHA-256 hex của refresh token, unique, max 64 |
+| `AccessTokenJti` | `jti` của access token tương ứng, max 64 |
+| `ExpiresAt` | thời điểm refresh token hết hạn |
+| `CreatedAt` | UTC timestamp |
+| `RevokedAt` | nullable; có giá trị khi token đã logout/rotate |
+| `ReplacedByTokenHash` | hash refresh token mới khi rotate, nullable |
+
+Index:
+
+```text
+IX_RefreshTokens_TokenHash
+IX_RefreshTokens_UserId_RevokedAt_ExpiresAt
+```
+
+### Bảng `RevokedAccessTokens`
+
+| Column | Ghi chú |
+|---|---|
+| `Id` | UUID PK |
+| `UserId` | FK required sang `AppUsers`, cascade delete |
+| `Jti` | `jti` của access token đã logout, unique, max 64 |
+| `ExpiresAt` | thời điểm access token hết hạn, dùng để biết thời hạn blacklist |
+| `RevokedAt` | UTC timestamp khi logout |
+
+Index:
+
+```text
+IX_RevokedAccessTokens_Jti
+IX_RevokedAccessTokens_ExpiresAt
 ```
 
 ### Seed admin
@@ -329,7 +369,16 @@ Cấu hình chung trong các service:
 }
 ```
 
-Gateway, DocumentService và SignService chỉ validate token; IdentityService là nơi phát hành token.
+IdentityService là nơi phát hành token. Gateway, DocumentService và SignService vẫn validate JWT bằng signing key; riêng Gateway có thêm bước gọi IdentityService `/api/auth/validate-token` để kiểm tra blacklist/logout trước khi proxy request xuống downstream service.
+
+Refresh/logout hiện tại:
+
+- IdentityService lưu refresh token bằng SHA-256 hash trong bảng `RefreshTokens`.
+- Mỗi lần refresh thành công sẽ revoke refresh token cũ và tạo refresh token mới.
+- Logout revoke toàn bộ refresh token active của user và lưu `jti` access token vào `RevokedAccessTokens`.
+- IdentityService tự kiểm tra blacklist trong `OnTokenValidated` và trong `POST /api/auth/validate-token`.
+- ApiGateway validate JWT cục bộ trước, sau đó gọi IdentityService `/api/auth/validate-token`; token đã logout bị chặn 401 trước khi tới Document/Sign/OCR.
+- Nếu IdentityService không sẵn sàng trong `AuthValidation:TimeoutSeconds`, Gateway fallback sang JWT local khi `AuthValidation:FailOpenOnValidationError=true`; cấu hình này tránh làm gián đoạn toàn bộ route downstream khi IdentityService tạm lỗi.
 
 ## Ghi chú vận hành
 

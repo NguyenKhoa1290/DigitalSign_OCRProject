@@ -16,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<AppUserRole> AppUserRoles => Set<AppUserRole>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<RevokedAccessToken> RevokedAccessTokens => Set<RevokedAccessToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -161,6 +163,54 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(t => new { t.UserId, t.IsUsed })
                   .HasDatabaseName("IX_PasswordResetTokens_UserId_IsUsed");
+
+            entity.HasOne(t => t.User)
+                  .WithMany()
+                  .HasForeignKey(t => t.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── RefreshToken ─────────────────────────────────────────────────────
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshTokens");
+            entity.HasKey(t => t.Id);
+
+            entity.Property(t => t.TokenHash).IsRequired().HasMaxLength(64);
+            entity.Property(t => t.AccessTokenJti).IsRequired().HasMaxLength(64);
+            entity.Property(t => t.ReplacedByTokenHash).HasMaxLength(64);
+            entity.Property(t => t.CreatedAt)
+                  .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'");
+
+            entity.HasIndex(t => t.TokenHash)
+                  .IsUnique()
+                  .HasDatabaseName("IX_RefreshTokens_TokenHash");
+
+            entity.HasIndex(t => new { t.UserId, t.RevokedAt, t.ExpiresAt })
+                  .HasDatabaseName("IX_RefreshTokens_UserId_RevokedAt_ExpiresAt");
+
+            entity.HasOne(t => t.User)
+                  .WithMany()
+                  .HasForeignKey(t => t.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── RevokedAccessToken ───────────────────────────────────────────────
+        modelBuilder.Entity<RevokedAccessToken>(entity =>
+        {
+            entity.ToTable("RevokedAccessTokens");
+            entity.HasKey(t => t.Id);
+
+            entity.Property(t => t.Jti).IsRequired().HasMaxLength(64);
+            entity.Property(t => t.RevokedAt)
+                  .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'");
+
+            entity.HasIndex(t => t.Jti)
+                  .IsUnique()
+                  .HasDatabaseName("IX_RevokedAccessTokens_Jti");
+
+            entity.HasIndex(t => t.ExpiresAt)
+                  .HasDatabaseName("IX_RevokedAccessTokens_ExpiresAt");
 
             entity.HasOne(t => t.User)
                   .WithMany()

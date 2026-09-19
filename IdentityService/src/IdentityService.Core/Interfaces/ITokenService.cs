@@ -1,4 +1,5 @@
 using IdentityService.Core.Entities;
+using System.Security.Claims;
 
 namespace IdentityService.Core.Interfaces;
 
@@ -30,4 +31,9 @@ public interface ITokenService
     /// <param name="token">Chuỗi JWT Access Token cần xác thực.</param>
     /// <returns>True nếu token hợp lệ và chưa hết hạn, False trong trường hợp ngược lại.</returns>
     Task<bool> ValidateTokenAsync(string token);
+
+    /// <summary>
+    /// Lấy principal từ access token đã hết hạn, dùng riêng cho refresh-token flow.
+    /// </summary>
+    ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
 }

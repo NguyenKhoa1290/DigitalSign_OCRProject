@@ -4,6 +4,7 @@ using IdentityService.Core.Exceptions;
 using IdentityService.Core.Interfaces;
 using IdentityService.Core.Services;
 using IdentityService.Infrastructure.Services;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using FluentAssertions;
 using Xunit;
@@ -15,6 +16,8 @@ public class AuthServiceTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<ITokenService> _tokenServiceMock;
     private readonly Mock<IPasswordResetRepository> _passwordResetRepositoryMock;
+    private readonly Mock<IRefreshTokenRepository> _refreshTokenRepositoryMock;
+    private readonly Mock<IRevokedAccessTokenRepository> _revokedAccessTokenRepositoryMock;
     private readonly Mock<IEmailService> _emailServiceMock;
     private readonly IAuthService _authService;
 
@@ -23,13 +26,24 @@ public class AuthServiceTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _tokenServiceMock = new Mock<ITokenService>();
         _passwordResetRepositoryMock = new Mock<IPasswordResetRepository>();
+        _refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
+        _revokedAccessTokenRepositoryMock = new Mock<IRevokedAccessTokenRepository>();
         _emailServiceMock = new Mock<IEmailService>();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["JwtSettings:RefreshTokenExpiryDays"] = "7"
+            })
+            .Build();
 
         _authService = new AuthService(
             _userRepositoryMock.Object,
             _tokenServiceMock.Object,
             _passwordResetRepositoryMock.Object,
-            _emailServiceMock.Object);
+            _refreshTokenRepositoryMock.Object,
+            _revokedAccessTokenRepositoryMock.Object,
+            _emailServiceMock.Object,
+            configuration);
     }
 
     private static AppUser CreateTestUser(bool isActive = true)
@@ -67,18 +81,22 @@ public class AuthServiceTests
 
         _tokenServiceMock
             .Setup(t => t.GenerateAccessToken(user, It.IsAny<IEnumerable<string>>()))
-            .Returns("access-token-123");
+            .Returns("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJ0ZXN0LWp0aSJ9.signature");
 
         _tokenServiceMock
             .Setup(t => t.GenerateRefreshToken())
             .Returns("refresh-token-456");
+
+        _refreshTokenRepositoryMock
+            .Setup(r => r.CreateAsync(It.IsAny<RefreshToken>()))
+            .ReturnsAsync((RefreshToken t) => t);
 
         // Act
         var result = await _authService.LoginAsync(request);
 
         // Assert
         result.Should().NotBeNull();
-        result.AccessToken.Should().Be("access-token-123");
+        result.AccessToken.Should().Be("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJ0ZXN0LWp0aSJ9.signature");
         result.RefreshToken.Should().Be("refresh-token-456");
         result.Username.Should().Be("testuser");
         result.FullName.Should().Be("Test User");

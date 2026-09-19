@@ -50,6 +50,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRoleRepository,          RoleRepository>();
         services.AddScoped<IDepartmentRepository,    DepartmentRepository>();
         services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
+        services.AddScoped<IRefreshTokenRepository,  RefreshTokenRepository>();
+        services.AddScoped<IRevokedAccessTokenRepository, RevokedAccessTokenRepository>();
 
         // ── Services (Scoped) ─────────────────────────────────────────────────────────
         services.AddScoped<ITokenService,      TokenService>();

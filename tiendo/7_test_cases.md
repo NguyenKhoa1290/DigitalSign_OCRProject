@@ -481,3 +481,262 @@ GET http://localhost:5227/documents/{docId}/ocr
 
 - Test này xác nhận màn hình frontend có thể nhận và hiển thị dữ liệu OCR đã được lưu trong DocumentService.
 - Chưa chạy full PaddleOCR trên file PDF thật trong test này; phần đó nên tách thành test chất lượng OCR riêng.
+
+## TC-AUTH-TOKEN-007 — Persist refresh token, rotate token và blacklist logout
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 19/09/2026 |
+| Phạm vi | IdentityService AuthService + AuthController integration test |
+| Mục tiêu | Xác nhận refresh token được lưu DB dạng hash, refresh token được rotate, token cũ không reuse được, logout revoke refresh token và blacklist access token |
+| Kết quả | Pass |
+
+### Thay đổi chính đã test
+
+- Thêm bảng/entity `RefreshTokens`.
+- Thêm bảng/entity `RevokedAccessTokens`.
+- Login lưu hash refresh token vào DB.
+- Refresh token kiểm tra token active trong DB và rotate token.
+- Reuse refresh token cũ sau khi rotate trả 401.
+- Logout revoke toàn bộ refresh token active của user.
+- Logout blacklist access token theo `jti`.
+- `validate-token` trả `isValid=false` với access token đã logout.
+- Protected endpoint trong IdentityService trả 401 nếu dùng lại access token đã logout.
+
+### Các bước đã chạy
+
+1. Build code:
+
+```powershell
+dotnet build .\HAU_DigitalSign_OCR.slnx
+```
+
+2. Chạy test IdentityService:
+
+```powershell
+dotnet test .\IdentityService\tests\IdentityService.Tests\IdentityService.Tests.csproj
+```
+
+3. Chạy toàn bộ test solution:
+
+```powershell
+dotnet test .\HAU_DigitalSign_OCR.slnx
+```
+
+4. Docker build/redeploy:
+
+```powershell
+docker compose build identity-service
+docker compose up -d identity-service api-gateway
+docker compose ps identity-service api-gateway postgres
+```
+
+5. Smoke test qua Gateway:
+   - Login `admin / Admin@123`.
+   - Refresh token bằng access/refresh token vừa login.
+   - Gọi lại refresh bằng refresh token cũ.
+   - Logout bằng access token mới.
+   - Validate token sau logout.
+   - Gọi `/api/users` bằng token đã logout.
+   - Gọi refresh token sau logout.
+
+6. Kiểm tra DB:
+
+```powershell
+SELECT to_regclass('"RefreshTokens"'), to_regclass('"RevokedAccessTokens"');
+SELECT COUNT(*) FROM "RefreshTokens";
+SELECT COUNT(*) FROM "RevokedAccessTokens";
+```
+
+### Kết quả build/test
+
+| Lệnh | Kết quả |
+|---|---|
+| `dotnet build .\HAU_DigitalSign_OCR.slnx` | Pass 0 warning/0 error |
+| `dotnet test .\IdentityService\tests\IdentityService.Tests\IdentityService.Tests.csproj` | Pass 29/29 |
+| `dotnet test .\HAU_DigitalSign_OCR.slnx` | Pass 31/31 |
+| Start Docker Desktop + `docker info` | Pass, Docker server `29.5.3` |
+| `docker compose build identity-service` | Pass |
+| `docker compose up -d identity-service api-gateway` | Pass |
+| `docker compose ps identity-service api-gateway postgres` | `identity-service` và `postgres` healthy; `api-gateway` up |
+
+### Kết quả smoke test Docker/Gateway
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Login admin | OK |
+| Refresh token | OK, refresh token mới khác token cũ |
+| Reuse refresh token cũ | HTTP 401 |
+| Logout | `Đăng xuất thành công` |
+| `validate-token` sau logout | `isValid = false` |
+| `GET /api/users` bằng token đã logout | HTTP 401 |
+| Refresh token sau logout | HTTP 401 |
+| Bảng `RefreshTokens` | Tồn tại, có 2 dòng sau test |
+| Bảng `RevokedAccessTokens` | Tồn tại, có 1 dòng sau test |
+
+### Integration test đã thêm
+
+- `RefreshToken_WithStoredRefreshToken_ShouldRotateAndRejectOldRefreshToken`
+- `Logout_ShouldBlacklistAccessTokenAndRevokeRefreshTokens`
+
+### Ghi chú
+
+- Lúc đầu Docker daemon chưa chạy; đã start Docker Desktop và chạy lại bước Docker thành công.
+- Sau `TC-GW-AUTH-008`, ApiGateway đã kiểm tra blacklist qua IdentityService nên token đã logout bị chặn trên route Document/Sign/OCR qua Gateway.
+
+## TC-GW-AUTH-008 — ApiGateway chặn token đã logout trên route downstream
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 19/09/2026 |
+| Phạm vi | ApiGateway + IdentityService + DocumentService qua Docker/Gateway |
+| Mục tiêu | Xác nhận ApiGateway không chỉ validate JWT local mà còn gọi IdentityService `validate-token` để chặn access token đã logout trước khi proxy sang downstream service |
+| Kết quả | Pass |
+
+### Thay đổi chính đã test
+
+- `ApiGateway/Program.cs` gọi IdentityService `/api/auth/validate-token` trong JWT `OnTokenValidated`.
+- `ApiGateway/appsettings.json` có `AuthValidation:ValidateTokenUrl` và `AuthValidation:TimeoutSeconds`.
+- `docker-compose.yml` cấu hình Gateway gọi IdentityService nội bộ bằng URL `http://identity-service:8080/api/auth/validate-token`.
+
+### Các bước đã chạy
+
+1. Build code:
+
+```powershell
+dotnet build .\HAU_DigitalSign_OCR.slnx
+```
+
+2. Chạy test tự động:
+
+```powershell
+dotnet test .\HAU_DigitalSign_OCR.slnx
+```
+
+3. Kiểm tra Docker Compose config:
+
+```powershell
+docker compose config --quiet
+```
+
+4. Build/redeploy Gateway:
+
+```powershell
+docker compose build api-gateway
+docker compose up -d api-gateway
+```
+
+5. Smoke test qua Gateway:
+   - `GET /health`.
+   - Login `admin / Admin@123`.
+   - Gọi `GET /api/documents` trước logout bằng token hợp lệ.
+   - Logout bằng `POST /api/auth/logout`.
+   - Gọi `POST /api/auth/validate-token` với access token vừa logout.
+   - Gọi lại `GET /api/documents` bằng token đã logout.
+
+### Kết quả build/test
+
+| Lệnh | Kết quả |
+|---|---|
+| `dotnet build .\HAU_DigitalSign_OCR.slnx` | Pass 0 warning/0 error |
+| `dotnet test .\HAU_DigitalSign_OCR.slnx` | Pass 31/31 |
+| `docker compose config --quiet` | Pass |
+| `docker compose build api-gateway` | Pass |
+| `docker compose up -d api-gateway` | Pass |
+
+### Kết quả smoke test
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Gateway `/health` | HTTP 200 |
+| Login admin | OK |
+| `GET /api/documents` trước logout | HTTP 200 |
+| Logout | `Đăng xuất thành công` |
+| `validate-token` sau logout | `isValid = false` |
+| `GET /api/documents` sau logout | HTTP 401 |
+| Body lỗi sau logout | `{"success":false,"message":"Bạn chưa đăng nhập hoặc token không hợp lệ."}` |
+
+### Ghi chú
+
+- Lần đầu `docker compose build api-gateway` lỗi YAML do biến URL mới chưa quote và block `environment` bị lệch indent; đã sửa và xác nhận bằng `docker compose config --quiet`.
+- Sau `TC-GW-AUTH-009`, Gateway có thể fallback sang JWT local khi IdentityService validate-token tạm lỗi nếu `AuthValidation:FailOpenOnValidationError=true`.
+
+## TC-GW-AUTH-009 — Gateway fallback sang JWT local khi IdentityService tạm lỗi
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 19/09/2026 |
+| Phạm vi | ApiGateway + IdentityService + DocumentService qua Docker/Gateway |
+| Mục tiêu | Xác nhận Gateway không làm gián đoạn route downstream khi IdentityService validate-token tạm lỗi/timeout, trong khi vẫn chặn token logout khi IdentityService hoạt động |
+| Kết quả | Pass |
+
+### Thay đổi chính đã test
+
+- Thêm `AuthValidation:FailOpenOnValidationError`.
+- Docker cấu hình `AuthValidation__FailOpenOnValidationError=true`.
+- Khi IdentityService validate-token lỗi/timeout, Gateway log warning và fallback sang kết quả JWT local.
+- Khi IdentityService phản hồi `isValid=false`, Gateway vẫn chặn 401.
+
+### Các bước đã chạy
+
+1. Build code:
+
+```powershell
+dotnet build .\HAU_DigitalSign_OCR.slnx
+```
+
+2. Chạy test tự động:
+
+```powershell
+dotnet test .\HAU_DigitalSign_OCR.slnx
+```
+
+3. Kiểm tra Docker Compose config và build/redeploy Gateway:
+
+```powershell
+docker compose config --quiet
+docker compose build api-gateway
+docker compose up -d api-gateway
+```
+
+4. Kiểm tra blacklist vẫn hoạt động:
+   - Login admin.
+   - `GET /api/documents` trước logout: 200.
+   - Logout.
+   - `validate-token`: `isValid=false`.
+   - `GET /api/documents` sau logout: 401.
+
+5. Kiểm tra fallback khi IdentityService tạm dừng:
+   - Login admin lấy token mới.
+   - `GET /api/documents` trước khi dừng IdentityService: 200.
+   - `docker compose stop identity-service`.
+   - `GET /api/documents` với token hợp lệ local trong lúc IdentityService dừng: 200.
+   - `docker compose up -d identity-service`.
+   - Health IdentityService trở lại 200.
+
+### Kết quả build/test
+
+| Lệnh | Kết quả |
+|---|---|
+| `dotnet build .\HAU_DigitalSign_OCR.slnx` | Pass 0 warning/0 error |
+| `dotnet test .\HAU_DigitalSign_OCR.slnx` | Pass 31/31 |
+| `docker compose config --quiet` | Pass |
+| `docker compose build api-gateway` | Pass |
+| `docker compose up -d api-gateway` | Pass |
+
+### Kết quả smoke test
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Blacklist: `/api/documents` trước logout | HTTP 200 |
+| Blacklist: `validate-token` sau logout | `isValid=false` |
+| Blacklist: `/api/documents` sau logout | HTTP 401 |
+| Fallback: `/api/documents` trước khi dừng IdentityService | HTTP 200 |
+| Fallback: `/api/documents` khi IdentityService dừng | HTTP 200 |
+| IdentityService sau khi restart | Health HTTP 200 |
+
+### Ghi chú
+
+- `FailOpenOnValidationError=true` ưu tiên tính sẵn sàng: downstream route vẫn chạy nếu JWT hợp lệ local và IdentityService tạm lỗi.
+- Đánh đổi: trong thời gian IdentityService tạm lỗi, token đã logout có thể chưa bị Gateway chặn cho tới khi IdentityService phục hồi hoặc token hết hạn.
+- Có thể đổi sang `false` ở production nếu muốn ưu tiên bảo mật tuyệt đối.

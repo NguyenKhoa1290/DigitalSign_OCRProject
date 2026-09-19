@@ -66,8 +66,13 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout()
     {
         var userId = User.FindFirst("sub")?.Value ?? User.FindFirst("nameid")?.Value;
-        if (!string.IsNullOrEmpty(userId))
-            await _authService.LogoutAsync(userId);
+        var accessToken = Request.Headers.Authorization
+            .ToString()
+            .Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Trim();
+
+        if (!string.IsNullOrEmpty(accessToken))
+            await _authService.LogoutAsync(accessToken);
 
         _logger.LogInformation("User {UserId} logged out", userId);
         return Ok(new { message = "Đăng xuất thành công" });

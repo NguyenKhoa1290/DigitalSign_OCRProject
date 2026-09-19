@@ -19,7 +19,7 @@ public interface IAuthService
     Task<ValidateTokenResponseDto> ValidateTokenAsync(ValidateTokenRequestDto request);
 
     /// <summary>Đăng xuất — thu hồi phiên làm việc.</summary>
-    Task LogoutAsync(string userId);
+    Task LogoutAsync(string accessToken);
 
     /// <summary>
     /// Đổi mật khẩu (dùng cho lần đầu đăng nhập lẫn đổi thông thường).

@@ -7,8 +7,8 @@
 | Thành phần | Công nghệ | Port dev | Trạng thái |
 |---|---|---:|---|
 | Frontend | Blazor WebAssembly .NET 9 | 5227 | Đã có màn hình auth, dashboard, admin, documents, signatures |
-| API Gateway | ASP.NET Core + YARP | 5000 | Đã route JWT/rate limit đến các service |
-| IdentityService | ASP.NET Core .NET 9, EF Core, PostgreSQL | 5048 | Đã có auth, user, role, department, OTP reset |
+| API Gateway | ASP.NET Core + YARP | 5000 | Đã route JWT/rate limit đến các service, kiểm tra blacklist qua IdentityService |
+| IdentityService | ASP.NET Core .NET 9, EF Core, PostgreSQL | 5048 | Đã có auth, user, role, department, OTP reset, refresh token persist/rotate, logout blacklist |
 | DocumentService | ASP.NET Core .NET 9, EF Core migrations, MinIO, Kafka producer | 5049 | Đã có CRUD, upload, OCR update, workflow |
 | SignService | ASP.NET Core .NET 9, iText7, BouncyCastle, MinIO | 5050 | Đã có cấp certificate, ký PDF, verify chữ ký |
 | OCRService | Python FastAPI, PaddleOCR, pdf2image, MinIO, Kafka consumer | 5051 | Đã có OCR backend và màn hình xem kết quả OCR trên frontend |
@@ -136,6 +136,8 @@ GET    /api/ocr/health
 | JWT | Issuer `IdentityService`, audience `HAU-MicroservicesClients` |
 | Password | BCrypt work factor 12 |
 | OTP reset | SHA-256 hash, hết hạn 15 phút, dùng một lần |
+| Refresh token | Lưu SHA-256 hash trong DB, rotate sau mỗi lần refresh |
+| Logout blacklist | IdentityService lưu access token `jti` vào `RevokedAccessTokens` |
 
 ## Ghi chú tích hợp quan trọng
 
@@ -146,6 +148,9 @@ GET    /api/ocr/health
 - Frontend có route `/documents/{id}/ocr` để xem `OcrDataRaw`, trường bóc tách, dòng text nhận diện và lịch sử `UpdateOCR`.
 - `SignService` đọc `Documents.MinioPath`, bỏ prefix bucket `documents/` khi cần, rồi tải/lưu lại đúng object PDF trên MinIO. Luồng này đã pass test Docker/API `TC-SIGN-001`.
 - Frontend ký số đã gửi đúng `SignRequestDto` backend (`DocId`, `SignerId`, `SignerName`, `Reason`) và payload này đã pass test Docker/API `TC-FE-SIGN-002`.
+- IdentityService đã persist/rotate refresh token và blacklist access token khi logout; luồng này đã pass test Docker/API `TC-AUTH-TOKEN-007`.
+- ApiGateway validate JWT cục bộ trước, sau đó gọi IdentityService `/api/auth/validate-token` để chặn token đã logout trên các route Document/Sign/OCR; luồng này đã pass `TC-GW-AUTH-008`.
+- ApiGateway có `AuthValidation:FailOpenOnValidationError=true` để fallback sang JWT local khi IdentityService validate-token tạm lỗi; luồng này đã pass `TC-GW-AUTH-009`.
 
 ## Cách chạy nhanh
 

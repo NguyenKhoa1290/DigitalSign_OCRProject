@@ -206,6 +206,9 @@ services:
       JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
       JwtSettings__Issuer: IdentityService
       JwtSettings__Audience: HAU-MicroservicesClients
+      AuthValidation__ValidateTokenUrl: "http://identity-service:8080/api/auth/validate-token"
+      AuthValidation__TimeoutSeconds: 3
+      AuthValidation__FailOpenOnValidationError: "true"
       ReverseProxy__Clusters__identity-cluster__Destinations__identity-1__Address: http://identity-service:8080/
       ReverseProxy__Clusters__document-cluster__Destinations__document-1__Address: http://document-service:8080/
       ReverseProxy__Clusters__sign-cluster__Destinations__sign-1__Address: http://sign-service:8080/

@@ -44,10 +44,30 @@ File chính:
 Nhiệm vụ:
 
 - Cấu hình JWT Bearer.
+- Sau khi JWT local hợp lệ, gọi IdentityService `/api/auth/validate-token` để kiểm tra blacklist/logout.
 - Cấu hình YARP reverse proxy từ `ReverseProxy` section.
 - Cấu hình rate limit bằng `AspNetCoreRateLimit`.
 - Map `/health`, `/swagger`, `/`.
 - Route cuối cùng bằng `app.MapReverseProxy()`.
+
+Auth validation:
+
+```text
+Authorization: Bearer <jwt>
+  -> Gateway validate issuer/audience/signature/expiry local
+  -> OnTokenValidated gọi AuthValidation:ValidateTokenUrl
+  -> IdentityService /api/auth/validate-token kiểm tra RevokedAccessTokens
+  -> nếu isValid=false thì Gateway trả 401, không proxy xuống downstream service
+  -> nếu IdentityService lỗi/timeout và FailOpenOnValidationError=true thì Gateway fallback sang JWT local
+```
+
+Config liên quan:
+
+- `JwtSettings:*`: phải khớp với IdentityService.
+- `AuthValidation:ValidateTokenUrl`: local mặc định `http://localhost:5048/api/auth/validate-token`.
+- Docker compose override `AuthValidation__ValidateTokenUrl` sang `http://identity-service:8080/api/auth/validate-token`.
+- `AuthValidation:TimeoutSeconds`: timeout gọi IdentityService.
+- `AuthValidation:FailOpenOnValidationError`: nếu `true`, lỗi/timeout khi gọi IdentityService không làm rớt toàn bộ request có JWT hợp lệ local.
 
 Route YARP nằm trong `appsettings.json`:
 
@@ -72,6 +92,8 @@ Entities:
 - `AppUserRole`
 - `Department`
 - `PasswordResetToken`
+- `RefreshToken`
+- `RevokedAccessToken`
 
 DTO nhóm chính:
 
@@ -82,7 +104,7 @@ DTO nhóm chính:
 
 Interfaces:
 
-- Repository: `IUserRepository`, `IRoleRepository`, `IDepartmentRepository`, `IPasswordResetRepository`.
+- Repository: `IUserRepository`, `IRoleRepository`, `IDepartmentRepository`, `IPasswordResetRepository`, `IRefreshTokenRepository`, `IRevokedAccessTokenRepository`.
 - Service: `IAuthService`, `IUserService`, `IRoleService`, `IDepartmentService`, `ITokenService`, `IEmailService`.
 
 ### Infrastructure
@@ -95,14 +117,40 @@ File chính:
 - `Repositories/RoleRepository.cs`
 - `Repositories/DepartmentRepository.cs`
 - `Repositories/PasswordResetRepository.cs`
+- `Repositories/RefreshTokenRepository.cs`
+- `Repositories/RevokedAccessTokenRepository.cs`
 - `Services/AuthService.cs`
 - `Services/TokenService.cs`
 - `Services/UserService.cs`
 - `Services/RoleService.cs`
 - `Services/DepartmentService.cs`
 - `Services/EmailService.cs`
+- `Data/AuthStoreInitializer.cs`
 
 `AppDbContext` dùng `HasData()` để seed roles, departments và admin.
+
+Luồng token hiện tại:
+
+```text
+POST /api/auth/login
+  -> AuthService.LoginAsync
+  -> phát access token + refresh token
+  -> lưu SHA-256(refresh token) vào RefreshTokens kèm AccessTokenJti
+
+POST /api/auth/refresh-token
+  -> parse access token kể cả khi hết hạn
+  -> kiểm tra refresh token active trong DB
+  -> revoke refresh token cũ
+  -> tạo access token + refresh token mới
+
+POST /api/auth/logout
+  -> revoke toàn bộ refresh token active của user
+  -> lưu jti access token vào RevokedAccessTokens nếu token chưa hết hạn
+
+POST /api/auth/validate-token
+  -> validate JWT
+  -> kiểm tra jti có nằm trong RevokedAccessTokens hay không
+```
 
 ### API
 
@@ -122,6 +170,9 @@ Startup:
 - `Program.cs` gọi `AddInfrastructure()`.
 - Auth pipeline: `UseAuthentication()`, `UseAuthorization()`.
 - Database init: `EnsureCreatedAsync()` nếu không phải môi trường `Testing`.
+- Sau `EnsureCreatedAsync()`, `AuthStoreInitializer.EnsureAuthTablesAsync()` tạo bổ sung `RefreshTokens` và `RevokedAccessTokens` cho DB PostgreSQL đã tồn tại từ trước.
+- JWT bearer event `OnTokenValidated` kiểm tra `RevokedAccessTokens` để chặn access token đã logout trong phạm vi IdentityService.
+- ApiGateway cũng gọi `/api/auth/validate-token`, nên blacklist có hiệu lực với route Document/Sign/OCR đi qua Gateway.
 
 ## 4. DocumentService
 

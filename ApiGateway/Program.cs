@@ -1,4 +1,6 @@
 using System.Text;
+using System.Net.Http.Json;
+using System.Text.Json;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -25,6 +27,18 @@ try
     var jwtKey     = config["JwtSettings:Key"]      ?? throw new InvalidOperationException("JwtSettings:Key missing");
     var jwtIssuer  = config["JwtSettings:Issuer"]   ?? throw new InvalidOperationException("JwtSettings:Issuer missing");
     var jwtAudience = config["JwtSettings:Audience"] ?? throw new InvalidOperationException("JwtSettings:Audience missing");
+    var validateTokenUrl = config["AuthValidation:ValidateTokenUrl"]
+        ?? "http://localhost:5048/api/auth/validate-token";
+    var validateTimeoutSeconds = int.TryParse(config["AuthValidation:TimeoutSeconds"], out var configuredTimeoutSeconds)
+        ? configuredTimeoutSeconds
+        : 3;
+    var failOpenOnValidationError = !bool.TryParse(config["AuthValidation:FailOpenOnValidationError"], out var configuredFailOpen)
+        || configuredFailOpen;
+
+    builder.Services.AddHttpClient("identity-token-validation", client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(validateTimeoutSeconds);
+    });
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -43,6 +57,67 @@ try
 
             options.Events = new JwtBearerEvents
             {
+                OnTokenValidated = async ctx =>
+                {
+                    var authorization = ctx.Request.Headers.Authorization.ToString();
+                    const string bearerPrefix = "Bearer ";
+                    if (!authorization.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+                        return;
+
+                    var token = authorization[bearerPrefix.Length..].Trim();
+                    if (string.IsNullOrWhiteSpace(token))
+                    {
+                        ctx.Fail("Token is missing.");
+                        return;
+                    }
+
+                    try
+                    {
+                        var httpClientFactory = ctx.HttpContext.RequestServices.GetRequiredService<IHttpClientFactory>();
+                        var httpClient = httpClientFactory.CreateClient("identity-token-validation");
+                        var response = await httpClient.PostAsJsonAsync(validateTokenUrl, new { token });
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            if (failOpenOnValidationError)
+                            {
+                                Log.Warning("IdentityService token validation returned {StatusCode}. Falling back to local JWT validation.",
+                                    response.StatusCode);
+                                return;
+                            }
+
+                            ctx.Fail("IdentityService token validation failed.");
+                            return;
+                        }
+
+                        await using var stream = await response.Content.ReadAsStreamAsync();
+                        using var json = await JsonDocument.ParseAsync(stream);
+                        if (!json.RootElement.TryGetProperty("isValid", out var isValidProperty))
+                        {
+                            if (failOpenOnValidationError)
+                            {
+                                Log.Warning("IdentityService token validation response is missing isValid. Falling back to local JWT validation.");
+                                return;
+                            }
+
+                            ctx.Fail("IdentityService token validation response is invalid.");
+                            return;
+                        }
+
+                        if (isValidProperty.ValueKind != JsonValueKind.True)
+                        {
+                            ctx.Fail("Token has been revoked or is no longer valid.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Không kiểm tra được token với IdentityService.");
+                        if (!failOpenOnValidationError)
+                        {
+                            ctx.Fail("IdentityService token validation is unavailable.");
+                        }
+                    }
+                },
                 OnChallenge = async ctx =>
                 {
                     ctx.HandleResponse();

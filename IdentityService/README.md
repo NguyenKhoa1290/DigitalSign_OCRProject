@@ -71,12 +71,20 @@ Route hiện tại là `/api/...`, không dùng `/api/v1/...`.
 | Method | Endpoint | Mô tả | Auth |
 |---|---|---|---|
 | POST | `/login` | Đăng nhập, nhận JWT và refresh token | Public |
-| POST | `/refresh-token` | Làm mới token | Public |
+| POST | `/refresh-token` | Làm mới access token, rotate refresh token | Public |
 | POST | `/validate-token` | Kiểm tra token | Public |
-| POST | `/logout` | Đăng xuất, hiện là stub | Bearer |
+| POST | `/logout` | Đăng xuất, revoke refresh token và blacklist access token hiện tại | Bearer |
 | POST | `/change-password` | Đổi mật khẩu, dùng cho first login | Bearer |
 | POST | `/forgot-password` | Gửi OTP reset password qua email | Public |
 | POST | `/reset-password` | Đặt lại mật khẩu bằng OTP | Public |
+
+## Refresh token và logout
+
+- Refresh token không lưu plain text; hệ thống lưu SHA-256 hash trong bảng `RefreshTokens`.
+- Mỗi lần gọi `/api/auth/refresh-token` thành công, refresh token cũ bị revoke và token mới được tạo.
+- `/api/auth/logout` revoke toàn bộ refresh token active của user và lưu `jti` access token vào bảng `RevokedAccessTokens`.
+- `/api/auth/validate-token` trả invalid nếu access token đã nằm trong blacklist.
+- Lưu ý: ApiGateway hiện validate JWT cục bộ bằng signing key, chưa gọi blacklist IdentityService cho từng request tới Document/Sign/OCR.
 
 ## Email reset password
 

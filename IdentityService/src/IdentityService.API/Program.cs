@@ -6,6 +6,9 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 using System.Reflection;
+using System.IdentityModel.Tokens.Jwt;
+using IdentityService.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +49,19 @@ builder.Services.AddAuthentication(options =>
     };
     options.Events = new JwtBearerEvents
     {
+        OnTokenValidated = async context =>
+        {
+            var jti = context.Principal?.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
+            if (string.IsNullOrWhiteSpace(jti))
+                return;
+
+            var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var isRevoked = await db.RevokedAccessTokens
+                .AnyAsync(t => t.Jti == jti && t.ExpiresAt > DateTime.UtcNow);
+
+            if (isRevoked)
+                context.Fail("Token has been revoked.");
+        },
         OnAuthenticationFailed = context =>
         {
             Log.Warning("Authentication failed: {Error}", context.Exception.Message);
@@ -156,8 +172,9 @@ if (!app.Environment.IsEnvironment("Testing"))
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<IdentityService.Infrastructure.Data.AppDbContext>();
+        var context = services.GetRequiredService<AppDbContext>();
         await context.Database.EnsureCreatedAsync();
+        await AuthStoreInitializer.EnsureAuthTablesAsync(context);
         Log.Information("Database initialized successfully");
     }
     catch (Exception ex)

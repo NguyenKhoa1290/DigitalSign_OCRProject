@@ -19,6 +19,8 @@
 - `AppUserRole`: bảng nối user-role.
 - `Department`: cây phòng ban self-reference bằng `ParentId`.
 - `PasswordResetToken`: OTP reset password, lưu hash SHA-256.
+- `RefreshToken`: lưu hash refresh token, `AccessTokenJti`, hạn dùng, trạng thái revoke/rotate.
+- `RevokedAccessToken`: blacklist JWT access token theo `jti` sau logout.
 
 Seed data:
 
@@ -33,8 +35,16 @@ Seed data:
 - User đổi mật khẩu có thể cập nhật email/SĐT.
 - Forgot password gửi OTP qua email.
 - Reset password xác thực OTP hash và vô hiệu hóa token đã dùng.
-- Logout hiện vẫn là stub, chưa có JWT blacklist.
-- Refresh token hiện sinh mới nhưng chưa persist DB.
+- Refresh token đã được persist dạng SHA-256 hash trong DB và được rotate sau mỗi lần refresh.
+- Refresh token cũ bị revoke, không reuse được sau khi đã rotate.
+- Logout revoke toàn bộ refresh token active của user và blacklist access token hiện tại theo `jti`.
+- `POST /api/auth/validate-token` trả invalid nếu access token đã nằm trong blacklist.
+
+Lưu ý tích hợp:
+
+- Blacklist hiện được kiểm tra trong IdentityService, endpoint `/api/auth/validate-token` và ApiGateway.
+- ApiGateway validate JWT cục bộ bằng signing key trước, sau đó gọi IdentityService `/api/auth/validate-token`; vì vậy token đã logout bị chặn trên các route Document/Sign/OCR qua Gateway.
+- Gateway có cấu hình `AuthValidation:FailOpenOnValidationError=true` để fallback sang JWT local nếu IdentityService validate-token tạm lỗi/timeout.
 
 ### User, role, department
 
@@ -49,6 +59,8 @@ Seed data:
 - Dùng ASP.NET Core + YARP Reverse Proxy.
 - Port dev: `5000`.
 - Validate JWT tại gateway cho các route cần auth.
+- Gọi IdentityService `/api/auth/validate-token` sau khi JWT local hợp lệ để chặn token đã bị logout/blacklist.
+- Có fallback vận hành bằng `AuthValidation:FailOpenOnValidationError`.
 - Cho anonymous với `/api/auth/**`.
 - Có rate limit:
   - Mặc định 120 request/phút.
@@ -220,6 +232,5 @@ GET  /api/signatures/certificates/{userId}
 
 ## 7. Những việc còn lại
 
-- Persist refresh token và/hoặc thêm JWT blacklist khi logout.
 - Rà soát secrets trong `appsettings*.json` trước khi deploy.
 - Bổ sung test cho DocumentService, SignService và flow tích hợp.

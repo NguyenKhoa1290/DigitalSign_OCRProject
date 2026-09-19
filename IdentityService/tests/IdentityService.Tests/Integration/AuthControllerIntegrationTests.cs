@@ -21,6 +21,7 @@ namespace IdentityService.Tests.Integration;
 public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly CustomWebApplicationFactory _factory;
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     public AuthControllerIntegrationTests(CustomWebApplicationFactory factory)
     {
@@ -28,6 +29,18 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     }
 
     private HttpClient CreateClient() => _factory.CreateClient();
+
+    private static async Task<LoginResponseDto> LoginAsAdminAsync(HttpClient client)
+    {
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequestDto { Username = "admin", Password = "Admin@123" });
+
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(JsonOptions);
+        loginContent.Should().NotBeNull();
+        return loginContent!;
+    }
 
     [Fact]
     public async Task Login_WithAdminCredentials_ShouldReturn200WithTokens()
@@ -69,19 +82,14 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task ValidateToken_WithValidToken_ShouldReturnIsValidTrue()
     {
         var client = CreateClient();
-        // First login
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequestDto { Username = "admin", Password = "Admin@123" });
-        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var loginContent = await LoginAsAdminAsync(client);
 
         // Then validate
-        var validateRequest = new ValidateTokenRequestDto { Token = loginContent!.AccessToken };
+        var validateRequest = new ValidateTokenRequestDto { Token = loginContent.AccessToken };
         var validateResponse = await client.PostAsJsonAsync("/api/auth/validate-token", validateRequest);
 
         validateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await validateResponse.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var result = await validateResponse.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(JsonOptions);
         result!.IsValid.Should().BeTrue();
     }
 
@@ -93,25 +101,82 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
         var response = await client.PostAsJsonAsync("/api/auth/validate-token", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var result = await response.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(JsonOptions);
         result!.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithStoredRefreshToken_ShouldRotateAndRejectOldRefreshToken()
+    {
+        var client = CreateClient();
+        var loginContent = await LoginAsAdminAsync(client);
+
+        var refreshResponse = await client.PostAsJsonAsync("/api/auth/refresh-token",
+            new RefreshTokenRequestDto
+            {
+                AccessToken = loginContent.AccessToken,
+                RefreshToken = loginContent.RefreshToken
+            });
+
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var refreshedContent = await refreshResponse.Content.ReadFromJsonAsync<LoginResponseDto>(JsonOptions);
+        refreshedContent.Should().NotBeNull();
+        refreshedContent!.AccessToken.Should().NotBeNullOrEmpty();
+        refreshedContent.RefreshToken.Should().NotBeNullOrEmpty();
+        refreshedContent.RefreshToken.Should().NotBe(loginContent.RefreshToken);
+
+        var reuseOldRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh-token",
+            new RefreshTokenRequestDto
+            {
+                AccessToken = loginContent.AccessToken,
+                RefreshToken = loginContent.RefreshToken
+            });
+
+        reuseOldRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task Logout_WithValidToken_ShouldReturn200()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequestDto { Username = "admin", Password = "Admin@123" });
-        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var loginContent = await LoginAsAdminAsync(client);
 
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent.AccessToken);
 
         var response = await client.PostAsync("/api/auth/logout", null);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Logout_ShouldBlacklistAccessTokenAndRevokeRefreshTokens()
+    {
+        var client = CreateClient();
+        var loginContent = await LoginAsAdminAsync(client);
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent.AccessToken);
+
+        var logoutResponse = await client.PostAsync("/api/auth/logout", null);
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var protectedResponse = await client.GetAsync("/api/users");
+        protectedResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        var validateResponse = await client.PostAsJsonAsync("/api/auth/validate-token",
+            new ValidateTokenRequestDto { Token = loginContent.AccessToken });
+        validateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var validateContent = await validateResponse.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(JsonOptions);
+        validateContent!.IsValid.Should().BeFalse();
+
+        var refreshResponse = await client.PostAsJsonAsync("/api/auth/refresh-token",
+            new RefreshTokenRequestDto
+            {
+                AccessToken = loginContent.AccessToken,
+                RefreshToken = loginContent.RefreshToken
+            });
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -126,13 +191,10 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task GetAllUsers_WithAdminToken_ShouldReturn200()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequestDto { Username = "admin", Password = "Admin@123" });
-        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var loginContent = await LoginAsAdminAsync(client);
 
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent.AccessToken);
 
         var response = await client.GetAsync("/api/users");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -142,13 +204,10 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task GetDepartments_WithAuth_ShouldReturn200WithSeededData()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequestDto { Username = "admin", Password = "Admin@123" });
-        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var loginContent = await LoginAsAdminAsync(client);
 
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent.AccessToken);
 
         var response = await client.GetAsync("/api/departments");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -158,13 +217,10 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
     public async Task GetRoles_WithAuth_ShouldReturn200()
     {
         var client = CreateClient();
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequestDto { Username = "admin", Password = "Admin@123" });
-        var loginContent = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var loginContent = await LoginAsAdminAsync(client);
 
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent!.AccessToken);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginContent.AccessToken);
 
         var response = await client.GetAsync("/api/roles");
         response.StatusCode.Should().Be(HttpStatusCode.OK);

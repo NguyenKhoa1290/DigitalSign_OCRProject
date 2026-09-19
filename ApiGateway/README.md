@@ -1,6 +1,6 @@
 # API Gateway
 
-Gateway trung tâm của hệ thống HAU DigitalSign OCR. Gateway dùng ASP.NET Core + YARP để định tuyến request đến các service phía sau và validate JWT cho các route cần đăng nhập.
+Gateway trung tâm của hệ thống HAU DigitalSign OCR. Gateway dùng ASP.NET Core + YARP để định tuyến request đến các service phía sau, validate JWT cho các route cần đăng nhập và kiểm tra blacklist token qua IdentityService.
 
 ## Chạy local
 
@@ -53,4 +53,6 @@ docker compose up -d
 - Local config trong `appsettings.json` trỏ đến `localhost:5048/5049/5050/5051`.
 - Docker Compose override các destination sang hostname nội bộ: `identity-service`, `document-service`, `sign-service`, `ocr-service`.
 - `JwtSettings` phải khớp với IdentityService và các downstream service.
-
+- `AuthValidation:ValidateTokenUrl` trỏ tới IdentityService `/api/auth/validate-token`; Gateway gọi endpoint này sau khi JWT đã pass kiểm tra chữ ký/issuer/audience/expiry local để chặn token đã logout.
+- Trong Docker, biến môi trường `AuthValidation__ValidateTokenUrl` đang trỏ tới `http://identity-service:8080/api/auth/validate-token`.
+- `AuthValidation:FailOpenOnValidationError=true` cho phép Gateway fallback sang kết quả JWT local nếu IdentityService tạm lỗi/timeout. Token đã logout vẫn bị chặn khi IdentityService phản hồi `isValid=false`.

@@ -1101,10 +1101,10 @@ F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\nwunhxox1w-{0}-ki
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\ylv44dynb6-{0}-x4l8oxbjyh-x4l8oxbjyh.gz
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\o7wvhspfgl-{0}-w3g3ckx2qd-w3g3ckx2qd.gz
 F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\HauDocumentApp.sourcelink.json
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.7y00oftzbi.wasm
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.h1a7yc49ee.pdb
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.7y00oftzbi.wasm.gz
-F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.h1a7yc49ee.pdb.gz
-F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\2qiep4vvox-{0}-7y00oftzbi-7y00oftzbi.gz
-F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\bwfusj677n-{0}-h1a7yc49ee-h1a7yc49ee.gz
-F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\0zv0h6vu5r-{0}-v9vzv2ruvx-v9vzv2ruvx.gz
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.doxz33kc0t.wasm
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.0fgrmbr1jb.pdb
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.doxz33kc0t.wasm.gz
+F:\DigitalSign_OCRProject\Frontend\bin\Debug\net9.0\wwwroot\_framework\HauDocumentApp.0fgrmbr1jb.pdb.gz
+F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\2qiep4vvox-{0}-doxz33kc0t-doxz33kc0t.gz
+F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\bwfusj677n-{0}-0fgrmbr1jb-0fgrmbr1jb.gz
+F:\DigitalSign_OCRProject\Frontend\obj\Debug\net9.0\compressed\0zv0h6vu5r-{0}-63s4iry99z-63s4iry99z.gz

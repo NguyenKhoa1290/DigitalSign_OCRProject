@@ -20,6 +20,7 @@ public interface IDocumentService
     // Workflow
     Task<DocumentDto> SubmitForReviewAsync(Guid id, Guid userId, string? comment);
     Task<DocumentDto> DeptSignAsync(Guid id, Guid userId, string? comment);         // Lãnh đạo phòng ký nháy
+    Task<DocumentDto> SubmitToDirectorAsync(Guid id, Guid userId, string? comment); // Trình BGH ký
     Task<DocumentDto> DirectorSignAsync(Guid id, Guid userId, string? comment);     // BGH ký số
     Task<DocumentDto> RejectAsync(Guid id, Guid userId, string reason);             // Từ chối ở bất kỳ bước
     Task<DocumentDto> PublishAsync(Guid id, Guid userId);                           // Văn thư phát hành

@@ -48,13 +48,13 @@ Workflow hiện tại nằm trong `DocumentService.Core.Entities.DocumentStatus`
 ```text
 Draft
   -> PendingDeptReview
-  -> DeptSigned (trạng thái có khai báo trong code)
+  -> DeptSigned
   -> PendingDirectorSign
   -> DirectorSigned
   -> Published
 ```
 
-Lưu ý: code hiện tại khai báo `DeptSigned`, nhưng hàm `DeptSignAsync` đang chuyển thẳng từ `PendingDeptReview` sang `PendingDirectorSign`. Có nhánh `Rejected` khi từ chối ở các trạng thái pending. Action log nằm trong `DocumentProcess` với các action: `Submit`, `DeptSign`, `DirectorSign`, `Reject`, `Publish`, `Assign`, `UpdateOCR`.
+Luồng hiện tại dùng `DeptSigned` làm trạng thái dừng sau khi lãnh đạo phòng ký nháy. Manager gọi tiếp `POST /api/documents/{id}/submit-director` để chuyển sang `PendingDirectorSign`. Có nhánh `Rejected` khi từ chối ở các trạng thái pending. Action log nằm trong `DocumentProcess` với các action: `Submit`, `DeptSign`, `SubmitDirector`, `DirectorSign`, `Reject`, `Publish`, `Assign`, `UpdateOCR`.
 
 ## API chính
 
@@ -146,13 +146,17 @@ GET    /api/ocr/health
 - `OCRService` dùng JWT nếu request/Kafka event có token; nếu token rỗng thì fallback sang `SERVICE_TOKEN` và PATCH về `DocumentService` bằng header `X-Service-Token`.
 - `SERVICE_TOKEN` của OCRService phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
 - OCRService Kafka consumer có retry khi Kafka chưa sẵn sàng; full luồng upload PDF thật → Kafka → PaddleOCR → `UpdateOCR` đã pass `TC-OCR-E2E-010`.
+- OCR với PDF dạng scan/image-based đã pass `TC-OCR-SCAN-014`, bóc được số văn bản/ngày/title từ ảnh PDF.
 - Frontend có route `/documents/{id}/ocr` để xem `OcrDataRaw`, trường bóc tách, dòng text nhận diện và lịch sử `UpdateOCR`.
 - `SignService` đọc `Documents.MinioPath`, bỏ prefix bucket `documents/` khi cần, rồi tải/lưu lại đúng object PDF trên MinIO. Luồng này đã pass test Docker/API `TC-SIGN-001`.
 - Frontend ký số đã gửi đúng `SignRequestDto` backend (`DocId`, `SignerId`, `SignerName`, `Reason`) và payload này đã pass test Docker/API `TC-FE-SIGN-002`.
+- Luồng ký số bằng role thật đã pass `TC-SIGN-ROLE-012`: `Manager` ký nháy, `BoardOfDirectors` ký pháp nhân, sai quyền trả 403, verify PDF valid với 2 chữ ký.
+- UI ký số frontend đã pass `TC-FE-SIGN-UI-013` bằng Playwright: Manager/Board đăng nhập frontend, bấm ký, bấm workflow và UI verify hiển thị 2 chữ ký hợp lệ.
 - IdentityService đã persist/rotate refresh token và blacklist access token khi logout; luồng này đã pass test Docker/API `TC-AUTH-TOKEN-007`.
 - ApiGateway validate JWT cục bộ trước, sau đó gọi IdentityService `/api/auth/validate-token` để chặn token đã logout trên các route Document/Sign/OCR; luồng này đã pass `TC-GW-AUTH-008`.
 - ApiGateway có `AuthValidation:FailOpenOnValidationError=true` để fallback sang JWT local khi IdentityService validate-token tạm lỗi; luồng này đã pass `TC-GW-AUTH-009`.
 - Docker Compose hỗ trợ `.env` ở root project; `.env.example` liệt kê PostgreSQL, MinIO, JWT và OCR service-token cần đổi khi deploy thật; luồng cấu hình này đã pass `TC-SEC-ENV-011`.
+- Docker dev có Mailpit SMTP local (`1025`, UI/API `8025`); forgot/reset password backend và frontend đã pass `TC-AUTH-MAILPIT-015`.
 
 ## Cách chạy nhanh
 

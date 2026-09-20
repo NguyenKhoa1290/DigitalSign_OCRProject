@@ -33,6 +33,9 @@ public class DocumentService
     public async Task<bool> DeptSignDocumentAsync(Guid id, string? comment = null)
     { try { await _api.PostAsync<object>($"api/documents/{id}/dept-sign", new { comment }); return true; } catch { return false; } }
 
+    public async Task<bool> SubmitDirectorDocumentAsync(Guid id, string? comment = null)
+    { try { await _api.PostAsync<object>($"api/documents/{id}/submit-director", new { comment }); return true; } catch { return false; } }
+
     public async Task<bool> DirectorSignDocumentAsync(Guid id, string? comment = null)
     { try { await _api.PostAsync<object>($"api/documents/{id}/director-sign", new { comment }); return true; } catch { return false; } }
 

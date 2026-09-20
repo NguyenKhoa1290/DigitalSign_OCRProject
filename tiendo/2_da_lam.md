@@ -35,6 +35,8 @@ Seed data:
 - User đổi mật khẩu có thể cập nhật email/SĐT.
 - Forgot password gửi OTP qua email.
 - Reset password xác thực OTP hash và vô hiệu hóa token đã dùng.
+- Docker dev dùng Mailpit local để test email OTP an toàn, không gửi email ra internet.
+- Luồng forgot/reset password backend và frontend đã pass `TC-AUTH-MAILPIT-015` bằng Mailpit.
 - Refresh token đã được persist dạng SHA-256 hash trong DB và được rotate sau mỗi lần refresh.
 - Refresh token cũ bị revoke, không reuse được sau khi đã rotate.
 - Logout revoke toàn bộ refresh token active của user và blacklist access token hiện tại theo `jti`.
@@ -87,7 +89,7 @@ Lưu ý tích hợp:
 - `DocumentType`: loại văn bản.
 - `DocumentProcess`: lịch sử xử lý văn bản.
 - `DocumentStatus`: `Draft`, `PendingDeptReview`, `DeptSigned`, `PendingDirectorSign`, `DirectorSigned`, `Published`, `Rejected`.
-- `DocumentAction`: `Submit`, `DeptSign`, `DirectorSign`, `Reject`, `Publish`, `Assign`, `UpdateOCR`.
+- `DocumentAction`: `Submit`, `DeptSign`, `SubmitDirector`, `DirectorSign`, `Reject`, `Publish`, `Assign`, `UpdateOCR`.
 
 ### API đã có
 
@@ -101,6 +103,7 @@ POST   /api/documents/{id}/upload
 PATCH  /api/documents/{id}/ocr
 POST   /api/documents/{id}/submit
 POST   /api/documents/{id}/dept-sign
+POST   /api/documents/{id}/submit-director
 POST   /api/documents/{id}/director-sign
 POST   /api/documents/{id}/reject
 POST   /api/documents/{id}/publish
@@ -112,13 +115,13 @@ POST   /api/documents/{id}/assign
 ```text
 Draft
   -> PendingDeptReview
-  -> DeptSigned (đã khai báo trong code)
+  -> DeptSigned
   -> PendingDirectorSign
   -> DirectorSigned
   -> Published
 ```
 
-Lưu ý: implementation hiện tại của `DeptSignAsync` đang chuyển thẳng từ `PendingDeptReview` sang `PendingDirectorSign`; `DeptSigned` tồn tại trong status constants nhưng chưa được dùng như trạng thái dừng riêng.
+Luồng hiện tại dùng `DeptSigned` làm trạng thái dừng riêng sau khi lãnh đạo phòng ký nháy. Manager gọi tiếp `POST /api/documents/{id}/submit-director` để trình Ban Giám hiệu ký.
 
 Reject được cho phép ở các trạng thái pending:
 
@@ -172,6 +175,11 @@ Tình trạng frontend:
 - Đã có màn hình riêng `/documents/{id}/ocr` để xem/kiểm tra kết quả OCR.
 - Màn hình đọc `OcrDataRaw`, hiển thị trường bóc tách, dòng text nhận diện, raw JSON và lịch sử `UpdateOCR`.
 
+Kiểm thử OCR đã pass:
+
+- `TC-OCR-E2E-010`: PDF text rõ qua upload/Kafka/PaddleOCR.
+- `TC-OCR-SCAN-014`: PDF dạng scan/image-based có nhiễu nhẹ và xoay nhẹ, bóc được số văn bản/ngày/title.
+
 ## 5. SignService
 
 ### Backend đã có
@@ -202,10 +210,14 @@ GET  /api/signatures/certificates/{userId}
 - `legal-seal`: role `BoardOfDirectors` hoặc `Admin`.
 - `legal-seal` yêu cầu văn bản đã có `PersonalSignature`.
 - Mỗi document chỉ có một chữ ký mỗi loại.
-
-Điểm cần hoàn thiện:
-
-- Luồng UI ký số nên tiếp tục được kiểm thử thủ công trên trình duyệt với nhiều role thật (`Manager`, `BoardOfDirectors`) khi có dữ liệu người dùng tương ứng.
+- Luồng ký số bằng role thật đã pass `TC-SIGN-ROLE-012`:
+  - `Manager` ký nháy.
+  - `BoardOfDirectors` ký pháp nhân.
+  - Kiểm tra sai quyền trả 403 đúng kỳ vọng.
+- Luồng UI ký số trực tiếp trên frontend đã pass `TC-FE-SIGN-UI-013` bằng Playwright:
+  - Manager đăng nhập frontend và bấm ký nháy.
+  - Board đăng nhập frontend và bấm ký pháp nhân.
+  - UI verify hiển thị 2 chữ ký hợp lệ.
 
 ## 6. Frontend
 
@@ -234,13 +246,15 @@ GET  /api/signatures/certificates/{userId}
 
 ## 7. Những việc còn lại
 
-- Kiểm thử UI ký số thủ công trên trình duyệt với role thật (`Manager`, `BoardOfDirectors`).
+- Nếu triển khai production, test lại forgot/reset password với SMTP thật/Gmail app password hợp lệ.
+- Nếu triển khai thực tế, bổ sung thêm bộ PDF/scan thật của nhà trường để đánh giá chất lượng OCR trên dữ liệu thật.
 - Tiếp tục bổ sung test tích hợp sâu cho DocumentService/SignService/OCRService khi phát triển thêm nghiệp vụ.
 
 ## 8. Cấu hình triển khai và secrets
 
 - Docker Compose đã hỗ trợ file `.env` ở root project.
-- Repo có `.env.example` để khai báo các biến cần đổi khi deploy: PostgreSQL, MinIO, JWT, OCR service-token.
+- Repo có `.env.example` để khai báo các biến cần đổi khi deploy: PostgreSQL, MinIO, JWT, OCR service-token, SMTP/email.
 - `docker-compose.yml` dùng cú pháp `${VAR:-default_dev}` để local/dev vẫn chạy nếu chưa tạo `.env`.
+- Docker Compose có Mailpit cho SMTP local: SMTP `1025`, Web UI/API `8025`.
 - `.gitignore` và `.dockerignore` đã bỏ qua `.env`/`.env.*`, nhưng vẫn cho phép commit `.env.example`.
 - `OCRService/.env.example` chỉ dùng khi chạy OCRService độc lập ngoài Docker Compose root.

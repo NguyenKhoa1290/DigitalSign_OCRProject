@@ -22,12 +22,34 @@ public class EmailService : IEmailService
         var settings = _configuration.GetSection("EmailSettings");
         var smtpHost = settings["SmtpHost"] ?? "smtp.gmail.com";
         var smtpPort = int.Parse(settings["SmtpPort"] ?? "587");
-        var username = GetRequiredSetting(settings, "Username");
-        var password = GetRequiredSetting(settings, "Password");
+        var secureSocketOptions = ParseSecureSocketOptions(settings["SecureSocketOptions"]);
+        var requireAuth = bool.TryParse(settings["RequireAuth"], out var parsedRequireAuth)
+            ? parsedRequireAuth
+            : true;
+        var username = settings["Username"];
+        var password = settings["Password"];
+        string? authUsername = null;
+        string? authPassword = null;
+        var fromEmail = settings["FromEmail"];
         var fromName = settings["FromName"] ?? "HAU Documents";
 
+        if (requireAuth)
+        {
+            authUsername = GetRequiredSetting(settings, "Username");
+            authPassword = GetRequiredSetting(settings, "Password");
+            username = authUsername;
+            password = authPassword;
+        }
+
+        var senderEmail = !string.IsNullOrWhiteSpace(fromEmail)
+            ? fromEmail
+            : username;
+
+        if (string.IsNullOrWhiteSpace(senderEmail))
+            throw new InvalidOperationException("EmailSettings:FromEmail is not configured.");
+
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(fromName, username));
+        message.From.Add(new MailboxAddress(fromName, senderEmail));
         message.To.Add(new MailboxAddress(toName, toEmail));
         message.Subject = "[HAU Documents] Mã OTP khôi phục mật khẩu";
 
@@ -67,12 +89,24 @@ public class EmailService : IEmailService
         await client.ConnectAsync(
             smtpHost,
             smtpPort,
-            SecureSocketOptions.StartTls);
+            secureSocketOptions);
 
-        await client.AuthenticateAsync(username, password);
+        if (requireAuth)
+            await client.AuthenticateAsync(authUsername!, authPassword!);
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
+    }
+
+    private static SecureSocketOptions ParseSecureSocketOptions(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return SecureSocketOptions.StartTls;
+
+        return Enum.TryParse<SecureSocketOptions>(value, ignoreCase: true, out var result)
+            ? result
+            : throw new InvalidOperationException(
+                $"EmailSettings:SecureSocketOptions has invalid value '{value}'.");
     }
 
     private static string GetRequiredSetting(IConfigurationSection settings, string key)

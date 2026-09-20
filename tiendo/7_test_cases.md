@@ -900,3 +900,360 @@ docker compose ps
 - `.env.example` dùng placeholder `change-me-*` cho triển khai thật.
 - Nếu không tạo `.env`, Compose vẫn dùng default dev trong `docker-compose.yml` để không làm gián đoạn môi trường local hiện tại.
 - Các file `appsettings*.json` vẫn có giá trị dev/local; khi chạy Docker, environment variables từ Compose sẽ override các giá trị này.
+
+## TC-SIGN-ROLE-012 — Ký số bằng role thật `Manager` và `BoardOfDirectors`
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | IdentityService + DocumentService + SignService + MinIO + ApiGateway trong Docker |
+| Mục tiêu | Xác nhận ký nháy/ký pháp nhân hoạt động với user role nghiệp vụ thật và chặn sai quyền đúng kỳ vọng |
+| Kết quả | Pass |
+
+### Dữ liệu test thực tế
+
+| Trường | Giá trị |
+|---|---|
+| Manager user | `tc_manager_20260920131615` |
+| Manager id | `5119eb6a-e937-4aa0-9d18-49cd08564042` |
+| Board user | `tc_board_20260920131615` |
+| Board id | `a4496098-df3a-4a36-9bb9-68cc2d46a38d` |
+| Document id | `8a5d61d0-23bf-4e27-a1cb-8cf275c02e73` |
+| MinIO path | `documents/a8330e0c-52ac-4a04-8f9a-6c20b5aff0cf.pdf` |
+
+### Các bước đã chạy
+
+1. Login admin qua Gateway.
+2. Lấy role `Manager` và `BoardOfDirectors`.
+3. Tạo 2 user test:
+   - User `Manager`.
+   - User `BoardOfDirectors`.
+4. Login bằng từng user để lấy token role thật.
+5. Admin cấp certificate cho cả 2 user.
+6. Tạo document test và upload PDF qua `/api/documents/{docId}/upload`.
+7. Submit document sang `PendingDeptReview`.
+8. Negative role test:
+   - Board gọi `POST /api/signatures/personal-sign`.
+   - Manager gọi `POST /api/signatures/legal-seal`.
+9. Positive role test:
+   - Manager gọi `POST /api/signatures/personal-sign`.
+   - Manager gọi `POST /api/documents/{docId}/dept-sign`.
+   - Board gọi `POST /api/signatures/legal-seal`.
+   - Board gọi `POST /api/documents/{docId}/director-sign`.
+10. Kiểm tra danh sách chữ ký và verify PDF:
+   - `GET /api/signatures/document/{docId}`.
+   - `GET /api/signatures/document/{docId}/verify`.
+11. Kiểm tra document cuối cùng.
+
+### Kết quả kiểm thử
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Board gọi `personal-sign` | HTTP 403 |
+| Manager gọi `legal-seal` | HTTP 403 |
+| Certificate Manager | `isValid = true` |
+| Certificate Board | `isValid = true` |
+| Manager ký nháy | Pass, `PersonalSignature` |
+| Board ký pháp nhân | Pass, `LegalSeal` |
+| Final document status | `DirectorSigned` |
+| Số chữ ký lưu trong SignService | `2` |
+| Verify PDF | `isValid = true`, `signatureCount = 2` |
+| Process actions | `Submit, Submit, UpdateOCR, DeptSign, DirectorSign` |
+
+### Ghi chú
+
+- Test chạy qua API Gateway bằng JWT của user role thật, không dùng Admin để ký thay.
+- Đây là kiểm thử API/role end-to-end; nếu cần đánh giá trải nghiệm người dùng, vẫn nên click thử luồng tương ứng trên trình duyệt.
+- Upload PDF kích hoạt OCR Kafka nên lịch sử document có thêm action `UpdateOCR`; điều này không ảnh hưởng luồng ký.
+
+## TC-FE-SIGN-UI-013 — Kiểm thử UI ký số trực tiếp trên frontend
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | Frontend Blazor WASM + ApiGateway + IdentityService + DocumentService + SignService + MinIO + Kafka/OCR |
+| Mục tiêu | Xác nhận thao tác click UI ký số hoạt động với user role thật `Manager` và `BoardOfDirectors` |
+| Kết quả | Pass |
+
+### Dữ liệu test thực tế
+
+| Trường | Giá trị |
+|---|---|
+| Manager user | `ui_manager_20260920062601` |
+| Board user | `ui_board_20260920062601` |
+| Document id | `6fc9e8b8-3a55-4c77-932a-6c19d0b0f57d` |
+| MinIO path | `documents/b4f6351b-5400-4dfa-925a-84752db670cd.pdf` |
+
+### Các bước đã chạy
+
+1. Tạo dữ liệu test bằng API Gateway:
+   - Tạo user `Manager`.
+   - Tạo user `BoardOfDirectors`.
+   - Đổi mật khẩu lần đầu cho 2 user để login frontend không bị redirect `/first-login`.
+   - Admin cấp certificate cho cả 2 user.
+   - Tạo document test, upload PDF và submit sang `PendingDeptReview`.
+2. Dùng Playwright headless thao tác frontend `http://localhost:5227`:
+   - Login Manager.
+   - Vào `/signatures/{docId}`.
+   - Bấm `Ký nháy (Manager)` và xác nhận modal ký.
+   - Vào `/documents/{docId}`.
+   - Bấm workflow `Ký nháy`.
+   - Login Board trong browser context riêng.
+   - Vào `/signatures/{docId}`.
+   - Bấm `Ký số pháp nhân (BGH)` và xác nhận modal ký.
+   - Vào `/documents/{docId}`.
+   - Bấm workflow `Ký số pháp nhân`.
+   - Vào lại `/signatures/{docId}` và bấm `Xác minh chữ ký`.
+3. Verify lại bằng API Gateway:
+   - `GET /api/documents/{docId}`.
+   - `GET /api/signatures/document/{docId}`.
+   - `GET /api/signatures/document/{docId}/verify`.
+
+### Kết quả kiểm thử
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Manager login frontend | Pass |
+| Manager bấm ký nháy trên UI | Pass |
+| Manager bấm workflow ký nháy trên UI | Pass |
+| Board login frontend | Pass |
+| Board bấm ký pháp nhân trên UI | Pass |
+| Board bấm workflow ký pháp nhân trên UI | Pass |
+| UI verify text | `✓ Tất cả 2 chữ ký đều hợp lệ` |
+| Final document status | `DirectorSigned` |
+| Số chữ ký | `2` |
+| Loại chữ ký | `PersonalSignature`, `LegalSeal` |
+| Verify API | `isValid = true`, `signatureCount = 2` |
+| Process actions | `Submit, Submit, UpdateOCR, DeptSign, DirectorSign` |
+
+### Ghi chú
+
+- Test này xác nhận thao tác click UI ký số chính đã pass.
+- Trang ký số `/signatures/{docId}` thực hiện ký PDF qua SignService; trang chi tiết `/documents/{docId}` thực hiện workflow DocumentService. Vì vậy test UI chạy cả hai trang để hoàn tất luồng nghiệp vụ.
+- Upload PDF kích hoạt OCR Kafka nên lịch sử document có thêm action `UpdateOCR`; không ảnh hưởng kết quả ký số.
+
+## TC-OCR-SCAN-014 — OCR PDF dạng scan/image-based qua Kafka
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | DocumentService + Kafka + MinIO + OCRService/PaddleOCR + ApiGateway |
+| Mục tiêu | Xác nhận OCRService xử lý được PDF chứa ảnh scan, không chỉ PDF text rõ |
+| Kết quả | Pass |
+
+### Dữ liệu test thực tế
+
+| Trường | Giá trị |
+|---|---|
+| Document id | `dda7d33f-6c93-4e12-b42f-37c72da1fad5` |
+| File test | `tc-ocr-scan-014-20260920133200.pdf` |
+| File size | `243107` bytes |
+| MinIO path | `documents/8e958a57-0797-4397-8bbb-2d30e685a69c.pdf` |
+
+### Nội dung PDF scan giả lập
+
+PDF được tạo tạm ngoài repo bằng Python/Pillow:
+
+- Ảnh A4 300 DPI.
+- Text được vẽ lên ảnh, sau đó lưu ảnh thành PDF.
+- Có nhiễu nhẹ, border scan và xoay nhẹ 0.7 độ.
+
+Nội dung:
+
+```text
+TRUONG DAI HOC KIEN TRUC HA NOI
+So: 456/QD-HAU
+Ngay: 20/09/2026
+V/v kiem thu OCR tu PDF scan
+TC-OCR-SCAN-014 20260920133200
+```
+
+### Các bước đã chạy
+
+1. Tạo PDF scan giả lập bằng Python/Pillow trong thư mục `%TEMP%`.
+2. Login admin qua Gateway.
+3. Tạo document test.
+4. Upload PDF qua `POST /api/documents/{docId}/upload`.
+5. DocumentService publish Kafka event `document.uploaded`.
+6. Poll `GET /api/documents/{docId}` cho tới khi có `ocrDataRaw`.
+7. Kiểm tra fields bóc tách và lịch sử xử lý.
+
+### Kết quả kiểm thử
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Upload PDF scan qua Gateway | Pass |
+| OCR tự động qua Kafka | Pass, có `ocrDataRaw` sau poll đầu khoảng 10 giây |
+| Số dòng OCR | `5` |
+| `docNumber` | `456/QD-HAU` |
+| `issuedDate` | `2026-09-20` |
+| `title` | `kiem thu OCR tu PDF scan` |
+| Process actions | `Submit, UpdateOCR` |
+
+### Ghi chú
+
+- Test này dùng scan giả lập bằng ảnh PDF, chưa phải file scan thật của nhà trường.
+- Khi có dữ liệu thật, nên bổ sung thêm bộ test gồm scan mờ, lệch, nhiều trang, có dấu đỏ/chữ ký để đánh giá chất lượng OCR thực tế.
+
+## TC-AUTH-MAILPIT-015 — Forgot/reset password qua Mailpit SMTP local
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | IdentityService + ApiGateway + Frontend + Mailpit Docker |
+| Mục tiêu | Xác nhận forgot/reset password gửi OTP qua SMTP local, reset được mật khẩu và login lại được |
+| Kết quả | Pass |
+
+### Thay đổi chính đã test
+
+- `EmailService` hỗ trợ cấu hình:
+  - `EmailSettings:SecureSocketOptions`.
+  - `EmailSettings:RequireAuth`.
+  - `EmailSettings:FromEmail`.
+- `docker-compose.yml` có service `mailpit`.
+- IdentityService Docker dev trỏ SMTP về Mailpit:
+  - Host: `mailpit`.
+  - Port: `1025`.
+  - `RequireAuth=false`.
+  - `SecureSocketOptions=None`.
+- Mailpit Web UI/API publish ở `http://localhost:8025`.
+
+### Kết quả build/Docker
+
+| Lệnh/kiểm tra | Kết quả |
+|---|---|
+| `dotnet build .\IdentityService\src\IdentityService.API\IdentityService.API.csproj` | Pass 0 warning/0 error |
+| `docker compose config --quiet` | Pass |
+| `docker compose build identity-service` | Pass |
+| `docker compose up -d mailpit identity-service api-gateway` | Pass |
+| Identity health | `Healthy` |
+| Mailpit Web UI/API | HTTP 200 |
+| `dotnet test .\IdentityService\tests\IdentityService.Tests\IdentityService.Tests.csproj --no-build` | Pass 29/29 |
+
+### Backend/API test
+
+| Trường | Giá trị |
+|---|---|
+| User email | `mailpit_user_20260920133942@hau.test` |
+| Mailpit message id | `7Sc5dGCvQV96DwoqBFrOv0` |
+| OTP length | `6` |
+| Reset result | `Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.` |
+| Login user sau reset | `mailpit_user_20260920133942` |
+| `mustChangePassword` sau reset | `false` |
+
+Các bước:
+
+1. Tạo user test có email.
+2. Gọi `POST /api/auth/forgot-password`.
+3. Đọc email OTP trong Mailpit API.
+4. Gọi `POST /api/auth/reset-password` bằng OTP.
+5. Login bằng mật khẩu mới.
+
+### Frontend/UI test
+
+| Trường | Giá trị |
+|---|---|
+| User | `ui_reset_20260920064037` |
+| Email | `ui_reset_20260920064037@hau.test` |
+| Mailpit message id | `0P2YGxZv1S0x8UbO4gyKHf` |
+| Final URL sau login | `http://localhost:5227/` |
+| API login user xác nhận | `ui_reset_20260920064037` |
+| `mustChangePassword` | `false` |
+
+Các bước Playwright:
+
+1. Tạo user test bằng API.
+2. Mở frontend `/forgot-password`.
+3. Nhập email và gửi OTP.
+4. Lấy OTP từ Mailpit API.
+5. Mở frontend `/reset-password`.
+6. Nhập email, OTP, mật khẩu mới.
+7. Reset thành công, redirect `/login`.
+8. Login frontend bằng mật khẩu mới và vào được trang `/`.
+
+### Ghi chú
+
+- Mailpit chỉ dùng local/dev, không gửi email ra internet.
+- Khi deploy production, đổi biến `EMAIL_*` trong `.env` sang SMTP thật và test lại với credential thật.
+
+## TC-DOC-WF-016 — Workflow `DeptSigned` và `submit-director`
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | DocumentService + ApiGateway + Docker |
+| Mục tiêu | Xác nhận trạng thái `DeptSigned` được dùng thật và phải qua bước `submit-director` trước khi BGH ký |
+| Kết quả | Pass |
+
+### Dữ liệu test thực tế
+
+| Trường | Giá trị |
+|---|---|
+| User chạy API | `admin / Admin@123` |
+| Document id | `7c186598-4e8d-4343-85a5-1f1a295743dc` |
+| Edge document id | `2808ff67-a5ab-4548-959d-e48fb01f0189` |
+
+### Các bước đã chạy
+
+1. Login admin qua Gateway.
+2. Lấy document type qua `GET /api/documents/types`.
+3. Tạo document mới qua `POST /api/documents`.
+4. Gọi `POST /api/documents/{docId}/submit`.
+5. Gọi `POST /api/documents/{docId}/dept-sign`.
+6. Kiểm tra status sau ký nháy là `DeptSigned`.
+7. Gọi `POST /api/documents/{docId}/submit-director`.
+8. Kiểm tra status là `PendingDirectorSign`.
+9. Gọi `POST /api/documents/{docId}/director-sign`.
+10. Kiểm tra status cuối là `DirectorSigned`.
+11. Tạo document edge case, đưa tới `DeptSigned`, gọi thẳng `director-sign` và kỳ vọng HTTP 422.
+
+### Kết quả kiểm thử
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `submit` | `Draft -> PendingDeptReview` |
+| `dept-sign` | `PendingDeptReview -> DeptSigned` |
+| `submit-director` | `DeptSigned -> PendingDirectorSign` |
+| `director-sign` | `PendingDirectorSign -> DirectorSigned` |
+| Process actions | `Submit, Submit, DeptSign, SubmitDirector, DirectorSign` |
+| Gọi `director-sign` trực tiếp từ `DeptSigned` | HTTP 422 |
+| Status sau edge case lỗi | Vẫn là `DeptSigned` |
+
+## TC-FE-WF-017 — UI nút `Trình BGH ký` trên trang chi tiết văn bản
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | Frontend Blazor WASM + ApiGateway + DocumentService |
+| Mục tiêu | Xác nhận nút `Trình BGH ký` ở trạng thái `DeptSigned` gọi đúng API `submit-director` |
+| Kết quả | Pass |
+
+### Dữ liệu test thực tế
+
+| Trường | Giá trị |
+|---|---|
+| Manager user | `ui_wf_manager_20260920135343` |
+| Document id | `837da503-9e73-4085-a9fc-ce20a04c3c73` |
+
+### Các bước đã chạy
+
+1. Tạo user role `Manager` qua API Gateway.
+2. Đổi mật khẩu lần đầu để login frontend không bị redirect `/first-login`.
+3. Tạo document và đưa tới trạng thái `DeptSigned` bằng API.
+4. Dùng Playwright headless mở `http://localhost:5227/login`.
+5. Login bằng user Manager.
+6. Mở `/documents/{docId}`.
+7. Bấm nút `Trình BGH ký`.
+8. Xác nhận modal.
+9. Kiểm tra UI hiển thị trạng thái `Chờ BGH ký`.
+10. Kiểm tra lại bằng API.
+
+### Kết quả kiểm thử
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Login frontend Manager | Pass |
+| Nút `Trình BGH ký` hiển thị khi status `DeptSigned` | Pass |
+| Bấm nút và xác nhận modal | Pass |
+| Status sau UI action | `PendingDirectorSign` |
+| Process actions | `Submit, Submit, DeptSign, SubmitDirector` |

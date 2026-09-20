@@ -4,6 +4,7 @@ public static class DocumentAction
 {
     public const string Submit = "Submit";           // Trình duyệt
     public const string DeptSign = "DeptSign";       // Ký nháy cấp phòng
+    public const string SubmitDirector = "SubmitDirector"; // Trình Ban Giám hiệu ký
     public const string DirectorSign = "DirectorSign"; // Ký số pháp nhân BGH
     public const string Reject = "Reject";           // Từ chối/Trả lại
     public const string Publish = "Publish";         // Phát hành

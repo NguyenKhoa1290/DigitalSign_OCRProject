@@ -345,6 +345,7 @@ else
         {
             "submit" => await DocumentService.SubmitDocumentAsync(Id, _actionComment),
             "dept-sign" => await DocumentService.DeptSignDocumentAsync(Id, _actionComment),
+            "submit-director" => await DocumentService.SubmitDirectorDocumentAsync(Id, _actionComment),
             "director-sign" => await DocumentService.DirectorSignDocumentAsync(Id, _actionComment),
             "reject" => await DocumentService.RejectDocumentAsync(Id, _actionComment),
             _ => false
@@ -414,6 +415,7 @@ else
     {
         "Submit" => "Nộp trình duyệt",
         "DeptSign" => "Ký nháy",
+        "SubmitDirector" => "Trình BGH ký",
         "DirectorSign" => "Ký số pháp nhân",
         "Reject" => "Từ chối",
         "Publish" => "Ban hành",

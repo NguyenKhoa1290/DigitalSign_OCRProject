@@ -34,6 +34,8 @@ Database:   DigitalSign_OCR
 MinIO:      localhost:9000
 MinIO UI:   localhost:9001
 Kafka:      localhost:9092
+Mailpit SMTP: localhost:1025
+Mailpit UI/API: http://localhost:8025
 ```
 
 Các volume dữ liệu quan trọng:
@@ -389,5 +391,6 @@ Refresh/logout hiện tại:
 - Trước deploy, chuyển secret ra environment variables hoặc secret manager.
 - Không commit PFX thật, app password Gmail, JWT key production.
 - Không commit file `.env` thật; repo chỉ commit `.env.example`.
-- `EmailService` cần `EmailSettings:Username` và `EmailSettings:Password`; nếu thiếu sẽ báo lỗi cấu hình rõ ràng trước khi gửi SMTP.
+- Docker dev dùng Mailpit local để test OTP reset password: `EmailSettings:RequireAuth=false`, `EmailSettings:SecureSocketOptions=None`.
+- Khi dùng SMTP thật, cấu hình `EMAIL_REQUIRE_AUTH=true`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`, `EMAIL_FROM_EMAIL` và `EMAIL_SECURE_SOCKET_OPTIONS` phù hợp.
 - Nếu chuyển IdentityService sang migrations, cần tạo migration đầu tiên cẩn thận vì DB dev có thể đã được tạo bằng `EnsureCreatedAsync()`.

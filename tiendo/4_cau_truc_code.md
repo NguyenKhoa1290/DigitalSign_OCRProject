@@ -129,6 +129,14 @@ File chính:
 
 `AppDbContext` dùng `HasData()` để seed roles, departments và admin.
 
+`EmailService` đọc `EmailSettings` và hỗ trợ cả SMTP thật có auth/TLS lẫn SMTP local Mailpit không auth:
+
+- `SmtpHost`, `SmtpPort`
+- `SecureSocketOptions`
+- `RequireAuth`
+- `Username`, `Password`
+- `FromEmail`, `FromName`
+
 Luồng token hiện tại:
 
 ```text
@@ -244,14 +252,15 @@ Workflow:
 
 ```text
 SubmitForReviewAsync: Draft -> PendingDeptReview
-DeptSignAsync: PendingDeptReview -> PendingDirectorSign
+DeptSignAsync: PendingDeptReview -> DeptSigned
+SubmitToDirectorAsync: DeptSigned -> PendingDirectorSign
 DirectorSignAsync: PendingDirectorSign -> DirectorSigned
 PublishAsync: DirectorSigned -> Published
 RejectAsync: pending states -> Rejected
 AssignAsync: ghi DocumentProcess, không đổi status
 ```
 
-`DocumentStatus.DeptSigned` có khai báo trong code và được cho phép reject, nhưng luồng hiện tại không dừng ở trạng thái này mà chuyển thẳng sang `PendingDirectorSign`.
+`DocumentStatus.DeptSigned` là trạng thái dừng sau khi lãnh đạo phòng ký nháy. Từ trạng thái này có thể reject hoặc gọi `SubmitToDirectorAsync` để chuyển sang `PendingDirectorSign`.
 
 ### API
 

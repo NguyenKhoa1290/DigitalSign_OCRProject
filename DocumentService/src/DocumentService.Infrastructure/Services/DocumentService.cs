@@ -224,8 +224,7 @@ public class DocumentService : IDocumentService
         if (document.Status != DocumentStatus.PendingDeptReview)
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.DeptSigned);
 
-        // DeptSigned → tự động chuyển sang PendingDirectorSign
-        document.Status = DocumentStatus.PendingDirectorSign;
+        document.Status = DocumentStatus.DeptSigned;
         var updated = await _documentRepository.UpdateAsync(document);
 
         await _documentProcessRepository.CreateAsync(new DocumentProcess
@@ -237,7 +236,34 @@ public class DocumentService : IDocumentService
             Timestamp = DateTime.UtcNow
         });
 
-        _logger.LogInformation("Văn bản ID={Id} được ký nháy, chuyển sang PendingDirectorSign", id);
+        _logger.LogInformation("Văn bản ID={Id} được ký nháy, chuyển sang DeptSigned", id);
+
+        var full = await _documentRepository.GetByIdAsync(updated.Id, includeProcesses: true)
+                   ?? updated;
+        return MapToDto(full);
+    }
+
+    public async Task<DocumentDto> SubmitToDirectorAsync(Guid id, Guid userId, string? comment)
+    {
+        var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
+            ?? throw new DocumentNotFoundException(id);
+
+        if (document.Status != DocumentStatus.DeptSigned)
+            throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.PendingDirectorSign);
+
+        document.Status = DocumentStatus.PendingDirectorSign;
+        var updated = await _documentRepository.UpdateAsync(document);
+
+        await _documentProcessRepository.CreateAsync(new DocumentProcess
+        {
+            DocId = id,
+            FromUserId = userId,
+            Action = DocumentAction.SubmitDirector,
+            Comment = comment ?? "Trình Ban Giám hiệu ký số.",
+            Timestamp = DateTime.UtcNow
+        });
+
+        _logger.LogInformation("Văn bản ID={Id} được trình Ban Giám hiệu, chuyển sang PendingDirectorSign", id);
 
         var full = await _documentRepository.GetByIdAsync(updated.Id, includeProcesses: true)
                    ?? updated;

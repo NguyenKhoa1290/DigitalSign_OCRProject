@@ -46,6 +46,7 @@ POST   /api/documents/{id}/upload
 PATCH  /api/documents/{id}/ocr
 POST   /api/documents/{id}/submit
 POST   /api/documents/{id}/dept-sign
+POST   /api/documents/{id}/submit-director
 POST   /api/documents/{id}/director-sign
 POST   /api/documents/{id}/reject
 POST   /api/documents/{id}/publish
@@ -57,12 +58,13 @@ POST   /api/documents/{id}/assign
 ```text
 Draft
   -> PendingDeptReview
+  -> DeptSigned
   -> PendingDirectorSign
   -> DirectorSigned
   -> Published
 ```
 
-`DocumentStatus.DeptSigned` có khai báo trong code nhưng implementation hiện chuyển thẳng từ `PendingDeptReview` sang `PendingDirectorSign`.
+`DeptSignAsync` chuyển `PendingDeptReview` sang `DeptSigned`. Sau đó gọi `SubmitToDirectorAsync` hoặc `POST /api/documents/{id}/submit-director` để chuyển sang `PendingDirectorSign`.
 
 ## Lưu ý tích hợp
 

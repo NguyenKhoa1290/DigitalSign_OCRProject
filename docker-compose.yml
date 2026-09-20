@@ -69,6 +69,14 @@ services:
       - hau_kafka_data:/tmp/kraft-combined-logs
     restart: unless-stopped
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: hau_mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
   identity-service:
     build:
       context: ./IdentityService
@@ -84,9 +92,19 @@ services:
       JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
       JwtSettings__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
       JwtSettings__RefreshTokenExpiryDays: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:-7}
+      EmailSettings__SmtpHost: ${EMAIL_SMTP_HOST:-mailpit}
+      EmailSettings__SmtpPort: ${EMAIL_SMTP_PORT:-1025}
+      EmailSettings__SecureSocketOptions: ${EMAIL_SECURE_SOCKET_OPTIONS:-None}
+      EmailSettings__RequireAuth: ${EMAIL_REQUIRE_AUTH:-false}
+      EmailSettings__Username: ${EMAIL_USERNAME:-}
+      EmailSettings__Password: ${EMAIL_PASSWORD:-}
+      EmailSettings__FromEmail: ${EMAIL_FROM_EMAIL:-noreply@hau.local}
+      EmailSettings__FromName: ${EMAIL_FROM_NAME:-HAU Documents}
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     ports:
       - "5048:8080"
     healthcheck:

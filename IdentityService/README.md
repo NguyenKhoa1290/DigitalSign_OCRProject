@@ -97,14 +97,27 @@ Cấu hình nằm trong section `EmailSettings`:
   "EmailSettings": {
     "SmtpHost": "smtp.gmail.com",
     "SmtpPort": "587",
+    "SecureSocketOptions": "StartTls",
+    "RequireAuth": "true",
     "Username": "<smtp-user>",
     "Password": "<smtp-app-password>",
+    "FromEmail": "<smtp-user>",
     "FromName": "HAU Documents"
   }
 }
 ```
 
-`Username` và `Password` là bắt buộc khi gửi mail. Không commit credential thật vào repo; khi triển khai nên đưa qua environment variables hoặc secret manager.
+Docker dev mặc định dùng Mailpit local:
+
+```text
+SMTP host: mailpit
+SMTP port: 1025
+SecureSocketOptions: None
+RequireAuth: false
+Web UI/API: http://localhost:8025
+```
+
+Khi `RequireAuth=true`, `Username` và `Password` là bắt buộc. Không commit credential thật vào repo; khi triển khai nên đưa qua environment variables hoặc secret manager.
 
 ### Users - `/api/users`
 

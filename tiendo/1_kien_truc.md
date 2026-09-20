@@ -115,13 +115,13 @@ Workflow theo code:
 ```text
 Draft
   -> PendingDeptReview
-  -> DeptSigned (đã khai báo trong code)
+  -> DeptSigned
   -> PendingDirectorSign
   -> DirectorSigned
   -> Published
 ```
 
-Lưu ý: implementation hiện tại của `DeptSignAsync` đang chuyển thẳng từ `PendingDeptReview` sang `PendingDirectorSign`; `DeptSigned` tồn tại trong status constants nhưng chưa được dùng như trạng thái dừng riêng.
+Luồng hiện tại dùng `DeptSigned` làm trạng thái dừng riêng sau khi lãnh đạo phòng ký nháy. Manager cần gọi tiếp `SubmitToDirectorAsync` / `POST /api/documents/{id}/submit-director` để chuyển văn bản sang `PendingDirectorSign`.
 
 Từ chối:
 
@@ -132,7 +132,7 @@ PendingDeptReview / DeptSigned / PendingDirectorSign -> Rejected
 Các action log:
 
 ```text
-Submit, DeptSign, DirectorSign, Reject, Publish, Assign, UpdateOCR
+Submit, DeptSign, SubmitDirector, DirectorSign, Reject, Publish, Assign, UpdateOCR
 ```
 
 ## SignService

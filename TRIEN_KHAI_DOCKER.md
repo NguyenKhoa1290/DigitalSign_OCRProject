@@ -48,6 +48,8 @@ Trước khi chạy, đảm bảo các port sau chưa bị app khác chiếm:
 | MinIO API | `localhost:9000` |
 | MinIO Console | `http://localhost:9001` |
 | Kafka | `localhost:9092` |
+| Mailpit SMTP dev | `localhost:1025` |
+| Mailpit Web UI/API | `http://localhost:8025` |
 
 Nếu port bị trùng, sửa phần `ports:` trong `docker-compose.yml`.
 
@@ -98,6 +100,7 @@ Lưu ý:
 
 - `JWT_SECRET_KEY` phải giống nhau cho IdentityService, ApiGateway, DocumentService và SignService.
 - `OCR_SERVICE_TOKEN` phải giống nhau giữa DocumentService và OCRService.
+- Mặc định Docker dev dùng Mailpit để nhận email forgot/reset password tại `http://localhost:8025`, không gửi email ra ngoài.
 - Không commit file `.env` thật vào Git. Repo đã có `.gitignore` và `.dockerignore` để bỏ qua `.env`.
 
 Nếu chỉ chạy local/dev nhanh mà chưa tạo `.env`, hệ thống vẫn dùng default dev như trước.
@@ -168,6 +171,7 @@ Invoke-WebRequest http://localhost:5000/ -UseBasicParsing
 Invoke-WebRequest http://localhost:5048/health -UseBasicParsing
 Invoke-WebRequest http://localhost:5051/api/ocr/health -UseBasicParsing
 Invoke-WebRequest http://localhost:5227/ -UseBasicParsing
+Invoke-WebRequest http://localhost:8025/ -UseBasicParsing
 ```
 
 Kết quả mong muốn:
@@ -176,6 +180,7 @@ Kết quả mong muốn:
 - Identity health trả `Healthy`.
 - OCR health trả JSON có `status: ok`.
 - Frontend trả HTML.
+- Mailpit trả HTML.
 
 Kiểm tra login qua Gateway:
 
@@ -230,6 +235,23 @@ document.uploaded
 ```
 
 Lưu ý hiện tại: Kafka upload event vẫn gửi `token` rỗng, nhưng Docker compose đã cấu hình `SERVICE_TOKEN` cho OCRService và `ServiceAuth__OcrServiceToken` cho DocumentService. Khi OCRService không nhận JWT từ event, service sẽ dùng header nội bộ `X-Service-Token` để PATCH kết quả OCR về DocumentService.
+
+## 9.1. Kiểm tra email forgot/reset password local
+
+Docker dev dùng Mailpit làm SMTP local:
+
+```text
+SMTP: http://localhost:1025
+Web UI/API: http://localhost:8025
+```
+
+Khi gọi `/api/auth/forgot-password`, email OTP sẽ nằm trong Mailpit, không gửi ra internet. Mở:
+
+```text
+http://localhost:8025
+```
+
+Nếu triển khai thật, đổi các biến `EMAIL_*` trong `.env` sang SMTP thật, ví dụ Gmail app password hoặc SMTP doanh nghiệp.
 
 ## 10. Xem log khi cần debug
 
@@ -350,6 +372,7 @@ Các giá trị mặc định trong repo chỉ phù hợp môi trường dev/dem
 - OCR service-token: `ServiceAuth__OcrServiceToken` của DocumentService và `SERVICE_TOKEN` của OCRService phải cùng giá trị.
 - Gmail app password hoặc SMTP account cho forgot/reset password.
 - `EmailSettings:Username` và `EmailSettings:Password` của IdentityService.
+- Nếu dùng SMTP thật, đặt `EMAIL_REQUIRE_AUTH=true` và cấu hình `EMAIL_SECURE_SOCKET_OPTIONS` phù hợp, thường là `StartTls` cho cổng 587.
 - Mật khẩu Root CA/PFX trong SignService nếu đưa vào môi trường thật.
 - Cấu hình HTTPS/reverse proxy nếu public ra mạng ngoài.
 

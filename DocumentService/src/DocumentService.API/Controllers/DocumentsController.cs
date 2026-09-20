@@ -197,7 +197,7 @@ public class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/documents/{id}/dept-sign - Lãnh đạo phòng ký nháy (PendingDeptReview → PendingDirectorSign)
+    /// POST /api/documents/{id}/dept-sign - Lãnh đạo phòng ký nháy (PendingDeptReview → DeptSigned)
     /// </summary>
     [HttpPost("{id:guid}/dept-sign")]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
@@ -207,6 +207,19 @@ public class DocumentsController : ControllerBase
         var userId = GetCurrentUserId();
         var result = await _documentService.DeptSignAsync(id, userId, dto?.Comment);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Lãnh đạo phòng đã ký nháy."));
+    }
+
+    /// <summary>
+    /// POST /api/documents/{id}/submit-director - Trình BGH ký (DeptSigned → PendingDirectorSign)
+    /// </summary>
+    [HttpPost("{id:guid}/submit-director")]
+    [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
+    [ProducesResponseType(422)]
+    public async Task<IActionResult> SubmitDirector(Guid id, [FromBody] WorkflowActionDto? dto)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _documentService.SubmitToDirectorAsync(id, userId, dto?.Comment);
+        return Ok(ApiResponse<DocumentDto>.Ok(result, "Đã trình Ban Giám hiệu ký văn bản."));
     }
 
     /// <summary>

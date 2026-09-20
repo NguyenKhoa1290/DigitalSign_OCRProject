@@ -137,6 +137,7 @@ Tình trạng hiện tại:
 
 - Kafka event vẫn gửi `authToken` rỗng, nhưng DocumentService đã hỗ trợ header nội bộ `X-Service-Token`.
 - OCRService đã fallback sang `SERVICE_TOKEN` khi Kafka event không có JWT, nên có thể tự PATCH kết quả OCR về DocumentService trong Docker/local.
+- Luồng upload PDF thật → publish Kafka `document.uploaded` → OCRService/PaddleOCR xử lý → PATCH kết quả OCR về DocumentService đã pass test Docker/Gateway `TC-OCR-E2E-010`.
 
 ## 4. OCRService
 
@@ -147,6 +148,7 @@ Tình trạng hiện tại:
 - Chuyển PDF sang ảnh bằng `pdf2image`.
 - Tải file PDF từ MinIO.
 - Kafka consumer tùy chọn.
+- Kafka consumer có retry loop khi Kafka chưa sẵn sàng, tránh chết thread nếu service khởi động trước broker.
 - Gọi lại DocumentService để cập nhật OCR result.
 
 ### API đã có
@@ -232,5 +234,13 @@ GET  /api/signatures/certificates/{userId}
 
 ## 7. Những việc còn lại
 
-- Rà soát secrets trong `appsettings*.json` trước khi deploy.
-- Bổ sung test cho DocumentService, SignService và flow tích hợp.
+- Kiểm thử UI ký số thủ công trên trình duyệt với role thật (`Manager`, `BoardOfDirectors`).
+- Tiếp tục bổ sung test tích hợp sâu cho DocumentService/SignService/OCRService khi phát triển thêm nghiệp vụ.
+
+## 8. Cấu hình triển khai và secrets
+
+- Docker Compose đã hỗ trợ file `.env` ở root project.
+- Repo có `.env.example` để khai báo các biến cần đổi khi deploy: PostgreSQL, MinIO, JWT, OCR service-token.
+- `docker-compose.yml` dùng cú pháp `${VAR:-default_dev}` để local/dev vẫn chạy nếu chưa tạo `.env`.
+- `.gitignore` và `.dockerignore` đã bỏ qua `.env`/`.env.*`, nhưng vẫn cho phép commit `.env.example`.
+- `OCRService/.env.example` chỉ dùng khi chạy OCRService độc lập ngoài Docker Compose root.

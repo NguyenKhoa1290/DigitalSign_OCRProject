@@ -79,7 +79,30 @@ Cách 2: copy thư mục project:
 - Nên bỏ qua các thư mục build tạm như `bin/`, `obj/`, `.vs/` nếu chỉ cần source.
 - Mở terminal tại thư mục root, nơi có file `docker-compose.yml`.
 
-## 4. Lưu ý nếu truy cập Frontend từ máy khác trong LAN
+## 4. Tạo file `.env` cho Docker Compose
+
+Docker Compose có thể chạy ngay bằng các default dev trong `docker-compose.yml`, nhưng khi mang sang máy khác hoặc triển khai thật nên tạo file `.env` riêng:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Sau đó mở `.env` và đổi tối thiểu:
+
+- `POSTGRES_PASSWORD`
+- `MINIO_ROOT_PASSWORD`
+- `JWT_SECRET_KEY`
+- `OCR_SERVICE_TOKEN`
+
+Lưu ý:
+
+- `JWT_SECRET_KEY` phải giống nhau cho IdentityService, ApiGateway, DocumentService và SignService.
+- `OCR_SERVICE_TOKEN` phải giống nhau giữa DocumentService và OCRService.
+- Không commit file `.env` thật vào Git. Repo đã có `.gitignore` và `.dockerignore` để bỏ qua `.env`.
+
+Nếu chỉ chạy local/dev nhanh mà chưa tạo `.env`, hệ thống vẫn dùng default dev như trước.
+
+## 5. Lưu ý nếu truy cập Frontend từ máy khác trong LAN
 
 Frontend hiện đang build với API base:
 
@@ -102,7 +125,7 @@ docker compose build frontend
 docker compose up -d frontend
 ```
 
-## 5. Build image lần đầu
+## 6. Build image lần đầu
 
 Tại thư mục root project:
 
@@ -116,7 +139,7 @@ PaddleOCR có thể tải model ở lần OCR đầu tiên. Nếu triển khai �
 
 Frontend build image cũng cần internet ở lần đầu để cài .NET workload `wasm-tools`. Nếu thiếu Python trong build image, WebAssembly publish có thể lỗi `unable to find python in $PATH`; Dockerfile hiện đã xử lý bằng `python3`.
 
-## 6. Chạy toàn bộ hệ thống
+## 7. Chạy toàn bộ hệ thống
 
 ```powershell
 docker compose up -d
@@ -135,7 +158,7 @@ Kết quả mong muốn:
 - Các container còn lại ở trạng thái `Up`.
 - `hau_minio_init` có thể `Exited (0)`, đây là bình thường vì container này chỉ tạo bucket `documents` rồi thoát.
 
-## 7. Kiểm tra sau khi chạy
+## 8. Kiểm tra sau khi chạy
 
 Kiểm tra endpoint:
 
@@ -171,7 +194,7 @@ Tài khoản seed:
 |---|---|---|
 | `admin` | `Admin@123` | `Admin` |
 
-## 8. Kiểm tra MinIO và Kafka
+## 9. Kiểm tra MinIO và Kafka
 
 MinIO Console:
 
@@ -185,6 +208,8 @@ http://localhost:9001
 Username: minioadmin
 Password: minioadmin
 ```
+
+Nếu đã đổi `.env`, dùng `MINIO_ROOT_USER` và `MINIO_ROOT_PASSWORD` trong file `.env`.
 
 Bucket mặc định cần có:
 
@@ -206,7 +231,7 @@ document.uploaded
 
 Lưu ý hiện tại: Kafka upload event vẫn gửi `token` rỗng, nhưng Docker compose đã cấu hình `SERVICE_TOKEN` cho OCRService và `ServiceAuth__OcrServiceToken` cho DocumentService. Khi OCRService không nhận JWT từ event, service sẽ dùng header nội bộ `X-Service-Token` để PATCH kết quả OCR về DocumentService.
 
-## 9. Xem log khi cần debug
+## 10. Xem log khi cần debug
 
 Xem toàn bộ log:
 
@@ -226,7 +251,7 @@ docker compose logs -f api-gateway
 
 Một số log EF Core báo lỗi khi kiểm tra bảng `__EFMigrationsHistory` trong lần chạy DB rỗng đầu tiên có thể xuất hiện, nhưng nếu sau đó có dòng migration hoàn tất và container vẫn `Up` thì không phải lỗi chặn chạy.
 
-## 10. Dừng, chạy lại, reset dữ liệu
+## 11. Dừng, chạy lại, reset dữ liệu
 
 Dừng container nhưng giữ dữ liệu:
 
@@ -248,11 +273,11 @@ docker compose down -v
 
 Chỉ dùng `down -v` khi chắc chắn muốn reset dữ liệu.
 
-## 11. Mang cả dữ liệu sang máy khác
+## 12. Mang cả dữ liệu sang máy khác
 
 Nếu chỉ cần chạy môi trường mới rỗng, bỏ qua phần này.
 
-### 11.1. Backup PostgreSQL trên máy cũ
+### 12.1. Backup PostgreSQL trên máy cũ
 
 ```powershell
 New-Item -ItemType Directory -Force backup
@@ -260,14 +285,16 @@ docker exec hau_postgres pg_dump -U postgres -d DigitalSign_OCR -Fc -f /tmp/Digi
 docker cp hau_postgres:/tmp/DigitalSign_OCR.dump .\backup\DigitalSign_OCR.dump
 ```
 
-### 11.2. Backup file MinIO trên máy cũ
+### 12.2. Backup file MinIO trên máy cũ
 
 ```powershell
 $backupPath = (Resolve-Path .\backup).Path
 docker run --rm --entrypoint /bin/sh --network container:hau_minio -v "${backupPath}:/backup" quay.io/minio/mc:latest -c "mc alias set local http://localhost:9000 minioadmin minioadmin >/dev/null && mc mirror local/documents /backup/minio-documents"
 ```
 
-### 11.3. Backup chứng thư số SignService trên máy cũ
+Nếu đã đổi MinIO credential trong `.env`, thay `minioadmin minioadmin` bằng `MINIO_ROOT_USER MINIO_ROOT_PASSWORD` thực tế.
+
+### 12.3. Backup chứng thư số SignService trên máy cũ
 
 Thư mục `/app/certs` trong container `hau_sign_service` chứa `rootca.pfx` và các PFX user. Cần backup phần này nếu muốn giữ khả năng ký/xác minh chứng thư đã cấp.
 
@@ -277,7 +304,7 @@ docker cp hau_sign_service:/app/certs .\backup\sign-certs
 
 Copy thư mục `backup/` sang máy mới.
 
-### 11.4. Restore trên máy mới
+### 12.4. Restore trên máy mới
 
 Khởi động hạ tầng trước:
 
@@ -313,9 +340,9 @@ Sau đó chạy toàn bộ app:
 docker compose up -d
 ```
 
-## 11.5. Checklist đổi secret khi triển khai thật
+## 12.5. Checklist đổi secret khi triển khai thật
 
-Các giá trị mặc định trong repo chỉ phù hợp môi trường dev/demo. Trước khi dùng thật, cần đổi:
+Các giá trị mặc định trong repo chỉ phù hợp môi trường dev/demo. Trước khi dùng thật, copy `.env.example` thành `.env` và đổi:
 
 - PostgreSQL username/password.
 - MinIO root user/password.
@@ -328,7 +355,7 @@ Các giá trị mặc định trong repo chỉ phù hợp môi trường dev/dem
 
 Không commit secret thật vào repo. Nên dùng biến môi trường, Docker secrets hoặc secret manager của hạ tầng triển khai.
 
-## 12. Trường hợp máy mới không có internet
+## 13. Trường hợp máy mới không có internet
 
 Trên máy cũ, sau khi đã build/pull đủ image:
 

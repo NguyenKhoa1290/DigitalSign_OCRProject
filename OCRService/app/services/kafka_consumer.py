@@ -1,6 +1,7 @@
 import json
 import logging
 import threading
+import time
 from typing import Optional
 from app.config import get_settings
 
@@ -37,26 +38,38 @@ def start_consumer(process_fn):
             settings.kafka_topic_document_uploaded,
             settings.kafka_consumer_group,
         )
-        consumer = KafkaConsumer(
-            settings.kafka_topic_document_uploaded,
-            bootstrap_servers=settings.kafka_bootstrap_servers,
-            group_id=settings.kafka_consumer_group,
-            auto_offset_reset="earliest",
-            value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        )
-        for message in consumer:
-            if not _running:
-                break
+        while _running:
+            consumer = None
             try:
-                payload = message.value
-                # Payload expected: { "doc_id": "...", "minio_path": "...", "token": "..." }
-                doc_id = payload.get("doc_id", "")
-                minio_path = payload.get("minio_path", "")
-                token = payload.get("token", "")
-                logger.info("Nhận Kafka event: doc_id=%s", doc_id)
-                process_fn(doc_id, minio_path, token)
+                consumer = KafkaConsumer(
+                    settings.kafka_topic_document_uploaded,
+                    bootstrap_servers=settings.kafka_bootstrap_servers,
+                    group_id=settings.kafka_consumer_group,
+                    auto_offset_reset="earliest",
+                    value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+                )
+                logger.info("Kafka consumer đã kết nối thành công.")
+
+                for message in consumer:
+                    if not _running:
+                        break
+                    try:
+                        payload = message.value
+                        # Payload expected: { "doc_id": "...", "minio_path": "...", "token": "..." }
+                        doc_id = payload.get("doc_id", "")
+                        minio_path = payload.get("minio_path", "")
+                        token = payload.get("token", "")
+                        logger.info("Nhận Kafka event: doc_id=%s", doc_id)
+                        process_fn(doc_id, minio_path, token)
+                    except Exception as e:
+                        logger.exception("Lỗi xử lý Kafka message: %s", e)
             except Exception as e:
-                logger.error("Lỗi xử lý Kafka message: %s", e)
+                if _running:
+                    logger.warning("Kafka consumer lỗi/kết nối chưa sẵn sàng: %s. Thử lại sau 5 giây.", e)
+                    time.sleep(5)
+            finally:
+                if consumer is not None:
+                    consumer.close()
 
     _consumer_thread = threading.Thread(target=_run, daemon=True, name="kafka-consumer")
     _consumer_thread.start()

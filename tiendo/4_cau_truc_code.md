@@ -395,6 +395,8 @@ Kafka:
 - Topic mặc định: `document.uploaded`.
 - Payload kỳ vọng: `{ "doc_id": "...", "minio_path": "...", "token": "..." }`.
 - Nếu `token` rỗng, `ocr_processor` dùng `settings.service_token` và `document_service.py` gửi header `X-Service-Token`.
+- Consumer có retry loop khi Kafka chưa sẵn sàng/lỗi kết nối, không để thread chết hẳn lúc container khởi động lệch nhịp.
+- `app/main.py` giữ event loop FastAPI lifespan và truyền coroutine OCR từ Kafka thread bằng `asyncio.run_coroutine_threadsafe(..., loop)`.
 
 ## 7. Frontend
 

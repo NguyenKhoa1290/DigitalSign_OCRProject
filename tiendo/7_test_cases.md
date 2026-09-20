@@ -740,3 +740,163 @@ docker compose up -d api-gateway
 - `FailOpenOnValidationError=true` ưu tiên tính sẵn sàng: downstream route vẫn chạy nếu JWT hợp lệ local và IdentityService tạm lỗi.
 - Đánh đổi: trong thời gian IdentityService tạm lỗi, token đã logout có thể chưa bị Gateway chặn cho tới khi IdentityService phục hồi hoặc token hết hạn.
 - Có thể đổi sang `false` ở production nếu muốn ưu tiên bảo mật tuyệt đối.
+
+## TC-OCR-E2E-010 — Upload PDF thật qua Kafka/PaddleOCR và cập nhật OCR về DocumentService
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | DocumentService + Kafka + MinIO + OCRService + ApiGateway trong Docker |
+| Mục tiêu | Xác nhận upload PDF thật qua Gateway kích hoạt Kafka event, OCRService xử lý bằng PaddleOCR và tự PATCH kết quả OCR về DocumentService |
+| Kết quả | Pass |
+
+### Thay đổi chính đã test
+
+- `OCRService/app/services/kafka_consumer.py` có retry loop khi Kafka chưa sẵn sàng/lỗi kết nối.
+- `OCRService/app/main.py` dùng event loop FastAPI lifespan để chạy coroutine OCR từ Kafka thread.
+- `OCRService/requirements.txt` pin thêm OpenCV packages để Docker build OCRService ổn định hơn.
+
+### Các bước đã chạy
+
+1. Kiểm tra code Python:
+
+```powershell
+python -m compileall .\OCRService\app
+```
+
+2. Build/redeploy OCRService:
+
+```powershell
+docker compose build ocr-service
+docker compose up -d ocr-service
+```
+
+3. Kiểm tra health và hạ tầng:
+
+```powershell
+Invoke-WebRequest http://localhost:5051/api/ocr/health -UseBasicParsing
+docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+```
+
+4. Chạy luồng qua Gateway:
+   - Login `admin / Admin@123`.
+   - `GET /api/documents/types` để lấy `DocTypeId`.
+   - Tạo document test.
+   - Tạo PDF test có nội dung lớn/rõ:
+     - `TRUONG DAI HOC KIEN TRUC HA NOI`
+     - `So: 123/CV-HAU`
+     - `Ngay: 20/09/2026`
+     - `V/v kiem thu OCR tu dong qua Kafka`
+   - Upload PDF vào `/api/documents/{docId}/upload`.
+   - Poll `GET /api/documents/{docId}` cho tới khi `ocrDataRaw` có dữ liệu.
+
+### Dữ liệu test thực tế
+
+| Trường | Giá trị |
+|---|---|
+| `docId` | `bba87f60-5a39-43c6-801d-8adcf8fa478c` |
+| File test | `tc-ocr-e2e-010-20260920103916.pdf` |
+| MinIO path | `documents/63df61e8-04bf-47af-bdc4-069f3470d4a3.pdf` |
+| Kafka topic | `document.uploaded` |
+| Kafka offset | `0` |
+
+### Kết quả build/test
+
+| Lệnh/kiểm tra | Kết quả |
+|---|---|
+| `python -m compileall .\OCRService\app` | Pass |
+| `docker compose build ocr-service` | Pass |
+| `docker compose up -d ocr-service` | Pass |
+| OCR health | HTTP 200 |
+| Kafka topic `document.uploaded` | Tồn tại |
+| Upload PDF qua Gateway | HTTP 200 |
+| DocumentService publish Kafka | OK, partition `0`, offset `0` |
+| OCRService/PaddleOCR xử lý và PATCH DocumentService | Pass, có `UpdateOCR` |
+
+### Kết quả OCR sau khi xử lý
+
+| Trường | Giá trị |
+|---|---|
+| `docNumber` | `123/CV-HAU` |
+| `issuedDate` | `2026-09-20` |
+| `title` | `kiem thu OCR tu dong qua Kafka` |
+| `ocrDataRaw` | Có JSON gồm `pages`, `lines`, `extracted` |
+| `DocumentProcess` | Có action `UpdateOCR` |
+| Actor cập nhật OCR | `00000000-0000-0000-0000-000000000051` |
+
+### Ghi chú
+
+- Test này xác nhận full luồng runtime, không chỉ test service-token/PATCH mẫu.
+- OCR nhận diện tốt với PDF test chữ rõ; cần thêm bộ PDF/scan thực tế để đánh giá chất lượng OCR trong điều kiện tài liệu thật.
+
+## TC-SEC-ENV-011 — Docker Compose dùng `.env`/`.env.example` cho secret triển khai
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 20/09/2026 |
+| Phạm vi | Docker Compose + cấu hình triển khai + Gateway/Identity/OCR smoke test |
+| Mục tiêu | Xác nhận các secret chính có thể override qua `.env` mà vẫn giữ default dev để local chạy được |
+| Kết quả | Pass |
+
+### Thay đổi chính đã test
+
+- Thêm `.env.example` ở root project.
+- Thêm `.gitignore` để bỏ qua `.env`/`.env.*` nhưng vẫn track `.env.example`.
+- Cập nhật `.dockerignore` để không đưa `.env` thật vào Docker build context.
+- Cập nhật `docker-compose.yml` dùng `${VAR:-default_dev}` cho:
+  - PostgreSQL user/password/database.
+  - MinIO root user/password.
+  - JWT key/issuer/audience/token expiry.
+  - OCR service-token.
+- Cập nhật `TRIEN_KHAI_DOCKER.md` và `OCRService/.env.example`.
+
+### Các bước đã chạy
+
+1. Kiểm tra Compose với default dev, không cần `.env`:
+
+```powershell
+docker compose config --quiet
+```
+
+2. Kiểm tra Compose đọc được `.env.example`:
+
+```powershell
+docker compose --env-file .env.example config --quiet
+```
+
+3. Redeploy stack hiện tại:
+
+```powershell
+docker compose up -d
+```
+
+4. Kiểm tra trạng thái container:
+
+```powershell
+docker compose ps
+```
+
+5. Smoke test:
+   - Gateway health.
+   - Identity health.
+   - OCR health.
+   - Login qua Gateway bằng `admin / Admin@123`.
+
+### Kết quả build/test
+
+| Lệnh/kiểm tra | Kết quả |
+|---|---|
+| `docker compose config --quiet` | Pass |
+| `docker compose --env-file .env.example config --quiet` | Pass |
+| `docker compose up -d` | Pass |
+| `docker compose ps` | Các container chính `Up`, PostgreSQL và Identity healthy |
+| Gateway health | `Healthy` |
+| Identity health | `Healthy` |
+| OCR health | `status = ok` |
+| Login qua Gateway | Pass, nhận access token |
+
+### Ghi chú
+
+- `.env.example` dùng placeholder `change-me-*` cho triển khai thật.
+- Nếu không tạo `.env`, Compose vẫn dùng default dev trong `docker-compose.yml` để không làm gián đoạn môi trường local hiện tại.
+- Các file `appsettings*.json` vẫn có giá trị dev/local; khi chạy Docker, environment variables từ Compose sẽ override các giá trị này.

@@ -277,10 +277,12 @@ Trong quá trình viết tài liệu phát hiện:
 | 19/09/2026 | Công việc số 7: persist refresh token, rotate token, blacklist logout; build/test/Docker smoke test pass |
 | 19/09/2026 | Công việc số 8: mở rộng ApiGateway kiểm tra blacklist qua IdentityService; build/test/Docker smoke test pass |
 | 19/09/2026 | Công việc số 9: sửa Gateway fallback khi IdentityService validate-token tạm lỗi; build/test/Docker smoke test pass |
+| 20/09/2026 | Công việc số 10: test full OCR upload PDF thật qua Kafka/PaddleOCR và bổ sung retry cho Kafka consumer; Docker/Gateway e2e pass |
+| 20/09/2026 | Công việc số 11: đưa secret Docker Compose sang `.env`/`.env.example`, giữ default dev và smoke test Gateway/OCR/login pass |
 
 **Trạng thái hiện tại:** IdentityService, DocumentService, SignService, OCRService backend, API Gateway và Frontend đều đã có code chính.
 
-**Còn lại đáng chú ý:** kiểm thử UI ký số thủ công trên trình duyệt với role thật; tiếp tục bổ sung test tích hợp sâu cho DocumentService/SignService/OCRService khi cần.
+**Còn lại đáng chú ý:** kiểm thử UI ký số thủ công trên trình duyệt với role thật; tiếp tục bổ sung test tích hợp sâu khi phát triển thêm nghiệp vụ.
 
 ---
 
@@ -658,6 +660,91 @@ Trong quá trình viết tài liệu phát hiện:
 **Ghi chú:**
 - Đây là đánh đổi có chủ ý: khi IdentityService tạm lỗi, token đã logout có thể đi tiếp cho tới khi IdentityService phục hồi hoặc token hết hạn.
 - Đổi `AuthValidation:FailOpenOnValidationError=false` nếu muốn ưu tiên bảo mật tuyệt đối hơn tính sẵn sàng.
+
+---
+
+## 🗓️ Công việc số 10 — 20/09/2026
+### Kiểm thử full OCR upload PDF thật qua Kafka/PaddleOCR
+
+**Vấn đề:**
+- Các hạng mục trước đã test đường service-token và màn hình xem OCR, nhưng chưa chạy full luồng PaddleOCR trên PDF thật sau khi upload.
+- OCRService có thể khởi động trước Kafka; trước khi sửa, consumer thread có rủi ro chết nếu Kafka chưa sẵn sàng.
+
+**Đã sửa code/cấu hình:**
+- Cập nhật `OCRService/app/services/kafka_consumer.py`:
+  - Thêm retry loop khi Kafka chưa sẵn sàng hoặc consumer lỗi.
+  - Đóng consumer trong `finally`.
+  - Log exception khi xử lý từng message lỗi.
+- Cập nhật `OCRService/app/main.py`:
+  - Lấy event loop đang chạy trong FastAPI lifespan.
+  - Kafka thread dùng `asyncio.run_coroutine_threadsafe(..., loop)` và `future.result()` để surface lỗi xử lý OCR.
+- Cập nhật `OCRService/requirements.txt`:
+  - Pin thêm `opencv-python==4.10.0.84` và `opencv-contrib-python==4.10.0.84` để Docker build không backtrack nhiều phiên bản OpenCV.
+
+**Đã kiểm tra theo quy trình:**
+- `python -m compileall .\OCRService\app`: pass.
+- `docker compose build ocr-service`: pass.
+- `docker compose up -d ocr-service`: pass.
+- OCR health `GET http://localhost:5051/api/ocr/health`: HTTP 200.
+- Kafka topic `document.uploaded`: tồn tại.
+- Test Docker/Gateway `TC-OCR-E2E-010`: pass.
+
+**Kết quả test chính:**
+- Login `admin / Admin@123`: OK.
+- Tạo document test qua Gateway: `bba87f60-5a39-43c6-801d-8adcf8fa478c`.
+- Upload PDF test lên DocumentService:
+  - File: `tc-ocr-e2e-010-20260920103916.pdf`.
+  - MinIO path: `documents/63df61e8-04bf-47af-bdc4-069f3470d4a3.pdf`.
+- DocumentService log publish Kafka OK:
+  - topic `document.uploaded`, partition `0`, offset `0`.
+- OCRService/PaddleOCR xử lý và PATCH kết quả về DocumentService trong khoảng 10 giây.
+- Document sau OCR:
+  - `docNumber = 123/CV-HAU`.
+  - `issuedDate = 2026-09-20`.
+  - `title = kiem thu OCR tu dong qua Kafka`.
+  - Có `OcrDataRaw` chứa lines OCR và extracted fields.
+  - Có `DocumentProcess` action `UpdateOCR` từ service user `00000000-0000-0000-0000-000000000051`.
+
+**Ghi chú:**
+- OCR nhận diện được nội dung PDF test ASCII lớn/chữ rõ. Chất lượng OCR với scan thật vẫn cần bộ test tài liệu thực tế riêng.
+- Log custom của OCRService chưa hiện đầy đủ như log ASP.NET service, nhưng luồng thực tế đã được xác nhận bằng DB/API và log DocumentService.
+
+---
+
+## 🗓️ Công việc số 11 — 20/09/2026
+### Đưa secret Docker Compose sang `.env`/`.env.example`
+
+**Vấn đề:**
+- `docker-compose.yml` đang hardcode các giá trị dev như PostgreSQL password, MinIO credential, JWT key và OCR service-token.
+- Khi mang sang máy khác hoặc deploy thật, cần có cơ chế đổi secret rõ ràng mà không commit secret thật vào repo.
+
+**Đã sửa code/cấu hình:**
+- Thêm `.env.example` ở root project với các biến:
+  - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`.
+  - `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`.
+  - `JWT_SECRET_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE`, thời hạn token.
+  - `OCR_SERVICE_TOKEN`.
+- Cập nhật `docker-compose.yml`:
+  - Dùng `${VAR:-default_dev}` cho các secret/cấu hình quan trọng.
+  - Giữ default dev để local vẫn chạy nếu chưa tạo `.env`.
+  - `minio-init` dùng cùng credential MinIO từ biến môi trường.
+- Thêm `.gitignore` để bỏ qua `.env`/`.env.*` nhưng vẫn cho phép `.env.example`.
+- Cập nhật `.dockerignore` để không đưa `.env` thật vào Docker build context.
+- Cập nhật `OCRService/.env.example` để ghi rõ file này dùng khi chạy OCRService độc lập; full stack dùng `.env.example` ở root.
+- Cập nhật `TRIEN_KHAI_DOCKER.md` với bước copy `.env.example` thành `.env` và checklist đổi secret.
+
+**Đã kiểm tra theo quy trình:**
+- `docker compose config --quiet`: pass với default dev.
+- `docker compose --env-file .env.example config --quiet`: pass.
+- `docker compose up -d`: pass, các container chính vẫn `Up`; `hau_postgres` và `hau_identity_service` healthy.
+- Gateway health `GET http://localhost:5000/health`: `Healthy`.
+- Identity health `GET http://localhost:5048/health`: `Healthy`.
+- OCR health `GET http://localhost:5051/api/ocr/health`: `status=ok`.
+- Login qua Gateway `admin / Admin@123`: pass, nhận access token.
+
+**Ghi chú:**
+- File `.env.example` dùng placeholder an toàn hơn cho deploy thật; nếu không tạo `.env`, Compose vẫn dùng default dev để tiện chạy local.
+- Các file `appsettings*.json` vẫn giữ giá trị dev/local; Docker deploy nên override qua `.env`/environment variables.
 
 ---
 

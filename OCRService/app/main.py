@@ -21,16 +21,18 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Khởi động và dọn dẹp resources."""
     settings = get_settings()
+    loop = asyncio.get_running_loop()
     logger.info("OCR Service đang khởi động (port=%d)...", settings.port)
 
     # Khởi động Kafka consumer nếu được bật
     def _sync_process(doc_id, minio_path, token):
         """Kafka cần sync wrapper vì consumer chạy trong thread."""
-        asyncio.run_coroutine_threadsafe(
+        future = asyncio.run_coroutine_threadsafe(
             __import__("app.services.ocr_processor", fromlist=["process_document"])
             .process_document(doc_id, minio_path, token),
-            asyncio.get_event_loop(),
+            loop,
         )
+        future.result()
 
     kafka_consumer.start_consumer(_sync_process)
     logger.info("OCR Service sẵn sàng.")

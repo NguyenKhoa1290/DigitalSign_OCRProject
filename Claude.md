@@ -145,12 +145,14 @@ GET    /api/ocr/health
 - `DocumentService` publish Kafka event `document.uploaded` với `minio_path = storedFileName`; hiện `authToken` đang gửi rỗng.
 - `OCRService` dùng JWT nếu request/Kafka event có token; nếu token rỗng thì fallback sang `SERVICE_TOKEN` và PATCH về `DocumentService` bằng header `X-Service-Token`.
 - `SERVICE_TOKEN` của OCRService phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
+- OCRService Kafka consumer có retry khi Kafka chưa sẵn sàng; full luồng upload PDF thật → Kafka → PaddleOCR → `UpdateOCR` đã pass `TC-OCR-E2E-010`.
 - Frontend có route `/documents/{id}/ocr` để xem `OcrDataRaw`, trường bóc tách, dòng text nhận diện và lịch sử `UpdateOCR`.
 - `SignService` đọc `Documents.MinioPath`, bỏ prefix bucket `documents/` khi cần, rồi tải/lưu lại đúng object PDF trên MinIO. Luồng này đã pass test Docker/API `TC-SIGN-001`.
 - Frontend ký số đã gửi đúng `SignRequestDto` backend (`DocId`, `SignerId`, `SignerName`, `Reason`) và payload này đã pass test Docker/API `TC-FE-SIGN-002`.
 - IdentityService đã persist/rotate refresh token và blacklist access token khi logout; luồng này đã pass test Docker/API `TC-AUTH-TOKEN-007`.
 - ApiGateway validate JWT cục bộ trước, sau đó gọi IdentityService `/api/auth/validate-token` để chặn token đã logout trên các route Document/Sign/OCR; luồng này đã pass `TC-GW-AUTH-008`.
 - ApiGateway có `AuthValidation:FailOpenOnValidationError=true` để fallback sang JWT local khi IdentityService validate-token tạm lỗi; luồng này đã pass `TC-GW-AUTH-009`.
+- Docker Compose hỗ trợ `.env` ở root project; `.env.example` liệt kê PostgreSQL, MinIO, JWT và OCR service-token cần đổi khi deploy thật; luồng cấu hình này đã pass `TC-SEC-ENV-011`.
 
 ## Cách chạy nhanh
 

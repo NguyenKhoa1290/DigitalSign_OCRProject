@@ -3,15 +3,15 @@ services:
     image: postgres:16-alpine
     container_name: hau_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "1111"
-      POSTGRES_DB: DigitalSign_OCR
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-1111}"
+      POSTGRES_DB: ${POSTGRES_DB:-DigitalSign_OCR}
     ports:
       - "5432:5432"
     volumes:
       - hau_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d DigitalSign_OCR"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-DigitalSign_OCR}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -22,8 +22,8 @@ services:
     container_name: hau_minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -36,9 +36,12 @@ services:
     container_name: hau_minio_init
     depends_on:
       - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     entrypoint: >
       /bin/sh -c "
-      until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 2; done;
+      until mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\"; do sleep 2; done;
       mc mb -p local/documents || true;
       "
 
@@ -75,12 +78,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable
-      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
-      JwtSettings__Issuer: IdentityService
-      JwtSettings__Audience: HAU-MicroservicesClients
-      JwtSettings__ExpiryMinutes: 60
-      JwtSettings__RefreshTokenExpiryDays: 7
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-DigitalSign_OCR};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-1111};SSL Mode=Disable"
+      JwtSettings__Key: ${JWT_SECRET_KEY:-HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!}
+      JwtSettings__Issuer: ${JWT_ISSUER:-IdentityService}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
+      JwtSettings__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      JwtSettings__RefreshTokenExpiryDays: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:-7}
     depends_on:
       postgres:
         condition: service_healthy
@@ -103,15 +106,15 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable
-      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
-      JwtSettings__Issuer: IdentityService
-      JwtSettings__Audience: HAU-MicroservicesClients
-      ServiceAuth__OcrServiceToken: hau-dev-ocr-service-token
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-DigitalSign_OCR};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-1111};SSL Mode=Disable"
+      JwtSettings__Key: ${JWT_SECRET_KEY:-HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!}
+      JwtSettings__Issuer: ${JWT_ISSUER:-IdentityService}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
+      ServiceAuth__OcrServiceToken: ${OCR_SERVICE_TOKEN:-hau-dev-ocr-service-token}
       ServiceAuth__OcrServiceUserId: 00000000-0000-0000-0000-000000000051
       MinioSettings__Endpoint: minio:9000
-      MinioSettings__AccessKey: minioadmin
-      MinioSettings__SecretKey: minioadmin
+      MinioSettings__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
+      MinioSettings__SecretKey: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MinioSettings__UseSSL: "false"
       MinioSettings__DefaultBucket: documents
       KafkaSettings__Enabled: "true"
@@ -139,13 +142,13 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable
-      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
-      JwtSettings__Issuer: IdentityService
-      JwtSettings__Audience: HAU-MicroservicesClients
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-DigitalSign_OCR};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-1111};SSL Mode=Disable"
+      JwtSettings__Key: ${JWT_SECRET_KEY:-HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!}
+      JwtSettings__Issuer: ${JWT_ISSUER:-IdentityService}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
       MinioSettings__Endpoint: minio:9000
-      MinioSettings__AccessKey: minioadmin
-      MinioSettings__SecretKey: minioadmin
+      MinioSettings__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
+      MinioSettings__SecretKey: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MinioSettings__UseSSL: "false"
       MinioSettings__Bucket: documents
       CertificateSettings__CertsDirectory: /app/certs
@@ -171,12 +174,12 @@ services:
     environment:
       PORT: 5051
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
       MINIO_BUCKET: documents
       DOCUMENT_SERVICE_URL: http://document-service:8080
-      SERVICE_TOKEN: hau-dev-ocr-service-token
+      SERVICE_TOKEN: ${OCR_SERVICE_TOKEN:-hau-dev-ocr-service-token}
       KAFKA_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC_DOCUMENT_UPLOADED: document.uploaded
@@ -203,9 +206,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      JwtSettings__Key: HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!
-      JwtSettings__Issuer: IdentityService
-      JwtSettings__Audience: HAU-MicroservicesClients
+      JwtSettings__Key: ${JWT_SECRET_KEY:-HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!}
+      JwtSettings__Issuer: ${JWT_ISSUER:-IdentityService}
+      JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
       AuthValidation__ValidateTokenUrl: "http://identity-service:8080/api/auth/validate-token"
       AuthValidation__TimeoutSeconds: 3
       AuthValidation__FailOpenOnValidationError: "true"

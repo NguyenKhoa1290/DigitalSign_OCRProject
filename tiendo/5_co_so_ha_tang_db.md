@@ -46,6 +46,8 @@ Các volume dữ liệu quan trọng:
 | `hau_sign_certs` | Root CA và PFX user của SignService |
 
 Không đưa secret thật vào tài liệu public/deploy. Các file `appsettings*.json` hiện vẫn có giá trị dev.
+Khi chạy bằng Docker Compose, copy `.env.example` ở root thành `.env` và đổi secret thật tại đó.
+`docker-compose.yml` dùng `${VAR:-default_dev}` nên local/dev vẫn chạy được nếu chưa tạo `.env`.
 
 ## Chiến lược schema theo service
 
@@ -349,6 +351,8 @@ OCRService consumer:
 - Gọi `process_document(doc_id, minio_path, token)`.
 - Nếu `token` rỗng, OCRService dùng `SERVICE_TOKEN` để gọi DocumentService bằng header `X-Service-Token`.
 - `SERVICE_TOKEN` phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
+- Consumer có retry 5 giây/lần khi Kafka chưa sẵn sàng hoặc kết nối lỗi, phù hợp môi trường Docker Compose khởi động nhiều container song song.
+- Luồng upload PDF thật qua Kafka/PaddleOCR đã pass `TC-OCR-E2E-010`: DocumentService publish `document.uploaded`, OCRService xử lý PDF từ MinIO và PATCH `UpdateOCR` về DocumentService.
 
 Service-to-service auth hiện tại:
 
@@ -384,5 +388,6 @@ Refresh/logout hiện tại:
 
 - Trước deploy, chuyển secret ra environment variables hoặc secret manager.
 - Không commit PFX thật, app password Gmail, JWT key production.
+- Không commit file `.env` thật; repo chỉ commit `.env.example`.
 - `EmailService` cần `EmailSettings:Username` và `EmailSettings:Password`; nếu thiếu sẽ báo lỗi cấu hình rõ ràng trước khi gửi SMTP.
 - Nếu chuyển IdentityService sang migrations, cần tạo migration đầu tiên cẩn thận vì DB dev có thể đã được tạo bằng `EnsureCreatedAsync()`.

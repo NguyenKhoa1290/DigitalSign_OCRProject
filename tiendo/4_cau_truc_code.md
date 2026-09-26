@@ -94,6 +94,7 @@ Entities:
 - `PasswordResetToken`
 - `RefreshToken`
 - `RevokedAccessToken`
+- `EmailVerificationToken`
 
 DTO nhóm chính:
 
@@ -104,7 +105,7 @@ DTO nhóm chính:
 
 Interfaces:
 
-- Repository: `IUserRepository`, `IRoleRepository`, `IDepartmentRepository`, `IPasswordResetRepository`, `IRefreshTokenRepository`, `IRevokedAccessTokenRepository`.
+- Repository: `IUserRepository`, `IRoleRepository`, `IDepartmentRepository`, `IPasswordResetRepository`, `IEmailVerificationRepository`, `IRefreshTokenRepository`, `IRevokedAccessTokenRepository`.
 - Service: `IAuthService`, `IUserService`, `IRoleService`, `IDepartmentService`, `ITokenService`, `IEmailService`.
 
 ### Infrastructure
@@ -117,6 +118,7 @@ File chính:
 - `Repositories/RoleRepository.cs`
 - `Repositories/DepartmentRepository.cs`
 - `Repositories/PasswordResetRepository.cs`
+- `Repositories/EmailVerificationRepository.cs`
 - `Repositories/RefreshTokenRepository.cs`
 - `Repositories/RevokedAccessTokenRepository.cs`
 - `Services/AuthService.cs`
@@ -136,6 +138,22 @@ File chính:
 - `RequireAuth`
 - `Username`, `Password`
 - `FromEmail`, `FromName`
+
+Luồng xác minh email first login:
+
+```text
+POST /api/auth/send-email-verification
+  -> kiểm tra email chưa thuộc user khác
+  -> vô hiệu hóa OTP xác minh cũ
+  -> lưu SHA-256(OTP) vào EmailVerificationTokens
+  -> gửi OTP qua SMTP
+
+POST /api/auth/change-password
+  -> nếu MustChangePassword=true thì bắt buộc email + OTP
+  -> kiểm tra OTP đúng user + email, chưa dùng, chưa hết hạn
+  -> lưu email, đổi mật khẩu, đặt MustChangePassword=false
+  -> vô hiệu hóa OTP đã dùng
+```
 
 Luồng token hiện tại:
 

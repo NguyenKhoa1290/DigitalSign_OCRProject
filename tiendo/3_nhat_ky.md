@@ -983,6 +983,58 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 17 — 24/09/2026
+### Chuẩn hóa cấu hình gửi OTP bằng tài khoản Google
+
+**Đã thực hiện:**
+- Bổ sung đầy đủ `SecureSocketOptions`, `RequireAuth` và `FromEmail` trong cấu hình IdentityService.
+- Bổ sung profile Gmail SMTP mẫu vào `.env.example`.
+- Người gửi mặc định lấy từ `FromEmail`; nếu bỏ trống thì dùng `Username`.
+- Ghi rõ quy trình dùng xác minh 2 bước và Google App Password trong tài liệu IdentityService và Docker.
+- Không lưu Gmail/App Password thật trong repository.
+
+**Kiểm tra:**
+- `dotnet build .\IdentityService\src\IdentityService.API\IdentityService.API.csproj`: pass, 0 warning/0 error.
+- `dotnet test .\IdentityService\tests\IdentityService.Tests\IdentityService.Tests.csproj --no-restore`: pass 29/29.
+- `docker compose config --quiet`: pass.
+- `docker compose build identity-service`: pass.
+- `docker compose up -d identity-service api-gateway`: pass.
+- Identity health và Gateway health: HTTP 200 `Healthy`.
+- Đã cấu hình credential trong `.env` cục bộ được Git bỏ qua và recreate IdentityService/Gateway.
+- Tạo user test `gmail_test_20260924221509` rồi gọi `POST /api/auth/forgot-password`.
+- Gmail SMTP chấp nhận yêu cầu gửi, API trả HTTP 200; log IdentityService không có lỗi SMTP.
+- Người nhận đã xác nhận email xuất hiện trong hộp thư.
+- Chưa chạy bước dùng OTP của email này để reset password.
+
+---
+
+## Công việc số 18 — 24/09/2026
+### Xác minh email trong lần đăng nhập đầu
+
+**Đã thực hiện:**
+- Thêm entity/bảng `EmailVerificationTokens` và repository riêng, không dùng chung OTP reset password.
+- Thêm API có Bearer auth `POST /api/auth/send-email-verification`.
+- Thêm email template OTP xác minh địa chỉ email.
+- First login bắt buộc email và OTP; backend chỉ lưu email sau khi OTP hợp lệ.
+- OTP ràng buộc theo user + email, lưu SHA-256 hash, hết hạn 15 phút và dùng một lần.
+- Gửi lại mã sẽ vô hiệu hóa các mã xác minh cũ của user.
+- `AppUsers.EmailVerifiedAt` lưu thời điểm xác minh; forgot password bỏ qua email chưa xác minh.
+- Khi email bị thay đổi qua quản trị user, trạng thái xác minh được đặt lại.
+- Frontend `/first-login` có nút gửi/gửi lại mã và ô nhập OTP 6 số.
+
+**Đã kiểm tra theo quy trình:**
+- Build IdentityService: pass, 0 warning/0 error.
+- Build Frontend: pass, 0 warning/0 error.
+- Unit test IdentityService: pass 34/34.
+- `docker compose config --quiet`: pass.
+- Build image `identity-service` và `frontend`: pass.
+- Test tích hợp `TC-AUTH-EMAIL-VERIFY-019` qua Gateway + Mailpit: pass.
+- Kiểm tra email chưa xác minh không nhận OTP forgot password; sau xác minh thì nhận được: pass.
+- IdentityService, Gateway và Frontend sau khi trả về cấu hình Gmail: HTTP 200.
+- API gửi template xác minh qua Gmail thật: HTTP 200.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

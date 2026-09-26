@@ -22,6 +22,9 @@
         <member name="M:IdentityService.API.Controllers.AuthController.Logout">
             <summary>Đăng xuất - vô hiệu hóa phiên làm việc hiện tại.</summary>
         </member>
+        <member name="M:IdentityService.API.Controllers.AuthController.SendEmailVerification(IdentityService.Core.DTOs.Auth.SendEmailVerificationDto)">
+            <summary>Gửi OTP tới email cần xác minh trong lần đăng nhập đầu.</summary>
+        </member>
         <member name="M:IdentityService.API.Controllers.AuthController.ChangePassword(IdentityService.Core.DTOs.Auth.ChangePasswordDto)">
             <summary>
             Đổi mật khẩu (dùng cho lần đầu đăng nhập bắt buộc lẫn đổi thông thường).

@@ -14,11 +14,12 @@
 
 ### Entity và dữ liệu
 
-- `AppUser`: user hệ thống, có `MustChangePassword`.
+- `AppUser`: user hệ thống, có `MustChangePassword` và `EmailVerifiedAt`.
 - `AppRole`: vai trò.
 - `AppUserRole`: bảng nối user-role.
 - `Department`: cây phòng ban self-reference bằng `ParentId`.
 - `PasswordResetToken`: OTP reset password, lưu hash SHA-256.
+- `EmailVerificationToken`: OTP xác minh email first login, ràng buộc user + email và lưu hash SHA-256.
 - `RefreshToken`: lưu hash refresh token, `AccessTokenJti`, hạn dùng, trạng thái revoke/rotate.
 - `RevokedAccessToken`: blacklist JWT access token theo `jti` sau logout.
 
@@ -32,7 +33,9 @@ Seed data:
 
 - Login trả `AccessToken`, `RefreshToken`, user info, roles, `MustChangePassword`.
 - Admin tạo user mới thì user bị bắt đổi mật khẩu lần đầu.
-- User đổi mật khẩu có thể cập nhật email/SĐT.
+- First login bắt buộc nhập email, gửi OTP xác minh và chỉ cập nhật email/đổi mật khẩu khi OTP hợp lệ.
+- OTP xác minh email hết hạn sau 15 phút, dùng một lần; gửi lại sẽ vô hiệu hóa OTP cũ.
+- Forgot password chỉ gửi OTP nếu `EmailVerifiedAt` đã có giá trị; thay đổi email sẽ đưa trạng thái về chưa xác minh.
 - Forgot password gửi OTP qua email.
 - Reset password xác thực OTP hash và vô hiệu hóa token đã dùng.
 - Docker dev dùng Mailpit local để test email OTP an toàn, không gửi email ra internet.
@@ -246,7 +249,7 @@ GET  /api/signatures/certificates/{userId}
 
 ## 7. Những việc còn lại
 
-- Nếu triển khai production, test lại forgot/reset password với SMTP thật/Gmail app password hợp lệ.
+- Cấu hình mẫu Gmail SMTP đã hoàn thiện; còn test gửi thật bằng tài khoản Google và App Password hợp lệ của người triển khai.
 - Nếu triển khai thực tế, bổ sung thêm bộ PDF/scan thật của nhà trường để đánh giá chất lượng OCR trên dữ liệu thật.
 - Tiếp tục bổ sung test tích hợp sâu cho DocumentService/SignService/OCRService khi phát triển thêm nghiệp vụ.
 

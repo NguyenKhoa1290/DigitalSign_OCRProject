@@ -46,7 +46,8 @@ public class EmailService : IEmailService
             : username;
 
         if (string.IsNullOrWhiteSpace(senderEmail))
-            throw new InvalidOperationException("EmailSettings:FromEmail is not configured.");
+            throw new InvalidOperationException(
+                "EmailSettings:FromEmail or EmailSettings:Username must be configured.");
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(fromName, senderEmail));
@@ -90,6 +91,79 @@ public class EmailService : IEmailService
             smtpHost,
             smtpPort,
             secureSocketOptions);
+
+        if (requireAuth)
+            await client.AuthenticateAsync(authUsername!, authPassword!);
+
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
+
+    public async Task SendEmailVerificationOtpAsync(string toEmail, string toName, string otp)
+    {
+        var settings = _configuration.GetSection("EmailSettings");
+        var smtpHost = settings["SmtpHost"] ?? "smtp.gmail.com";
+        var smtpPort = int.Parse(settings["SmtpPort"] ?? "587");
+        var secureSocketOptions = ParseSecureSocketOptions(settings["SecureSocketOptions"]);
+        var requireAuth = bool.TryParse(settings["RequireAuth"], out var parsedRequireAuth)
+            ? parsedRequireAuth
+            : true;
+        var username = settings["Username"];
+        var fromEmail = settings["FromEmail"];
+        var fromName = settings["FromName"] ?? "HAU Documents";
+        string? authUsername = null;
+        string? authPassword = null;
+
+        if (requireAuth)
+        {
+            authUsername = GetRequiredSetting(settings, "Username");
+            authPassword = GetRequiredSetting(settings, "Password");
+            username = authUsername;
+        }
+
+        var senderEmail = !string.IsNullOrWhiteSpace(fromEmail)
+            ? fromEmail
+            : username;
+
+        if (string.IsNullOrWhiteSpace(senderEmail))
+            throw new InvalidOperationException(
+                "EmailSettings:FromEmail or EmailSettings:Username must be configured.");
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, senderEmail));
+        message.To.Add(new MailboxAddress(toName, toEmail));
+        message.Subject = "[HAU Documents] Xác minh địa chỉ email";
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = $@"
+<div style='font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;
+            border:1px solid #e5e7eb;border-radius:12px;'>
+  <div style='text-align:center;margin-bottom:24px;'>
+    <h2 style='color:#1e3a5f;margin:0;'>HAU Documents</h2>
+    <p style='color:#6b7280;margin:4px 0 0;'>Xác minh địa chỉ email</p>
+  </div>
+  <p style='color:#374151;'>Xin chào <strong>{toName}</strong>,</p>
+  <p style='color:#374151;'>Nhập mã dưới đây để xác minh email cho tài khoản của bạn:</p>
+  <div style='text-align:center;margin:28px 0;'>
+    <span style='font-size:36px;font-weight:bold;letter-spacing:10px;color:#1e3a5f;
+                 background:#f0f4ff;padding:16px 32px;border-radius:8px;
+                 display:inline-block;'>{otp}</span>
+  </div>
+  <p style='color:#6b7280;font-size:14px;'>
+    Mã xác minh có hiệu lực trong <strong>15 phút</strong> và chỉ dùng một lần.
+  </p>
+  <p style='color:#6b7280;font-size:14px;'>
+    Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email.
+  </p>
+</div>",
+            TextBody = $"Mã xác minh email HAU Documents: {otp}\nMã có hiệu lực trong 15 phút."
+        };
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(smtpHost, smtpPort, secureSocketOptions);
 
         if (requireAuth)
             await client.AuthenticateAsync(authUsername!, authPassword!);

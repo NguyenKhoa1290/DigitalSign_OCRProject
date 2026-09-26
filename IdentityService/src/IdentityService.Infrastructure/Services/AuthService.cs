@@ -19,6 +19,7 @@ public class AuthService : IAuthService
     private readonly IUserRepository         _userRepository;
     private readonly ITokenService           _tokenService;
     private readonly IPasswordResetRepository _resetRepository;
+    private readonly IEmailVerificationRepository _emailVerificationRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IRevokedAccessTokenRepository _revokedAccessTokenRepository;
     private readonly IEmailService           _emailService;
@@ -28,6 +29,7 @@ public class AuthService : IAuthService
         IUserRepository          userRepository,
         ITokenService            tokenService,
         IPasswordResetRepository resetRepository,
+        IEmailVerificationRepository emailVerificationRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IRevokedAccessTokenRepository revokedAccessTokenRepository,
         IEmailService emailService,
@@ -36,6 +38,7 @@ public class AuthService : IAuthService
         _userRepository = userRepository;
         _tokenService = tokenService;
         _resetRepository = resetRepository;
+        _emailVerificationRepository = emailVerificationRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _revokedAccessTokenRepository = revokedAccessTokenRepository;
         _emailService = emailService;
@@ -198,6 +201,35 @@ public class AuthService : IAuthService
         }
     }
 
+    // ── Email Verification ───────────────────────────────────────────────────
+
+    public async Task SendEmailVerificationAsync(Guid userId, SendEmailVerificationDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId)
+            ?? throw new UserNotFoundException(userId);
+
+        if (!user.IsActive)
+            throw new AccountLockedException($"Tài khoản '{user.Username}' đã bị khoá.");
+
+        var email = dto.Email.Trim();
+        var existingUser = await _userRepository.GetByEmailAsync(email);
+        if (existingUser is not null && existingUser.Id != userId)
+            throw new IdentityServiceException("Email đã được sử dụng bởi tài khoản khác.", 409);
+
+        await _emailVerificationRepository.InvalidateAllAsync(userId);
+
+        var otp = GenerateOtp();
+        await _emailVerificationRepository.CreateAsync(new EmailVerificationToken
+        {
+            UserId = userId,
+            Email = email,
+            TokenHash = HashOtp(otp),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15)
+        });
+
+        await _emailService.SendEmailVerificationOtpAsync(email, user.FullName, otp);
+    }
+
     // ── Change Password ───────────────────────────────────────────────────────
 
     public async Task ChangePasswordAsync(Guid userId, ChangePasswordDto dto)
@@ -216,17 +248,48 @@ public class AuthService : IAuthService
         if (BCrypt.Net.BCrypt.Verify(dto.NewPassword, user.PasswordHash))
             throw new IdentityServiceException("Mật khẩu mới không được trùng mật khẩu hiện tại.", 400);
 
+        if (user.MustChangePassword && string.IsNullOrWhiteSpace(dto.Email))
+            throw new IdentityServiceException(
+                "Email là bắt buộc trong lần đăng nhập đầu tiên.", 400);
+
+        var normalizedEmail = dto.Email?.Trim();
+        if (!string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            if (string.IsNullOrWhiteSpace(dto.EmailVerificationOtp))
+                throw new IdentityServiceException("Vui lòng xác minh email bằng mã OTP.", 400);
+
+            var existingUser = await _userRepository.GetByEmailAsync(normalizedEmail);
+            if (existingUser is not null && existingUser.Id != userId)
+                throw new IdentityServiceException("Email đã được sử dụng bởi tài khoản khác.", 409);
+
+            var tokenHash = HashOtp(dto.EmailVerificationOtp);
+            var verificationToken = await _emailVerificationRepository.GetValidTokenAsync(
+                userId,
+                normalizedEmail,
+                tokenHash);
+
+            if (verificationToken is null)
+                throw new IdentityServiceException(
+                    "Mã xác minh email không hợp lệ hoặc đã hết hạn.", 400);
+        }
+
         // Cập nhật mật khẩu
         user.PasswordHash       = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword, workFactor: 12);
         user.MustChangePassword = false;  // Đánh dấu đã đổi mật khẩu
 
         // Cập nhật email/SĐT nếu được cung cấp (lần đầu đăng nhập)
-        if (!string.IsNullOrWhiteSpace(dto.Email))
-            user.Email = dto.Email.Trim();
+        if (!string.IsNullOrWhiteSpace(normalizedEmail))
+        {
+            user.Email = normalizedEmail;
+            user.EmailVerifiedAt = DateTime.UtcNow;
+        }
         if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
             user.PhoneNumber = dto.PhoneNumber.Trim();
 
         await _userRepository.UpdateAsync(user);
+
+        if (!string.IsNullOrWhiteSpace(normalizedEmail))
+            await _emailVerificationRepository.InvalidateAllAsync(userId);
     }
 
     // ── Forgot Password ───────────────────────────────────────────────────────
@@ -235,7 +298,7 @@ public class AuthService : IAuthService
     {
         // Không báo lỗi nếu email không tồn tại → tránh user enumeration attack
         var user = await _userRepository.GetByEmailAsync(dto.Email);
-        if (user is null || !user.IsActive) return;
+        if (user is null || !user.IsActive || user.EmailVerifiedAt is null) return;
 
         // Sinh OTP 6 chữ số ngẫu nhiên
         var otp     = GenerateOtp();

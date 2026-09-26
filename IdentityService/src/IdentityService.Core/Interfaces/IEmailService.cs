@@ -12,4 +12,7 @@ public interface IEmailService
     /// <param name="toName">Tên hiển thị người nhận.</param>
     /// <param name="otp">OTP 6 chữ số plain-text (chưa hash).</param>
     Task SendPasswordResetEmailAsync(string toEmail, string toName, string otp);
+
+    /// <summary>Gửi OTP xác minh quyền sở hữu email.</summary>
+    Task SendEmailVerificationOtpAsync(string toEmail, string toName, string otp);
 }

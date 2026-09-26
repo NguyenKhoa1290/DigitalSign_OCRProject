@@ -1257,3 +1257,96 @@ Các bước Playwright:
 | Bấm nút và xác nhận modal | Pass |
 | Status sau UI action | `PendingDirectorSign` |
 | Process actions | `Submit, Submit, DeptSign, SubmitDirector` |
+
+## TC-AUTH-GMAIL-018 — Gửi OTP bằng tài khoản Google
+
+| Mục | Nội dung |
+|---|---|
+| Ngày soạn | 24/09/2026 |
+| Phạm vi | IdentityService + ApiGateway + Gmail SMTP |
+| Mục tiêu | Xác nhận email OTP được gửi ra internet với người gửi là tài khoản Google đã cấu hình |
+| Trạng thái | Đang kiểm thử — SMTP gửi thành công, chờ xác nhận Inbox/Spam và OTP |
+
+Kiểm tra kỹ thuật đã đạt: build IdentityService, 29/29 unit test, Docker Compose config, Docker image và health của IdentityService/Gateway.
+
+### Kết quả chạy ngày 24/09/2026
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `.env` chứa Gmail credential và được Git bỏ qua | Pass |
+| Recreate IdentityService/Gateway | Pass |
+| Health IdentityService/Gateway | HTTP 200 `Healthy` |
+| User test | `gmail_test_20260924221509` |
+| `POST /api/auth/forgot-password` | HTTP 200 |
+| Log lỗi SMTP | Không có |
+| Gmail SMTP chấp nhận gửi | Pass |
+| Xác nhận email tại Inbox/Spam | Chờ người nhận xác nhận |
+| Dùng OTP reset password và login lại | Chưa chạy |
+
+### Điều kiện
+
+- Tài khoản Google đã bật xác minh 2 bước.
+- Đã tạo App Password riêng cho ứng dụng.
+- `.env` dùng `smtp.gmail.com`, cổng `587`, `StartTls`, bật xác thực.
+- `EMAIL_FROM_EMAIL` trùng `EMAIL_USERNAME` hoặc là địa chỉ gửi thay đã được Gmail cho phép.
+
+### Các bước kiểm thử
+
+1. Recreate `identity-service` và `api-gateway` để nhận biến môi trường mới.
+2. Gọi `POST /api/auth/forgot-password` với email người nhận thật.
+3. Xác nhận API không trả lỗi SMTP.
+4. Kiểm tra Inbox/Spam của người nhận.
+5. Xác nhận trường From đúng tài khoản Google cấu hình.
+6. Lấy OTP trong email và gọi `POST /api/auth/reset-password`.
+7. Login bằng mật khẩu mới.
+
+### Kết quả mong đợi
+
+- Email tới được người nhận, nội dung OTP đúng mẫu HAU Documents.
+- From đúng tài khoản Google cấu hình.
+- OTP dùng được đúng một lần và hết hạn theo quy định hiện tại.
+- Không có App Password xuất hiện trong log hoặc source control.
+
+## TC-AUTH-EMAIL-VERIFY-019 — Xác minh email khi đăng nhập lần đầu
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 24/09/2026 |
+| Phạm vi | IdentityService + ApiGateway + Frontend + Mailpit/Gmail |
+| Mục tiêu | Chỉ hoàn tất first login sau khi user chứng minh quyền sở hữu email bằng OTP |
+| Kết quả | Pass |
+
+### Dữ liệu test
+
+| Trường | Giá trị |
+|---|---|
+| User | `email_verified_20260924223327` |
+| Email test | Email duy nhất trong Mailpit |
+| OTP | 6 số, không ghi plain text vào tài liệu |
+
+### Các bước và kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Gửi OTP qua `POST /api/auth/send-email-verification` | HTTP 200 |
+| Mailpit nhận email xác minh | Pass |
+| Forgot password trước khi email được xác minh | Không gửi email |
+| First login không gửi OTP | HTTP 400 |
+| First login với OTP hợp lệ | HTTP 200 |
+| `IsEmailVerified` sau xác minh | `true` |
+| Login lại bằng mật khẩu mới | Pass |
+| `MustChangePassword` sau xác minh | `false` |
+| Forgot password sau khi email được xác minh | Có gửi email |
+| Dùng lại OTP đã sử dụng | HTTP 400 |
+| Unit test IdentityService | 34/34 pass |
+| Build backend/frontend | 0 warning/0 error |
+| Docker build IdentityService/Frontend | Pass |
+| Health IdentityService/Gateway/Frontend | HTTP 200 |
+| Gửi email xác minh bằng Gmail SMTP thật | HTTP 200 |
+
+### Kết luận
+
+- Email không được lưu trong first login nếu thiếu hoặc sai OTP.
+- OTP chỉ hợp lệ cho đúng user và đúng email đã yêu cầu.
+- OTP hết hạn sau 15 phút, bị vô hiệu hóa khi gửi lại hoặc sau khi dùng thành công.
+- Chỉ email có `EmailVerifiedAt` mới được dùng để nhận OTP quên mật khẩu.

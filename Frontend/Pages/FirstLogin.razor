@@ -112,15 +112,43 @@
 
             <div style="border-top:1px solid var(--color-border-light);margin:20px 0 16px;">
                 <p style="font-size:13px;color:var(--color-text-muted);margin:16px 0 12px;">
-                    📧 Thêm email để có thể khôi phục mật khẩu sau này (tùy chọn)
+                    Xác minh email để có thể khôi phục mật khẩu sau này
                 </p>
             </div>
 
             <div class="form-group">
-                <label class="form-label">Email khôi phục</label>
-                <input type="email" class="form-control" placeholder="vd: nguyenvan@hau.edu.vn"
-                       @bind="_model.Email" disabled="@_isSaving"/>
+                <label class="form-label required">Email khôi phục</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="email" class="form-control" placeholder="vd: nguyenvan@hau.edu.vn"
+                           @bind="_model.Email" @bind:event="oninput"
+                           disabled="@(_isSaving || _isSendingOtp)"/>
+                    <button type="button" class="btn btn-secondary" style="white-space:nowrap;"
+                            @onclick="SendVerificationOtp"
+                            disabled="@(_isSaving || _isSendingOtp || string.IsNullOrWhiteSpace(_model.Email))">
+                        @if (_isSendingOtp)
+                        {
+                            <span>Đang gửi...</span>
+                        }
+                        else
+                        {
+                            <span>@(_verificationSent ? "Gửi lại mã" : "Gửi mã")</span>
+                        }
+                    </button>
+                </div>
             </div>
+
+            @if (_verificationSent)
+            {
+                <div class="form-group">
+                    <label class="form-label required">Mã xác minh email</label>
+                    <input type="text" inputmode="numeric" maxlength="6" class="form-control"
+                           placeholder="Nhập OTP 6 chữ số"
+                           @bind="_model.EmailVerificationOtp" disabled="@_isSaving"/>
+                    <span style="font-size:12px;color:var(--color-text-muted);">
+                        Mã có hiệu lực trong 15 phút và chỉ dùng một lần.
+                    </span>
+                </div>
+            }
 
             <div class="form-group">
                 <label class="form-label">Số điện thoại</label>
@@ -154,7 +182,10 @@
     private readonly ChangePasswordRequest _model = new();
     private string? _errorMessage;
     private bool _isSaving;
+    private bool _isSendingOtp;
     private bool _success;
+    private bool _verificationSent;
+    private string? _verificationEmail;
     private bool _showCurrent, _showNew, _showConfirm;
     private int    _strength;
     private string _strengthLabel = "";
@@ -198,6 +229,24 @@
             _errorMessage = "Mật khẩu mới phải có ít nhất 8 ký tự.";
             return;
         }
+        if (string.IsNullOrWhiteSpace(_model.Email))
+        {
+            _errorMessage = "Vui lòng nhập email khôi phục.";
+            return;
+        }
+        if (!_verificationSent ||
+            !string.Equals(_verificationEmail, _model.Email.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            _errorMessage = "Vui lòng gửi mã xác minh cho email hiện tại.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_model.EmailVerificationOtp) ||
+            _model.EmailVerificationOtp.Length != 6 ||
+            !_model.EmailVerificationOtp.All(char.IsDigit))
+        {
+            _errorMessage = "Vui lòng nhập đúng OTP xác minh email gồm 6 chữ số.";
+            return;
+        }
 
         _isSaving = true;
         var (success, error) = await AuthService.ChangePasswordAsync(_model);
@@ -213,6 +262,35 @@
         else
         {
             _errorMessage = error ?? "Có lỗi xảy ra. Vui lòng thử lại.";
+        }
+    }
+
+    private async Task SendVerificationOtp()
+    {
+        _errorMessage = null;
+        var email = _model.Email?.Trim();
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            _errorMessage = "Vui lòng nhập email cần xác minh.";
+            return;
+        }
+
+        _isSendingOtp = true;
+        var (success, error) = await AuthService.SendEmailVerificationAsync(email);
+        _isSendingOtp = false;
+
+        if (success)
+        {
+            _verificationSent = true;
+            _verificationEmail = email;
+            _model.EmailVerificationOtp = string.Empty;
+            Toast.ShowSuccess("Đã gửi mã xác minh tới email.");
+        }
+        else
+        {
+            _verificationSent = false;
+            _verificationEmail = null;
+            _errorMessage = error ?? "Không thể gửi mã xác minh email.";
         }
     }
 

@@ -130,7 +130,12 @@ public class UserService : IUserService
 
         // Apply changes
         if (!string.IsNullOrWhiteSpace(dto.FullName))     user.FullName    = dto.FullName.Trim();
-        if (dto.Email is not null)                        user.Email       = dto.Email.Trim();
+        if (dto.Email is not null &&
+            !string.Equals(user.Email, dto.Email.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            user.Email = dto.Email.Trim();
+            user.EmailVerifiedAt = null;
+        }
         if (dto.PhoneNumber is not null)                  user.PhoneNumber = dto.PhoneNumber.Trim();
         if (dto.DepartmentId.HasValue)                    user.DepartmentId = dto.DepartmentId;
         user.IsActive = dto.IsActive;
@@ -172,6 +177,7 @@ public class UserService : IUserService
         Username     = user.Username,
         FullName     = user.FullName,
         Email        = user.Email,
+        IsEmailVerified = user.EmailVerifiedAt.HasValue,
         PhoneNumber  = user.PhoneNumber,
         DepartmentId = user.DepartmentId,
         DepartmentName = user.Department?.DeptName,

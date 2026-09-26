@@ -74,7 +74,8 @@ Route hiện tại là `/api/...`, không dùng `/api/v1/...`.
 | POST | `/refresh-token` | Làm mới access token, rotate refresh token | Public |
 | POST | `/validate-token` | Kiểm tra token | Public |
 | POST | `/logout` | Đăng xuất, revoke refresh token và blacklist access token hiện tại | Bearer |
-| POST | `/change-password` | Đổi mật khẩu, dùng cho first login | Bearer |
+| POST | `/send-email-verification` | Gửi OTP xác minh email first login | Bearer |
+| POST | `/change-password` | Đổi mật khẩu; first login yêu cầu email và OTP xác minh | Bearer |
 | POST | `/forgot-password` | Gửi OTP reset password qua email | Public |
 | POST | `/reset-password` | Đặt lại mật khẩu bằng OTP | Public |
 
@@ -86,9 +87,18 @@ Route hiện tại là `/api/...`, không dùng `/api/v1/...`.
 - `/api/auth/validate-token` trả invalid nếu access token đã nằm trong blacklist.
 - Lưu ý: ApiGateway hiện validate JWT cục bộ bằng signing key, chưa gọi blacklist IdentityService cho từng request tới Document/Sign/OCR.
 
-## Email reset password
+## Email OTP
 
-IdentityService gửi OTP reset password bằng MailKit/MimeKit `4.18.0`.
+IdentityService gửi OTP reset password và OTP xác minh email bằng MailKit/MimeKit `4.18.0`.
+
+Luồng đăng nhập lần đầu:
+
+1. User nhập email và gọi `POST /api/auth/send-email-verification` bằng access token vừa đăng nhập.
+2. IdentityService gửi OTP 6 số, lưu SHA-256 hash trong `EmailVerificationTokens` và vô hiệu hóa OTP cũ.
+3. User gửi email cùng `EmailVerificationOtp` trong `POST /api/auth/change-password`.
+4. Backend chỉ lưu email và hoàn tất first login khi OTP đúng email, đúng user, chưa dùng và chưa quá 15 phút.
+
+Khi xác minh thành công, `AppUsers.EmailVerifiedAt` được cập nhật. API forgot password chỉ gửi OTP tới email đã xác minh; khi Admin thay đổi email của user, trạng thái xác minh được xóa và email mới phải được xác minh lại.
 
 Cấu hình nằm trong section `EmailSettings`:
 
@@ -118,6 +128,33 @@ Web UI/API: http://localhost:8025
 ```
 
 Khi `RequireAuth=true`, `Username` và `Password` là bắt buộc. Không commit credential thật vào repo; khi triển khai nên đưa qua environment variables hoặc secret manager.
+
+### Dùng tài khoản Google làm người gửi
+
+1. Bật xác minh 2 bước cho tài khoản Google.
+2. Tạo App Password dành riêng cho ứng dụng. Không dùng mật khẩu đăng nhập Google.
+3. Copy `.env.example` thành `.env` ở thư mục gốc và đặt:
+
+```dotenv
+EMAIL_SMTP_HOST=smtp.gmail.com
+EMAIL_SMTP_PORT=587
+EMAIL_SECURE_SOCKET_OPTIONS=StartTls
+EMAIL_REQUIRE_AUTH=true
+EMAIL_USERNAME=your-account@gmail.com
+EMAIL_PASSWORD=your-16-character-app-password
+EMAIL_FROM_EMAIL=your-account@gmail.com
+EMAIL_FROM_NAME=HAU Documents
+```
+
+`EMAIL_FROM_EMAIL` nên là chính tài khoản trong `EMAIL_USERNAME`, hoặc một địa chỉ gửi thay đã được cấu hình hợp lệ trong Gmail. Sau khi đổi cấu hình, tạo lại IdentityService:
+
+```powershell
+docker compose up -d --build --force-recreate identity-service api-gateway
+```
+
+Sau đó gọi luồng quên mật khẩu tới một email nhận thật và kiểm tra cả Inbox/Spam. Không ghi App Password vào log, tài liệu hoặc commit Git.
+
+Tham khảo: [Google App Password](https://support.google.com/accounts/answer/185833) và [cấu hình Gmail SMTP](https://support.google.com/a/answer/176600).
 
 ### Users - `/api/users`
 

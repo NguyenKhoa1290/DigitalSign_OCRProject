@@ -21,6 +21,9 @@ public class AppUser
     /// <summary>Địa chỉ email duy nhất, tối đa 100 ký tự.</summary>
     public string? Email { get; set; }
 
+    /// <summary>Thời điểm người dùng xác minh quyền sở hữu email; null nếu chưa xác minh.</summary>
+    public DateTime? EmailVerifiedAt { get; set; }
+
     /// <summary>Số điện thoại, tối đa 15 ký tự.</summary>
     public string? PhoneNumber { get; set; }
 

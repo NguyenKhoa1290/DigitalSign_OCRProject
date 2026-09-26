@@ -21,10 +21,15 @@ public class ChangePasswordDto
     [Required(ErrorMessage = "Xác nhận mật khẩu không được để trống.")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
-    /// <summary>Email để khôi phục mật khẩu sau này (tùy chọn).</summary>
+    /// <summary>Email để khôi phục mật khẩu. Bắt buộc ở lần đăng nhập đầu.</summary>
     [EmailAddress(ErrorMessage = "Địa chỉ email không hợp lệ.")]
     [StringLength(100)]
     public string? Email { get; set; }
+
+    /// <summary>OTP 6 chữ số đã gửi tới Email để xác minh quyền sở hữu.</summary>
+    [StringLength(6, MinimumLength = 6, ErrorMessage = "OTP xác minh email phải đúng 6 chữ số.")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP xác minh email phải gồm 6 chữ số.")]
+    public string? EmailVerificationOtp { get; set; }
 
     /// <summary>Số điện thoại (tùy chọn).</summary>
     [StringLength(15)]

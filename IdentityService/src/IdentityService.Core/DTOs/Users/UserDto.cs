@@ -17,6 +17,9 @@ public class UserDto
     /// <summary>Địa chỉ email.</summary>
     public string? Email { get; set; }
 
+    /// <summary>Email hiện tại đã được xác minh hay chưa.</summary>
+    public bool IsEmailVerified { get; set; }
+
     /// <summary>Số điện thoại.</summary>
     public string? PhoneNumber { get; set; }
 

@@ -61,6 +61,31 @@ public class AuthService
 
     // ── Change Password ────────────────────────────────────────────────────────
 
+    public async Task<(bool Success, string? Error)> SendEmailVerificationAsync(string email)
+    {
+        try
+        {
+            var token = await GetTokenAsync();
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/send-email-verification");
+            request.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            request.Content = JsonContent.Create(new SendEmailVerificationRequest { Email = email });
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                return (false, ParseError(err));
+            }
+
+            return (true, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Lỗi: {ex.Message}");
+        }
+    }
+
     public async Task<(bool Success, string? Error)> ChangePasswordAsync(ChangePasswordRequest req)
     {
         try

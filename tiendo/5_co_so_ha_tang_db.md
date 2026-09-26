@@ -76,6 +76,7 @@ DbSet<AppRole> AppRoles
 DbSet<AppUserRole> AppUserRoles
 DbSet<Department> Departments
 DbSet<PasswordResetToken> PasswordResetTokens
+DbSet<EmailVerificationToken> EmailVerificationTokens
 DbSet<RefreshToken> RefreshTokens
 DbSet<RevokedAccessToken> RevokedAccessTokens
 ```
@@ -89,6 +90,7 @@ DbSet<RevokedAccessToken> RevokedAccessTokens
 | `PasswordHash` | required, max 256 |
 | `FullName` | required, max 100 |
 | `Email` | nullable, unique filtered index |
+| `EmailVerifiedAt` | UTC timestamp nullable; null nghĩa là email chưa xác minh |
 | `PhoneNumber` | nullable, max 15 |
 | `DepartmentId` | FK nullable sang `Departments`, delete set null |
 | `IsActive` | default true |
@@ -148,6 +150,22 @@ Index:
 ```text
 IX_PasswordResetTokens_UserId_IsUsed
 ```
+
+### Bảng `EmailVerificationTokens`
+
+| Column | Ghi chú |
+|---|---|
+| `Id` | UUID PK |
+| `UserId` | FK required sang `AppUsers`, cascade delete |
+| `Email` | email đang chờ xác minh, max 100 |
+| `TokenHash` | SHA-256 hex của OTP, max 64 |
+| `ExpiresAt` | hết hạn sau 15 phút |
+| `IsUsed` | mặc định false; true khi dùng hoặc gửi mã mới |
+| `CreatedAt` | UTC timestamp |
+
+Index: `IX_EmailVerificationTokens_UserId_IsUsed`.
+
+Do IdentityService hiện dùng `EnsureCreatedAsync()`, `AuthStoreInitializer` tạo bổ sung bảng này bằng `CREATE TABLE IF NOT EXISTS` cho database Docker/local đã tồn tại.
 
 ### Bảng `RefreshTokens`
 

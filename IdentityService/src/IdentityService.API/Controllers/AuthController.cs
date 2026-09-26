@@ -78,6 +78,24 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Đăng xuất thành công" });
     }
 
+    /// <summary>Gửi OTP tới email cần xác minh trong lần đăng nhập đầu.</summary>
+    [HttpPost("send-email-verification")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> SendEmailVerification([FromBody] SendEmailVerificationDto dto)
+    {
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
+
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized(new { message = "Không xác định được người dùng từ token." });
+
+        await _authService.SendEmailVerificationAsync(userId, dto);
+        return Ok(new { message = "Mã xác minh đã được gửi tới email." });
+    }
+
     /// <summary>
     /// Đổi mật khẩu (dùng cho lần đầu đăng nhập bắt buộc lẫn đổi thông thường).
     /// Kèm cập nhật email/SĐT tùy chọn (để dùng khôi phục mật khẩu sau này).

@@ -16,6 +16,7 @@ public class AuthServiceTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<ITokenService> _tokenServiceMock;
     private readonly Mock<IPasswordResetRepository> _passwordResetRepositoryMock;
+    private readonly Mock<IEmailVerificationRepository> _emailVerificationRepositoryMock;
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepositoryMock;
     private readonly Mock<IRevokedAccessTokenRepository> _revokedAccessTokenRepositoryMock;
     private readonly Mock<IEmailService> _emailServiceMock;
@@ -26,6 +27,7 @@ public class AuthServiceTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _tokenServiceMock = new Mock<ITokenService>();
         _passwordResetRepositoryMock = new Mock<IPasswordResetRepository>();
+        _emailVerificationRepositoryMock = new Mock<IEmailVerificationRepository>();
         _refreshTokenRepositoryMock = new Mock<IRefreshTokenRepository>();
         _revokedAccessTokenRepositoryMock = new Mock<IRevokedAccessTokenRepository>();
         _emailServiceMock = new Mock<IEmailService>();
@@ -40,6 +42,7 @@ public class AuthServiceTests
             _userRepositoryMock.Object,
             _tokenServiceMock.Object,
             _passwordResetRepositoryMock.Object,
+            _emailVerificationRepositoryMock.Object,
             _refreshTokenRepositoryMock.Object,
             _revokedAccessTokenRepositoryMock.Object,
             _emailServiceMock.Object,
@@ -186,5 +189,131 @@ public class AuthServiceTests
         // Assert
         result.IsValid.Should().BeFalse();
         result.Roles.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SendEmailVerificationAsync_WithAvailableEmail_ShouldCreateTokenAndSendOtp()
+    {
+        var user = CreateTestUser();
+        user.Email = null;
+        var request = new SendEmailVerificationDto { Email = "verified@hau.edu.vn" };
+
+        _userRepositoryMock.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync((AppUser?)null);
+        _emailVerificationRepositoryMock
+            .Setup(r => r.CreateAsync(It.IsAny<EmailVerificationToken>()))
+            .ReturnsAsync((EmailVerificationToken token) => token);
+
+        await _authService.SendEmailVerificationAsync(user.Id, request);
+
+        _emailVerificationRepositoryMock.Verify(r => r.InvalidateAllAsync(user.Id), Times.Once);
+        _emailVerificationRepositoryMock.Verify(r => r.CreateAsync(
+            It.Is<EmailVerificationToken>(t =>
+                t.UserId == user.Id &&
+                t.Email == request.Email &&
+                t.TokenHash.Length == 64 &&
+                !t.IsUsed)), Times.Once);
+        _emailServiceMock.Verify(s => s.SendEmailVerificationOtpAsync(
+            request.Email,
+            user.FullName,
+            It.Is<string>(otp => otp.Length == 6 && otp.All(char.IsDigit))), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_FirstLoginWithoutEmailOtp_ShouldReject()
+    {
+        var user = CreateTestUser();
+        user.MustChangePassword = true;
+        _userRepositoryMock.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+
+        var request = new ChangePasswordDto
+        {
+            CurrentPassword = "Password123!",
+            NewPassword = "NewPassword456!",
+            ConfirmPassword = "NewPassword456!",
+            Email = "verified@hau.edu.vn"
+        };
+
+        var act = () => _authService.ChangePasswordAsync(user.Id, request);
+
+        await act.Should().ThrowAsync<IdentityServiceException>()
+            .WithMessage("*xác minh email*");
+        _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<AppUser>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_FirstLoginWithValidEmailOtp_ShouldUpdateUser()
+    {
+        var user = CreateTestUser();
+        user.MustChangePassword = true;
+        user.Email = null;
+        const string email = "verified@hau.edu.vn";
+        const string otp = "123456";
+
+        _userRepositoryMock.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _userRepositoryMock.Setup(r => r.GetByEmailAsync(email)).ReturnsAsync((AppUser?)null);
+        _emailVerificationRepositoryMock
+            .Setup(r => r.GetValidTokenAsync(user.Id, email, It.IsAny<string>()))
+            .ReturnsAsync(new EmailVerificationToken
+            {
+                UserId = user.Id,
+                Email = email,
+                TokenHash = "hash",
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10)
+            });
+        _userRepositoryMock
+            .Setup(r => r.UpdateAsync(user))
+            .ReturnsAsync(user);
+
+        await _authService.ChangePasswordAsync(user.Id, new ChangePasswordDto
+        {
+            CurrentPassword = "Password123!",
+            NewPassword = "NewPassword456!",
+            ConfirmPassword = "NewPassword456!",
+            Email = email,
+            EmailVerificationOtp = otp
+        });
+
+        user.Email.Should().Be(email);
+        user.EmailVerifiedAt.Should().NotBeNull();
+        user.MustChangePassword.Should().BeFalse();
+        BCrypt.Net.BCrypt.Verify("NewPassword456!", user.PasswordHash).Should().BeTrue();
+        _emailVerificationRepositoryMock.Verify(r => r.InvalidateAllAsync(user.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_WithUnverifiedEmail_ShouldNotSendOtp()
+    {
+        var user = CreateTestUser();
+        user.EmailVerifiedAt = null;
+        _userRepositoryMock.Setup(r => r.GetByEmailAsync(user.Email!)).ReturnsAsync(user);
+
+        await _authService.ForgotPasswordAsync(new ForgotPasswordDto { Email = user.Email! });
+
+        _passwordResetRepositoryMock.Verify(
+            r => r.CreateAsync(It.IsAny<PasswordResetToken>()), Times.Never);
+        _emailServiceMock.Verify(
+            s => s.SendPasswordResetEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAsync_WithVerifiedEmail_ShouldSendOtp()
+    {
+        var user = CreateTestUser();
+        user.EmailVerifiedAt = DateTime.UtcNow;
+        _userRepositoryMock.Setup(r => r.GetByEmailAsync(user.Email!)).ReturnsAsync(user);
+        _passwordResetRepositoryMock
+            .Setup(r => r.CreateAsync(It.IsAny<PasswordResetToken>()))
+            .ReturnsAsync((PasswordResetToken token) => token);
+
+        await _authService.ForgotPasswordAsync(new ForgotPasswordDto { Email = user.Email! });
+
+        _passwordResetRepositoryMock.Verify(
+            r => r.CreateAsync(It.Is<PasswordResetToken>(t => t.UserId == user.Id)), Times.Once);
+        _emailServiceMock.Verify(s => s.SendPasswordResetEmailAsync(
+            user.Email!,
+            user.FullName,
+            It.Is<string>(otp => otp.Length == 6 && otp.All(char.IsDigit))), Times.Once);
     }
 }

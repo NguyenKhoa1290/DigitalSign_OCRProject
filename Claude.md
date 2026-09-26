@@ -65,6 +65,7 @@ POST   /api/auth/login
 POST   /api/auth/logout
 POST   /api/auth/refresh-token
 POST   /api/auth/validate-token
+POST   /api/auth/send-email-verification
 POST   /api/auth/change-password
 POST   /api/auth/forgot-password
 POST   /api/auth/reset-password
@@ -136,6 +137,8 @@ GET    /api/ocr/health
 | JWT | Issuer `IdentityService`, audience `HAU-MicroservicesClients` |
 | Password | BCrypt work factor 12 |
 | OTP reset | SHA-256 hash, hết hạn 15 phút, dùng một lần |
+| OTP xác minh email | SHA-256 hash, ràng buộc user + email, hết hạn 15 phút, dùng một lần |
+| Email verified | `AppUsers.EmailVerifiedAt`; forgot password chỉ dùng email đã xác minh |
 | Refresh token | Lưu SHA-256 hash trong DB, rotate sau mỗi lần refresh |
 | Logout blacklist | IdentityService lưu access token `jti` vào `RevokedAccessTokens` |
 

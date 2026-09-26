@@ -6,7 +6,13 @@ public class ChangePasswordRequest
     public string NewPassword     { get; set; } = string.Empty;
     public string ConfirmPassword { get; set; } = string.Empty;
     public string? Email          { get; set; }
+    public string? EmailVerificationOtp { get; set; }
     public string? PhoneNumber    { get; set; }
+}
+
+public class SendEmailVerificationRequest
+{
+    public string Email { get; set; } = string.Empty;
 }
 
 public class ForgotPasswordRequest

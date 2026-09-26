@@ -21,10 +21,13 @@ public interface IAuthService
     /// <summary>Đăng xuất — thu hồi phiên làm việc.</summary>
     Task LogoutAsync(string accessToken);
 
+    /// <summary>Gửi OTP xác minh tới email do người dùng đang đăng nhập cung cấp.</summary>
+    Task SendEmailVerificationAsync(Guid userId, SendEmailVerificationDto dto);
+
     /// <summary>
     /// Đổi mật khẩu (dùng cho lần đầu đăng nhập lẫn đổi thông thường).
     /// Nếu MustChangePassword = true → đặt về false sau khi đổi thành công.
-    /// Đồng thời cập nhật Email/SĐT nếu được cung cấp.
+    /// Email là bắt buộc và phải có OTP hợp lệ nếu MustChangePassword = true.
     /// </summary>
     Task ChangePasswordAsync(Guid userId, ChangePasswordDto dto);
 

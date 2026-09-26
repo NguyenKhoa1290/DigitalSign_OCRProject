@@ -14,6 +14,20 @@ public static class AuthStoreInitializer
             return;
 
         await context.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "AppUsers"
+                ADD COLUMN IF NOT EXISTS "EmailVerifiedAt" timestamp with time zone NULL;
+            """);
+
+        // Dữ liệu cũ đã hoàn tất onboarding được giữ tương thích như email tin cậy.
+        await context.Database.ExecuteSqlRawAsync("""
+            UPDATE "AppUsers"
+            SET "EmailVerifiedAt" = "CreatedAt"
+            WHERE "Email" IS NOT NULL
+              AND "MustChangePassword" = false
+              AND "EmailVerifiedAt" IS NULL;
+            """);
+
+        await context.Database.ExecuteSqlRawAsync("""
             CREATE TABLE IF NOT EXISTS "RefreshTokens" (
                 "Id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
                 "UserId" uuid NOT NULL,
@@ -58,6 +72,25 @@ public static class AuthStoreInitializer
         await context.Database.ExecuteSqlRawAsync("""
             CREATE INDEX IF NOT EXISTS "IX_RevokedAccessTokens_ExpiresAt"
                 ON "RevokedAccessTokens" ("ExpiresAt");
+            """);
+
+        await context.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "EmailVerificationTokens" (
+                "Id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                "UserId" uuid NOT NULL,
+                "Email" character varying(100) NOT NULL,
+                "TokenHash" character varying(64) NOT NULL,
+                "ExpiresAt" timestamp with time zone NOT NULL,
+                "IsUsed" boolean NOT NULL DEFAULT false,
+                "CreatedAt" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+                CONSTRAINT "FK_EmailVerificationTokens_AppUsers_UserId"
+                    FOREIGN KEY ("UserId") REFERENCES "AppUsers" ("Id") ON DELETE CASCADE
+            );
+            """);
+
+        await context.Database.ExecuteSqlRawAsync("""
+            CREATE INDEX IF NOT EXISTS "IX_EmailVerificationTokens_UserId_IsUsed"
+                ON "EmailVerificationTokens" ("UserId", "IsUsed");
             """);
     }
 }

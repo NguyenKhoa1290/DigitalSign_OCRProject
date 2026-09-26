@@ -251,7 +251,31 @@ Khi gọi `/api/auth/forgot-password`, email OTP sẽ nằm trong Mailpit, khôn
 http://localhost:8025
 ```
 
-Nếu triển khai thật, đổi các biến `EMAIL_*` trong `.env` sang SMTP thật, ví dụ Gmail app password hoặc SMTP doanh nghiệp.
+Nếu muốn tài khoản Google của bạn là người gửi, tạo `.env` ở root và cấu hình:
+
+```dotenv
+EMAIL_SMTP_HOST=smtp.gmail.com
+EMAIL_SMTP_PORT=587
+EMAIL_SECURE_SOCKET_OPTIONS=StartTls
+EMAIL_REQUIRE_AUTH=true
+EMAIL_USERNAME=your-account@gmail.com
+EMAIL_PASSWORD=your-16-character-app-password
+EMAIL_FROM_EMAIL=your-account@gmail.com
+EMAIL_FROM_NAME=HAU Documents
+```
+
+Tài khoản Google phải bật xác minh 2 bước và dùng App Password; không dùng mật khẩu đăng nhập thông thường. App Password chỉ đặt trong `.env` đã được Git bỏ qua. `EMAIL_FROM_EMAIL` nên trùng `EMAIL_USERNAME`, trừ khi Gmail đã cho phép địa chỉ gửi thay.
+
+Tài liệu chính thức: [Google App Password](https://support.google.com/accounts/answer/185833) và [Gmail SMTP cho ứng dụng](https://support.google.com/a/answer/176600).
+
+Áp dụng lại cấu hình:
+
+```powershell
+docker compose up -d --build --force-recreate identity-service api-gateway
+docker compose logs --tail 100 identity-service
+```
+
+Sau đó mở frontend, chạy luồng **Quên mật khẩu** tới một địa chỉ email nhận thật và kiểm tra Inbox/Spam. Khi đã chuyển sang Gmail, email sẽ không còn xuất hiện trong Mailpit.
 
 ## 10. Xem log khi cần debug
 

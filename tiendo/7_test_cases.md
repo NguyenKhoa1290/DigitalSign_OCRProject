@@ -1350,3 +1350,72 @@ Kiểm tra kỹ thuật đã đạt: build IdentityService, 29/29 unit test, Doc
 - OTP chỉ hợp lệ cho đúng user và đúng email đã yêu cầu.
 - OTP hết hạn sau 15 phút, bị vô hiệu hóa khi gửi lại hoặc sau khi dùng thành công.
 - Chỉ email có `EmailVerifiedAt` mới được dùng để nhận OTP quên mật khẩu.
+
+## TC-FE-GLASS-020 — Giao diện nhận diện HAU và glassmorphism
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận logo HAU, theme glassmorphism, fallback và responsive hoạt động sau khi đóng image Docker |
+| Kết quả | Pass |
+
+### Viewport đã kiểm tra
+
+| Màn hình | Viewport | Kết quả |
+|---|---:|---|
+| Login | Desktop Chrome 1280 × 720 | Pass |
+| Login | Mobile 390 × 844 | Pass |
+| First login/email OTP | Mobile 390 × 844 | Pass; card cuộn nội bộ khi nội dung dài |
+| Forgot password | Desktop 1440 × 900 | Pass |
+| Dashboard có đăng nhập | Desktop 1440 × 900 | Pass |
+| Dashboard có đăng nhập | Mobile 390 × 844 | Pass; bottom navigation hoạt động và trang không cuộn ngang |
+
+### Kết quả kỹ thuật
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Build Blazor WASM | Pass, 0 warning/0 error |
+| `docker compose config --quiet` | Pass |
+| Build image `hau/frontend:local` | Pass |
+| Container `hau_frontend` | `running` |
+| `GET http://localhost:5227/` | HTTP 200 |
+| `GET /css/app.css` | HTTP 200, có theme HAU glassmorphism |
+| `GET /images/hau-logo.png` | HTTP 200, `image/png` |
+| Logo trên sidebar/auth/loading/favicon | Pass |
+| Ba cấp glassmorphism | Pass |
+| Safari prefix `-webkit-backdrop-filter` | Có |
+| Fallback không hỗ trợ blur | Có |
+| `prefers-reduced-motion` | Có |
+| Desktop/tablet/mobile responsive | Pass |
+
+### Kết luận
+
+- Giao diện mới không thay đổi API hoặc nghiệp vụ hiện có.
+- Nội dung chính dùng nền kính sáng đủ độ tương phản; các hiệu ứng trang trí không nhận sự kiện chuột.
+- Mobile khóa overflow ngang của trang và chỉ cho phép thanh điều hướng đáy tự cuộn khi số mục vượt chiều rộng.
+
+## TC-FE-STYLE-021 — Font Inter, card một màu và icon đồng bộ
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận giao diện dùng Inter, card không dùng gradient và icon chức năng cùng màu xanh HAU |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Font `Inter` trên body, button, input, select, textarea | Pass |
+| Stat card và card nội dung dùng nền kính một màu | Pass |
+| Login card và modal không dùng gradient | Pass |
+| Icon chức năng thống nhất `#0879BD` | Pass |
+| Thanh nhấn stat card thống nhất `#0093DD` | Pass |
+| Màu cảnh báo/lỗi/trạng thái nghiệp vụ vẫn được giữ | Pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Frontend | HTTP 200, container `running` |
+| Playwright dashboard desktop 1440 × 900 | Pass |
+| Playwright login mobile 390 × 844 | Pass |

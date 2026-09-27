@@ -1035,6 +1035,48 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 19 — 27/09/2026
+### Làm lại giao diện theo nhận diện HAU và glassmorphism
+
+**Đã thực hiện:**
+- Thay icon tài liệu cũ bằng logo HAU nền trong suốt tại sidebar, các màn hình xác thực, màn hình loading và favicon.
+- Sửa chân trang đăng nhập từ tên trường bị ghi nhầm thành `Trường Đại học Kiến trúc Hà Nội`.
+- Áp dụng bảng màu tham chiếu từ cổng sinh viên HAU: xanh đậm `#12466D`, xanh `#3B5998`, xanh logo `#0093DD` và điểm nhấn xanh lá `#00963F`.
+- Thiết kế ba cấp glassmorphism: sidebar kính tối, card kính sáng và control kính bên trong; modal có blur/đổ bóng nổi riêng.
+- Bổ sung gradient nhiều lớp, orb chuyển động nhẹ, viền phát sáng, bóng màu và trạng thái hover/focus.
+- Bổ sung `-webkit-backdrop-filter`, fallback nền đặc khi trình duyệt không hỗ trợ blur và `prefers-reduced-motion`.
+- Responsive: sidebar thu gọn ở tablet; mobile dùng bottom navigation có cuộn riêng, không làm trang cuộn ngang.
+
+**Đã kiểm tra theo quy trình:**
+- `dotnet build .\Frontend\HauDocumentApp.csproj`: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- `docker compose build frontend`: pass, publish Release bằng `wasm-tools` thành công.
+- `docker compose up -d frontend`: pass; container `hau_frontend` ở trạng thái `running`.
+- HTTP frontend, CSS và logo: đều trả 200; logo trả `image/png`.
+- Playwright Chromium kiểm tra login, first login, forgot password và dashboard ở desktop/mobile: pass.
+- Test case: `TC-FE-GLASS-020`.
+
+---
+
+## Công việc số 20 — 27/09/2026
+### Chuẩn hóa font, nền card và màu icon
+
+**Đã thực hiện:**
+- Khóa font giao diện và toàn bộ control form về `Inter`.
+- Bỏ gradient khỏi card nội dung, stat card, table wrapper, modal và card xác thực; thay bằng nền kính một màu.
+- Đồng bộ icon chức năng và thanh nhấn stat card về xanh HAU `#0093DD/#0879BD`.
+- Giữ màu riêng cho cảnh báo, lỗi và trạng thái nghiệp vụ để không làm mất ngữ nghĩa.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass.
+- Frontend Docker: HTTP 200, container `hau_frontend` đang `running`.
+- Playwright Chromium kiểm tra dashboard desktop và login mobile: pass.
+- Test case: `TC-FE-STYLE-021`.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

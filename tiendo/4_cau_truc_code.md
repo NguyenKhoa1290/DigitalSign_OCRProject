@@ -439,6 +439,9 @@ File chính:
 - `Services/DocumentService.cs`: document workflow.
   - `RunOcrAsync` gọi `api/ocr/process` qua Gateway, lấy object name từ `DocumentDto.MinioPath`.
 - `Services/SignatureService.cs`: signature API, gửi `SignRequestDto` đúng backend và map thao tác UI sang endpoint ký.
+- `wwwroot/css/app.css`: theme HAU glassmorphism, responsive desktop/tablet/mobile và fallback trình duyệt.
+- `wwwroot/images/hau-logo.png`: logo HAU nền trong suốt dùng chung cho sidebar, auth, loading và favicon.
+- `Layout/NavMenu.razor`: sidebar kính trên desktop, tự chuyển thành bottom navigation trên mobile bằng CSS.
 
 Pages:
 

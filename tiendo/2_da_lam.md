@@ -232,6 +232,10 @@ GET  /api/signatures/certificates/{userId}
 - `CustomAuthStateProvider` parse JWT và kiểm tra expiry.
 - `ApiService.SmartDeserialize()` unwrap được response có dạng `ApiResponse<T>`.
 - Frontend ký số đã gửi đúng DTO backend: `DocId`, `SignerId`, `SignerName`, `Reason`; map `DeptSign -> personal-sign`, `DirectorSign -> legal-seal`.
+- Giao diện dùng nhận diện Trường Đại học Kiến trúc Hà Nội: logo HAU nền trong suốt, bảng màu xanh theo cổng sinh viên và phong cách glassmorphism.
+- Hệ thống glassmorphism có ba cấp: sidebar kính tối, card nội dung kính sáng một màu và control kính bên trong; modal dùng lớp kính nổi riêng.
+- Font giao diện thống nhất là Inter; icon chức năng dùng chung màu xanh HAU thay vì tô nhiều màu theo từng card.
+- Giao diện có `-webkit-backdrop-filter`, fallback không blur, `prefers-reduced-motion`, sidebar thu gọn trên tablet và thanh điều hướng đáy trên mobile.
 
 ### Màn hình chính
 

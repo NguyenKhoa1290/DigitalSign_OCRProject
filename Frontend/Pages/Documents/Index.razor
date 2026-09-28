@@ -31,26 +31,10 @@
         <input type="text" class="form-control" placeholder="Tìm kiếm theo tiêu đề, số hiệu..."
                @bind="_searchQuery" @bind:event="oninput" @bind:after="OnSearchChanged" />
     </div>
-    <select class="form-control filter-select" @bind="_statusFilter" @bind:after="LoadDocuments">
-        <option value="">Tất cả trạng thái</option>
-        <option value="Draft">Nháp</option>
-        <option value="PendingDeptReview">Chờ duyệt phòng</option>
-        <option value="DeptSigned">Đã ký nháy</option>
-        <option value="PendingDirectorSign">Chờ BGH ký</option>
-        <option value="DirectorSigned">BGH đã ký</option>
-        <option value="Published">Đã ban hành</option>
-        <option value="Rejected">Từ chối</option>
-    </select>
-    <select class="form-control filter-select" @bind="_typeFilter" @bind:after="LoadDocuments">
-        <option value="">Tất cả loại</option>
-        @if (_documentTypes != null)
-        {
-            @foreach (var t in _documentTypes)
-            {
-                <option value="@t.Id">@t.Name</option>
-            }
-        }
-    </select>
+    <CustomSelect CssClass="filter-select" AriaLabel="Lọc theo trạng thái"
+                  @bind-Value="_statusFilter" Options="StatusFilterOptions" AfterValueChanged="LoadDocuments" />
+    <CustomSelect CssClass="filter-select" AriaLabel="Lọc theo loại văn bản"
+                  @bind-Value="_typeFilter" Options="TypeFilterOptions" AfterValueChanged="LoadDocuments" />
 </div>
 
 @if (_isLoading)
@@ -101,7 +85,7 @@ else
                             {
                                 <span class="badge badge-indigo">@doc.DocumentTypeName</span>
                             }
-                            else { <span style="color:var(--color-text-muted)">—</span> }
+                            else { <span class="empty-value">—</span> }
                         </td>
                         <td><StatusBadge Status="@doc.Status" /></td>
                         <td>@(doc.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
@@ -143,6 +127,28 @@ else
     private string _searchQuery = "";
     private string _statusFilter = "";
     private string _typeFilter = "";
+    private static readonly IReadOnlyList<SelectOption> StatusFilterOptions = new List<SelectOption>
+    {
+        new("", "Tất cả trạng thái"),
+        new("Draft", "Nháp"),
+        new("PendingDeptReview", "Chờ duyệt phòng"),
+        new("DeptSigned", "Đã ký nháy"),
+        new("PendingDirectorSign", "Chờ BGH ký"),
+        new("DirectorSigned", "BGH đã ký"),
+        new("Published", "Đã ban hành"),
+        new("Rejected", "Từ chối")
+    };
+
+    private IReadOnlyList<SelectOption> TypeFilterOptions
+    {
+        get
+        {
+            var options = new List<SelectOption> { new("", "Tất cả loại") };
+            if (_documentTypes != null)
+                options.AddRange(_documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.Name)));
+            return options;
+        }
+    }
     private int _currentPage = 1;
     private const int _pageSize = 15;
     private System.Threading.CancellationTokenSource? _searchCts;

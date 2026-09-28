@@ -204,7 +204,11 @@ POST /api/signatures/legal-seal
 GET  /api/signatures/document/{docId}
 GET  /api/signatures/document/{docId}/verify
 POST /api/signatures/certificates/issue
+POST /api/signatures/certificates/me/issue
+GET  /api/signatures/certificates/me
+GET  /api/signatures/certificates
 GET  /api/signatures/certificates/{userId}
+DELETE /api/signatures/certificates/{userId}
 ```
 
 ### Rule ký
@@ -236,6 +240,24 @@ GET  /api/signatures/certificates/{userId}
 - Hệ thống glassmorphism có ba cấp: sidebar kính tối, card nội dung kính sáng một màu và control kính bên trong; modal dùng lớp kính nổi riêng.
 - Font giao diện thống nhất là Inter; icon chức năng dùng chung màu xanh HAU thay vì tô nhiều màu theo từng card.
 - Giao diện có `-webkit-backdrop-filter`, fallback không blur, `prefers-reduced-motion`, sidebar thu gọn trên tablet và thanh điều hướng đáy trên mobile.
+- Đã tách CSS theo Blazor CSS isolation: toàn bộ 14 page có file `.razor.css` cùng tên; `wwwroot/css/app.css` chỉ giữ theme, token và style dùng chung.
+- Static inline style đã được loại bỏ khỏi các page. Chỉ giữ 3 style động phụ thuộc dữ liệu runtime: thanh/nhãn độ mạnh mật khẩu và màu hạn chứng thư.
+- Dashboard đã được làm lại theo mẫu HAU Docs: tiêu đề/lời chào rõ hơn, 4 thẻ thống kê một hàng trên desktop, khối thao tác nhanh toàn chiều rộng và responsive 2/1 cột trên tablet/mobile.
+- Khi nguồn thống kê chưa có dữ liệu, Dashboard hiển thị `0` thay vì để trống.
+- Đã bỏ sidebar thu gọn kiểu tablet; giao diện chỉ còn desktop trên `960px`, mobile từ `450px` đến `960px`, và khóa thao tác nếu rộng dưới `450px` hoặc cao dưới `500px`.
+- Thẻ tài khoản mở popup có `Chỉnh sửa thông tin` và `Đăng xuất`; cập nhật họ tên/email/số điện thoại dùng API người dùng hiện tại.
+- Nội dung mobile cuộn xuyên phía sau taskbar nổi; cuối trang tự chừa khoảng theo chiều cao taskbar để nội dung cuối không bị che.
+- Trang ký số có nút `Quay lại`: từ chi tiết chữ ký trở về đúng chi tiết công văn, từ trang ký số chung trở về danh sách công văn.
+- Nút primary dùng nền màu cố định `#304e8a` ở cả trạng thái thường và hover, không còn dùng gradient.
+- Modal cấp chứng thư hỗ trợ tìm người dùng theo họ tên, username, email hoặc GUID; danh sách gợi ý hiển thị đủ thông tin để phân biệt người trùng tên và tự dùng GUID của mục được chọn.
+- Ô chọn loại chứng thư dùng dropdown tùy biến đồng bộ với danh sách tìm người dùng, không còn phụ thuộc giao diện `<select>` mặc định của trình duyệt.
+- Toàn bộ ô chọn vai trò, phòng ban cha, loại văn bản và bộ lọc công văn dùng component `CustomSelect`; frontend không còn `<select>` native và đã đọc đúng mảng `roles` từ API người dùng.
+- Dropdown dài trong modal giới hạn chiều cao và cuộn nội bộ, giữ phần chân modal cùng các nút thao tác luôn hiển thị.
+- Frontend có cache-busting cho stylesheet và Nginx không lưu cache HTML/CSS, tránh dropdown mất CSS isolation sau khi triển khai image mới.
+- Dropdown vai trò được phép nổi vượt đáy modal, vẫn giới hạn 160px và cuộn nội bộ nên không bị cắt nội dung.
+- Modal luôn nằm trên sidebar/taskbar; chỉ chuyển sang toàn màn hình trên mobile/máy tính nhỏ khi rộng không quá 1200px hoặc viewport rất thấp, cao không quá 650px. Desktop thông thường giữ popup căn giữa.
+- Manager và Ban Giám hiệu có trang `Chứng thư của tôi` để tự tạo chứng thư bằng danh tính trong JWT; Manager nhận loại cá nhân, Ban Giám hiệu nhận loại pháp nhân. Clerk/Specialist không được tự cấp.
+- Trang Admin Certificates đã dùng API danh sách/thu hồi thật và DTO cấp chứng thư đã đồng bộ với SignService.
 
 ### Màn hình chính
 
@@ -247,6 +269,7 @@ GET  /api/signatures/certificates/{userId}
 - Admin Users.
 - Admin Departments.
 - Admin Certificates.
+- My Certificate.
 - Documents list/create/detail.
 - Documents OCR result.
 - Signatures page.

@@ -1,0 +1,115 @@
+.empty-back-button {
+    margin-top: 12px;
+}
+
+.ocr-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: start;
+    gap: 20px;
+}
+
+.ocr-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+.ocr-title-section {
+    margin-top: 14px;
+}
+
+.ocr-title-value {
+    padding: 14px 16px;
+    margin-top: 6px;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    line-height: 1.6;
+}
+
+.ocr-line-count,
+.ocr-line-meta,
+.ocr-line-confidence {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.ocr-empty-text {
+    color: var(--color-text-secondary);
+}
+
+.ocr-lines {
+    display: flex;
+    max-height: 420px;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+.ocr-line {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr) 90px;
+    align-items: start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+}
+
+.ocr-line-text {
+    white-space: pre-wrap;
+}
+
+.ocr-line-confidence {
+    text-align: right;
+}
+
+.ocr-parse-error {
+    margin-bottom: 10px;
+}
+
+.ocr-raw-json {
+    max-height: 360px;
+    padding: 14px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    font-family: Consolas, monospace;
+    font-size: 12.5px;
+    white-space: pre-wrap;
+}
+
+.ocr-metadata {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ocr-status {
+    margin-top: 4px;
+}
+
+.ocr-object-path {
+    word-break: break-all;
+}
+
+@media (max-width: 1100px) {
+    .ocr-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .ocr-line {
+        grid-template-columns: 1fr;
+    }
+
+    .ocr-line-confidence {
+        text-align: left;
+    }
+}

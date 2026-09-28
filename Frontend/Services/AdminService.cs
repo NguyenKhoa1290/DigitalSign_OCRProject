@@ -17,6 +17,8 @@ public class AdminService
 
     public async Task<UserDto?> GetUserAsync(Guid id) => await _api.GetAsync<UserDto>($"api/users/{id}");
 
+    public async Task<UserDto?> GetCurrentUserAsync() => await _api.GetAsync<UserDto>("api/users/me");
+
     public async Task<UserDto?> CreateUserAsync(CreateUserDto dto)
     {
         // Lấy danh sách roles để chuyển tên role → GUID
@@ -53,14 +55,12 @@ public class AdminService
 
     // ── Certificates ── (SignService: api/signatures/certificates/...)
     // GET api/signatures/certificates/{userId}
-    public async Task<List<CertificateDto>?> GetCertificatesAsync(Guid userId) => await _api.GetAsync<List<CertificateDto>>($"api/signatures/certificates/{userId}");
-    // Overload không có userId — dùng trong trang admin (hiển thị tất cả cert)
-    // Backend không có endpoint này, tạm return null, UI sẽ nhẫn rỗng
-    public Task<List<CertificateDto>?> GetCertificatesAsync() => Task.FromResult<List<CertificateDto>?>(null);
+    public async Task<CertificateDto?> GetCertificateAsync(Guid userId) => await _api.GetAsync<CertificateDto>($"api/signatures/certificates/{userId}");
+    public async Task<List<CertificateDto>?> GetCertificatesAsync() => await _api.GetAsync<List<CertificateDto>>("api/signatures/certificates");
     // POST api/signatures/certificates/issue
     public async Task<CertificateDto?> IssueCertificateAsync(IssueCertificateDto dto) => await _api.PostAsync<CertificateDto>("api/signatures/certificates/issue", dto);
-    // Backend không có revoke endpoint — stub trả true
-    public Task<bool> RevokeCertificateAsync(Guid id) => Task.FromResult(true);
+    public async Task<bool> RevokeCertificateAsync(Guid userId)
+        => await _api.DeleteWithResultAsync($"api/signatures/certificates/{userId}");
 
     // ── Stats ── (tổng hợp từ Document Service, tính local từ danh sách docs)
     // Backend không có /stats endpoint — trả về null, UI sẽ ẩn hoặc hiện 0

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using SignService.Core.Common;
 using SignService.Core.DTOs;
 using SignService.Core.Interfaces;
@@ -87,7 +88,7 @@ public class SignaturesController : ControllerBase
 
     // ──────────────────────────────────────────────────────────────────────────
     // POST api/signatures/certificates/issue
-    // Cấp certificate cho user — Admin only
+    // Cấp certificate cho user khác — Admin only
     // ──────────────────────────────────────────────────────────────────────────
     [HttpPost("certificates/issue")]
     [Authorize(Roles = "Admin")]
@@ -104,6 +105,92 @@ public class SignaturesController : ControllerBase
     }
 
     // ──────────────────────────────────────────────────────────────────────────
+    // POST api/signatures/certificates/me/issue
+    // Manager/Ban Giám hiệu tự cấp certificate cho chính tài khoản đang đăng nhập
+    // ──────────────────────────────────────────────────────────────────────────
+    [HttpPost("certificates/me/issue")]
+    [Authorize(Roles = "Manager,BoardOfDirectors")]
+    [ProducesResponseType(typeof(ApiResponse<CertificateDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> IssueOwnCertificate([FromBody] IssueOwnCertificateDto request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ApiResponse<CertificateDto>.Fail(
+                ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
+
+        if (!TryGetCurrentUser(out var userId, out var username, out var fullName))
+            return Unauthorized(ApiResponse<CertificateDto>.Fail("Token không chứa đủ thông tin người dùng."));
+
+        var existingCertificate = await _signService.GetCertificateAsync(userId);
+        if (existingCertificate?.IsValid == true)
+            return Conflict(ApiResponse<CertificateDto>.Fail("Bạn đã có chứng thư số còn hiệu lực."));
+
+        var certificateType = User.IsInRole("BoardOfDirectors") ? "Organization" : "Personal";
+        var issueRequest = new IssueCertificateDto
+        {
+            UserId = userId,
+            Username = username,
+            FullName = fullName,
+            CertificateType = certificateType,
+            ValidityDays = request.ValidityDays
+        };
+
+        var result = await _signService.IssueCertificateAsync(issueRequest);
+        return Ok(ApiResponse<CertificateDto>.Ok(result, "Tạo chứng thư số thành công."));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // GET api/signatures/certificates/me
+    // Lấy certificate của chính tài khoản đang đăng nhập
+    // ──────────────────────────────────────────────────────────────────────────
+    [HttpGet("certificates/me")]
+    [Authorize(Roles = "Manager,BoardOfDirectors")]
+    [ProducesResponseType(typeof(ApiResponse<CertificateDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetOwnCertificate()
+    {
+        if (!TryGetCurrentUser(out var userId, out _, out _))
+            return Unauthorized(ApiResponse<CertificateDto>.Fail("Token không chứa đủ thông tin người dùng."));
+
+        var certificate = await _signService.GetCertificateAsync(userId);
+        if (certificate == null)
+            return NotFound(ApiResponse<CertificateDto>.Fail("Bạn chưa có chứng thư số."));
+
+        return Ok(ApiResponse<CertificateDto>.Ok(certificate));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // GET api/signatures/certificates
+    // Lấy toàn bộ certificate — Admin only
+    // ──────────────────────────────────────────────────────────────────────────
+    [HttpGet("certificates")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<CertificateDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCertificates()
+    {
+        var certificates = await _signService.GetCertificatesAsync();
+        return Ok(ApiResponse<IEnumerable<CertificateDto>>.Ok(certificates));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // DELETE api/signatures/certificates/{userId}
+    // Thu hồi certificate — Admin only
+    // ──────────────────────────────────────────────────────────────────────────
+    [HttpDelete("certificates/{userId:guid}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RevokeCertificate([FromRoute] Guid userId)
+    {
+        var revoked = await _signService.RevokeCertificateAsync(userId);
+        if (!revoked)
+            return NotFound(ApiResponse<bool>.Fail($"Người dùng {userId} chưa có chứng thư số."));
+
+        return Ok(ApiResponse<bool>.Ok(true, "Thu hồi chứng thư số thành công."));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // GET api/signatures/certificates/{userId}
     // Lấy thông tin certificate — Admin hoặc chính user đó
     // ──────────────────────────────────────────────────────────────────────────
@@ -114,7 +201,7 @@ public class SignaturesController : ControllerBase
     public async Task<IActionResult> GetCertificate([FromRoute] Guid userId)
     {
         // Chỉ Admin hoặc chính user đó mới xem được
-        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                          ?? User.FindFirst("sub")?.Value;
         bool isAdmin = User.IsInRole("Admin");
 
@@ -126,5 +213,19 @@ public class SignaturesController : ControllerBase
             return NotFound(ApiResponse<CertificateDto>.Fail($"Người dùng {userId} chưa có chứng thư số."));
 
         return Ok(ApiResponse<CertificateDto>.Ok(cert));
+    }
+
+    private bool TryGetCurrentUser(out Guid userId, out string username, out string fullName)
+    {
+        var userIdText = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst("sub")?.Value;
+        username = User.FindFirst("username")?.Value ?? string.Empty;
+        fullName = User.FindFirst(ClaimTypes.Name)?.Value
+                   ?? User.FindFirst("name")?.Value
+                   ?? string.Empty;
+
+        return Guid.TryParse(userIdText, out userId)
+               && !string.IsNullOrWhiteSpace(username)
+               && !string.IsNullOrWhiteSpace(fullName);
     }
 }

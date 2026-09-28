@@ -1,0 +1,86 @@
+.actions-heading {
+    text-align: right;
+}
+
+.user-modal {
+    overflow: visible;
+}
+
+@media (min-width: 1201px) and (min-height: 651px) {
+    .user-modal > .modal-body {
+        overflow: visible;
+    }
+}
+
+@media (max-width: 1200px), (max-height: 650px) {
+    .user-modal {
+        overflow: hidden;
+    }
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-table-avatar {
+    display: flex;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.user-full-name {
+    font-weight: 500;
+}
+
+.user-email {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.username-cell {
+    font-family: Consolas, monospace;
+    font-size: 13px;
+}
+
+.row-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.user-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.active-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.active-checkbox-label {
+    margin: 0;
+}
+
+.user-spinner {
+    border-top-color: white;
+}
+
+@media (max-width: 600px) {
+    .user-form-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1077,6 +1077,359 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 21 — 27/09/2026
+### Tách CSS riêng cho từng page frontend
+
+**Đã thực hiện:**
+- Tạo đủ 13 file `.razor.css` tương ứng với 13 page Razor bằng cơ chế Blazor CSS isolation.
+- Chuyển toàn bộ style tĩnh đang khai báo inline sang class có tên rõ nghĩa trong file CSS của page.
+- Giữ `wwwroot/css/app.css` cho theme, design token và các component dùng chung.
+- Loại bỏ màu inline riêng trên các stat card Dashboard để tiếp tục tuân thủ màu icon xanh HAU thống nhất.
+- Chỉ giữ 3 inline style động: 2 giá trị biểu diễn độ mạnh mật khẩu và 1 giá trị cảnh báo hạn chứng thư.
+
+**Đã kiểm tra theo quy trình:**
+- Kiểm tra tự động: 13 page Razor, 13 file `.razor.css`, không thiếu cặp file.
+- `dotnet build .\Frontend\HauDocumentApp.csproj`: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- `docker compose build frontend`: pass; publish Release bằng `wasm-tools` thành công.
+- `docker compose up -d frontend`: pass; container `hau_frontend` đang `running`.
+- Frontend và `HauDocumentApp.styles.css`: HTTP 200.
+- Bundle CSS đã triển khai có đủ marker của 13 page.
+- Playwright Chromium kiểm tra Dashboard, Admin Users, Admin Departments ở desktop và Login ở mobile: pass.
+- Test case: `TC-FE-CSS-022`.
+
+---
+
+## Công việc số 22 — 27/09/2026
+### Làm lại giao diện Dashboard theo mẫu HAU Docs
+
+**Đã thực hiện:**
+- Bọc nội dung trong `dashboard-page` để style của Dashboard được cô lập trong `Dashboard.razor.css`.
+- Căn lại tiêu đề, lời chào, khoảng cách và chiều rộng nội dung theo ảnh mẫu.
+- Thiết kế thẻ thống kê bo lớn, nền kính một màu, icon xanh HAU và giá trị thống kê rõ ràng.
+- Thu nhỏ tiêu đề trang, lời chào, nhãn thống kê, giá trị và tiêu đề `Thao tác nhanh` để giao diện gọn hơn.
+- Giữ nguyên các màu do người dùng cấu hình lại cho sidebar, menu đang chọn và avatar; không tự thay đổi bảng màu.
+- Đồng bộ thông số thẻ thống kê `100px / 15px / 10px` cho desktop, tablet và mobile; đồng bộ bo góc sidebar `10px` trên mobile.
+- Desktop hiển thị tối đa 4 thẻ một hàng; tablet 2 cột; mobile 1 cột.
+- Thiết kế lại khối `Thao tác nhanh` toàn chiều rộng với header/body và button lớn hơn.
+- Xử lý `GetStatsAsync()` trả `null` bằng `DashboardStats` mặc định để giao diện hiển thị `0` thay vì để trống.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass, publish Release bằng `wasm-tools` thành công.
+- Frontend và scoped CSS: HTTP 200.
+- Playwright Chromium: Dashboard Admin desktop 1440 × 900 và mobile 390 × 844 đều pass.
+- Xác nhận 4 thẻ thống kê và khối thao tác nhanh hiển thị đúng ở cả hai viewport.
+- Sau khi thu nhỏ typography: build/recreate Frontend Docker và kiểm tra HTTP lại đều pass.
+- Sau khi đồng bộ kích thước: kiểm tra CSS triển khai giữ nguyên ba màu người dùng đã chỉnh và nhận đúng thông số responsive, pass.
+- Test case: `TC-FE-DASHBOARD-023`.
+
+---
+
+## Công việc số 23 — 27/09/2026
+### Sửa responsive navigation và bổ sung popup tài khoản
+
+**Đã thực hiện:**
+- Xóa chế độ sidebar thu gọn 88px ở khoảng 769–960px gây lỗi bố cục trên màn hình cỡ trung.
+- Chuẩn hóa ba trạng thái: desktop trên 960px, mobile/bottom navigation từ 450px đến 960px, khóa ứng dụng dưới 450px.
+- Cảnh báo màn hình quá hẹp được đặt ở cấp `App.razor`, áp dụng cả trang đăng nhập và các trang đã xác thực.
+- Chuyển user card thành nút mở popup tài khoản; popup có `Chỉnh sửa thông tin` và `Đăng xuất`.
+- Bổ sung tải hồ sơ bằng `GET /api/users/me` và lưu họ tên/email/số điện thoại bằng `PUT /api/users/{id}`.
+- Giữ nguyên các màu sidebar/menu/avatar do người dùng đã cấu hình; chỉ sửa display, kích thước, vị trí và responsive.
+- Dashboard chỉ còn một breakpoint responsive tại 960px.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium chạy 3 test: desktop 1440px, cửa sổ trung bình 900px và màn hình quá hẹp 340px; pass 3/3.
+- Popup hiển thị đủ hai thao tác; modal tải đúng tài khoản Admin, lưu dữ liệu không đổi qua API và đăng xuất về `/login`: pass.
+- Ở 900px sidebar dọc/compact không còn xuất hiện, bottom navigation được dùng: pass.
+- Ở 340px nội dung ứng dụng bị ẩn và cảnh báo chiều rộng tối thiểu 450px hiển thị: pass.
+- Test case: `TC-FE-ACCOUNT-RESPONSIVE-024`.
+
+---
+
+## Công việc số 24 — 27/09/2026
+### Cho nội dung mobile cuộn phía sau taskbar
+
+**Đã thực hiện:**
+- Giữ nguyên vị trí taskbar mobile do người dùng cấu hình.
+- Khai báo `--mobile-taskbar-height: 68px` và `--mobile-taskbar-bottom: 10px` để dùng thống nhất.
+- Bỏ `padding-bottom` khỏi `.main-content`, cho vùng cuộn chiếm toàn bộ chiều cao và đi phía sau taskbar fixed.
+- Đặt padding cuối `.page-container` bằng `28px + chiều cao taskbar + khoảng cách đáy`, hiện là `106px`.
+- Đồng bộ vị trí popup tài khoản theo hai biến taskbar, tránh dùng số cố định.
+- Không thay đổi màu giao diện.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass.
+- Playwright Chromium tại 390 × 844: pass 1/1.
+- Vùng cuộn chồng xuống phía sau taskbar 78px; padding cuối tính được 106px.
+- Sau khi cuộn hết, khối nội dung cuối còn cách taskbar 37px và không bị che.
+- Test case: `TC-FE-MOBILE-TASKBAR-025`.
+
+---
+
+## Công việc số 25 — 27/09/2026
+### Nâng chiều rộng điện thoại tối thiểu lên 450px
+
+**Đã thực hiện:**
+- Đổi media query khóa ứng dụng từ `max-width: 359px` thành `max-width: 449px`.
+- Cập nhật thông báo yêu cầu chiều rộng tối thiểu từ 360px lên 450px.
+- Phạm vi mobile được chuẩn hóa thành 450–960px; desktop vẫn trên 960px.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass.
+- Playwright Chromium kiểm tra hai giá trị biên: pass 2/2.
+- 449px: ứng dụng bị khóa và hiện thông báo tối thiểu 450px.
+- 450px: đăng nhập được, bottom navigation hiển thị đúng giao diện mobile.
+- Test case: `TC-FE-VIEWPORT-LIMIT-026`.
+
+---
+
+## Công việc số 26 — 27/09/2026
+### Bổ sung nút quay lại cho trang xem chữ ký
+
+**Đã thực hiện:**
+- Thêm nút `Quay lại` tại phần tiêu đề trang ký số.
+- Khi đang xem `/signatures/{docId}`, nút quay về `/documents/{docId}` để giữ đúng ngữ cảnh công văn.
+- Khi mở `/signatures`, nút quay về `/documents`.
+- Trên giao diện mobile, nút chiếm toàn bộ chiều rộng để dễ thao tác; không thay đổi bảng màu hiện có.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 3/3 trường hợp desktop 1440px, mobile 450px và trang ký số chung.
+- Nút hiển thị đúng và điều hướng về đúng chi tiết/danh sách công văn.
+- Test case: `TC-FE-SIGN-BACK-027`.
+
+---
+
+## Công việc số 27 — 27/09/2026
+### Đổi nền nút primary từ gradient sang màu cố định
+
+**Đã thực hiện:**
+- Thay nền gradient của `.btn-primary` bằng màu cố định `#304e8a`.
+- Trạng thái hover tiếp tục dùng `#304e8a`, không phát sinh chuyển màu gradient.
+- Giữ nguyên các gradient nền trang và hiệu ứng trang trí không thuộc nút.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- CSS triển khai: có 2 khai báo nền `#304e8a`, không còn gradient trong `.btn-primary`.
+- Playwright Chromium desktop 1440px và mobile 450px: pass 2/2 cho trạng thái thường và hover.
+- Test case: `TC-FE-BUTTON-COLOR-028`.
+
+---
+
+## Công việc số 28 — 27/09/2026
+### Tìm và chọn người dùng khi cấp chứng thư số
+
+**Đã thực hiện:**
+- Thay ô bắt buộc nhập GUID bằng ô tìm kiếm hỗ trợ họ tên, username, email hoặc GUID.
+- Kết nối trực tiếp `GET /api/users` với debounce 250ms và giới hạn 20 gợi ý.
+- Mỗi gợi ý hiển thị họ tên, username và email; các người dùng có họ tên giống nhau vẫn xuất hiện thành các mục riêng.
+- Sau khi chọn, giao diện hiển thị tài khoản đã chọn và request cấp chứng thư tự dùng GUID tương ứng.
+- Không cho gửi yêu cầu nếu người dùng chỉ nhập nội dung nhưng chưa chọn một mục trong danh sách gợi ý.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 3/3 cho tìm tên trùng, tìm bằng GUID và viewport mobile 450px.
+- Request cấp chứng thư gửi đúng GUID của người dùng thứ hai trong danh sách trùng tên.
+- Test case: `TC-FE-CERT-USER-PICKER-029`.
+
+---
+
+## Công việc số 29 — 27/09/2026
+### Đồng bộ giao diện ô chọn loại chứng thư
+
+**Đã thực hiện:**
+- Thay `<select>` loại chứng thư bằng dropdown tùy biến.
+- Đồng bộ nền, viền, bo góc, bóng và trạng thái hover với danh sách gợi ý người dùng.
+- Hiển thị dấu xác nhận tại loại chứng thư đang chọn và xoay biểu tượng mũi tên khi mở danh sách.
+- Bổ sung `role=listbox`, `role=option`, `aria-expanded` và `aria-selected` đúng giá trị.
+- Giữ nguyên hai giá trị nghiệp vụ `Personal` và `Organization`.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium desktop và mobile 450px: pass 2/2.
+- Chọn `Pháp nhân (Organization)` cập nhật đúng giá trị và tự đóng danh sách.
+- Test case: `TC-FE-CERT-TYPE-DROPDOWN-030`.
+
+---
+
+## Công việc số 30 — 28/09/2026
+### Chuẩn hóa toàn bộ ô chọn frontend
+
+**Đã thực hiện:**
+- Tạo component dùng chung `Shared/CustomSelect.razor` và CSS isolation tương ứng.
+- Tạo model `SelectOption` dùng thống nhất cho giá trị/nhãn lựa chọn.
+- Thay 5 `<select>` còn lại: vai trò người dùng, phòng ban cha, loại văn bản, trạng thái công văn và loại công văn.
+- Giữ callback tải lại danh sách khi đổi hai bộ lọc công văn.
+- Hỗ trợ trạng thái đang chọn, dấu xác nhận, mũi tên mở/đóng, bàn phím và thuộc tính ARIA.
+- Sửa `UserDto` đọc mảng `roles` của IdentityService để modal sửa người dùng hiển thị đúng vai trò hiện tại.
+
+**Đã kiểm tra theo quy trình:**
+- Toàn bộ `Frontend/Pages` và `Frontend/Shared` không còn thẻ `<select>`.
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 5/5 cho vai trò, dữ liệu động, bộ lọc công văn, mobile 450px và thao tác bàn phím.
+- Test case: `TC-FE-CUSTOM-SELECT-031`.
+
+---
+
+## Công việc số 31 — 28/09/2026
+### Sửa dropdown dài trong modal
+
+**Đã thực hiện:**
+- Giữ nguyên mẫu giao diện của dropdown loại chứng thư cho các ô chọn dùng chung.
+- Giới hạn chiều cao danh sách vai trò và phòng ban cha; danh sách dài cuộn bên trong thay vì che phần chân modal.
+- Nút `Hủy` và `Lưu thay đổi` luôn còn hiển thị khi dropdown vai trò đang mở.
+- Giữ nguyên mapping `roles[]` để modal sửa người dùng hiển thị đúng vai trò hiện tại.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 1/1; chọn được mục cuối `Ban Giám hiệu` sau khi cuộn, danh sách tự đóng và không che footer.
+- Test case: `TC-FE-CUSTOM-SELECT-032`.
+
+---
+
+## Công việc số 32 — 28/09/2026
+### Ngăn trình duyệt dùng CSS cũ sau khi triển khai frontend
+
+**Đã thực hiện:**
+- Xác định dropdown bị rơi về nút HTML mặc định do trình duyệt giữ bản cũ của `HauDocumentApp.styles.css`, không phải do dữ liệu phòng ban.
+- Thêm phiên bản truy vấn cho `app.css` và `HauDocumentApp.styles.css` trong `index.html` để buộc tải stylesheet mới.
+- Cấu hình Nginx trả `Cache-Control: no-cache, no-store, must-revalidate` cho HTML và CSS.
+- Không thay đổi màu sắc hoặc thông số giao diện của dropdown.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Header cache của `index.html` và `HauDocumentApp.styles.css`: đúng `no-cache, no-store, must-revalidate`.
+- Playwright Chromium: pass 1/1 cho dropdown phòng ban, vai trò và bộ lọc công văn; item hiển thị dạng flex toàn chiều rộng.
+- Test case: `TC-FE-CUSTOM-SELECT-CACHE-033`.
+
+---
+
+## Công việc số 33 — 28/09/2026
+### Cho dropdown vai trò hiển thị vượt khung modal
+
+**Đã thực hiện:**
+- Cho modal thêm/sửa người dùng hiển thị phần tử con vượt ra ngoài đường biên, tránh cắt danh sách vai trò tại đáy modal.
+- Giữ dropdown mở xuống và nằm trên nội dung phía sau.
+- Giữ chiều cao tối đa 160px và cuộn nội bộ cho danh sách dài.
+- Không thay đổi màu sắc, kích thước control hoặc dữ liệu vai trò.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 1/1; danh sách vượt đáy modal, cao không quá 160px, cuộn được và chọn được `Ban Giám hiệu`.
+- Test case: `TC-FE-ROLE-DROPDOWN-OVERLAY-034`.
+
+---
+
+## Công việc số 34 — 28/09/2026
+### Chuẩn hóa popup responsive và kích thước viewport tối thiểu
+
+**Đã thực hiện:**
+- Sửa ngưỡng sử dụng ứng dụng thành chiều rộng tối thiểu 450px và chiều cao tối thiểu 720px.
+- Nâng modal lên `z-index: 20000` và nâng stacking context chứa modal để luôn nằm trên sidebar, taskbar và dashboard.
+- Giữ toast ở lớp cao hơn modal với `z-index: 30000`.
+- Chuyển modal sang toàn màn hình khi viewport rộng không quá 960px hoặc cao không quá 800px.
+- Thu gọn padding header/body/footer; phần body cuộn độc lập, header và footer luôn hiển thị.
+- Áp dụng toàn màn hình cả cho popup chỉnh sửa tài khoản nằm trong navigation.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 7/7 tại biên 449/450px, 719/720px và các viewport 450×720, 1000×744, 1366×768, 1366×900.
+- Popup người dùng, tài khoản và chứng thư đều nằm trên navigation; popup dài cuộn trong body.
+- Test case: `TC-FE-RESPONSIVE-MODAL-035`.
+
+---
+
+## Công việc số 35 — 28/09/2026
+### Hạ chiều cao viewport tối thiểu xuống 500px
+
+**Đã thực hiện:**
+- Hạ chiều cao tối thiểu để sử dụng ứng dụng từ 720px xuống 500px; giữ nguyên chiều rộng tối thiểu 450px.
+- Cập nhật nội dung cảnh báo kích thước thiết bị và điều kiện media query tương ứng.
+- Giữ chế độ popup toàn màn hình, body cuộn độc lập và header/footer luôn hiển thị trên màn hình thấp.
+- Tăng phiên bản cache stylesheet để trình duyệt nhận ngay quy tắc responsive mới.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 4/4 tại các viewport 450×499, 450×500, 449×600 và 1366×500.
+- Popup thêm người dùng tại 450×500 và 1366×500 hiển thị toàn màn hình, cuộn được, header/footer không bị che.
+- Test case: `TC-FE-VIEWPORT-HEIGHT-036`.
+
+---
+
+## Công việc số 36 — 28/09/2026
+### Giữ popup căn giữa trên desktop thông thường
+
+**Đã thực hiện:**
+- Chỉ dùng popup toàn màn hình trên mobile/máy tính nhỏ có chiều rộng không quá 1200px, hoặc viewport rất thấp có chiều cao không quá 650px.
+- Desktop thông thường từ 1201px chiều rộng và trên 650px chiều cao tiếp tục dùng popup căn giữa.
+- Đồng bộ điều kiện overflow của modal người dùng để dropdown không bị cắt trên desktop thông thường.
+- Tăng phiên bản cache stylesheet để trình duyệt nhận ngay breakpoint mới.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass bằng `wasm-tools`.
+- Playwright Chromium: pass 5/5.
+- Mobile 450×500, desktop nhỏ 1200×800 và desktop rất thấp 1366×650 dùng toàn màn hình.
+- Desktop mặc định 1366×768 và desktop lớn 1920×1080 giữ popup căn giữa.
+- Test case: `TC-FE-MODAL-BREAKPOINT-037`.
+
+---
+
+## Công việc số 37 — 28/09/2026
+### Cho người có quyền ký tự tạo chứng thư số
+
+**Đã thực hiện:**
+- Thêm API `POST /api/signatures/certificates/me/issue` cho `Manager` và `BoardOfDirectors`; danh tính người nhận lấy hoàn toàn từ JWT.
+- Manager tự nhận chứng thư `Personal`, Ban Giám hiệu tự nhận chứng thư `Organization`; chặn cấp trùng nếu chứng thư hiện tại còn hiệu lực.
+- Giữ API cấp cho người khác ở quyền `Admin`; Manager không thể truyền ID để cấp cho tài khoản khác.
+- Thêm API xem chứng thư của tôi, Admin xem toàn bộ danh sách và Admin thu hồi chứng thư.
+- Đồng bộ DTO cấp chứng thư frontend/backend: `UserId`, `Username`, `FullName`, `CertificateType`, `ValidityDays`.
+- Bỏ trường mật khẩu khóa không được backend sử dụng; thời hạn ngày và loại chứng thư được xử lý thật trong X.509.
+- Thêm trang `Chứng thư của tôi` và mục điều hướng cho Manager/Ban Giám hiệu; page có CSS isolation riêng.
+- Trang Admin Certificates chuyển từ API stub sang danh sách/thu hồi thật.
+
+**Đã kiểm tra theo quy trình:**
+- Build toàn solution: pass, 0 warning/0 error.
+- xUnit toàn solution: pass 36/36.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `sign-service` và `frontend`: pass; hai container đang chạy.
+- API qua Gateway: pass 7/7 cho tự cấp Manager/Ban Giám hiệu, chặn Clerk, chặn Manager cấp cho người khác, chặn cấp trùng và luồng Admin.
+- Playwright Chromium: pass 2/2 cho trang tự cấp của Manager và modal cấp chứng thư Admin.
+- Dữ liệu chứng thư test đã được thu hồi sau kiểm thử.
+- Test case: `TC-SIGN-CERT-SELF-SERVICE-038`.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

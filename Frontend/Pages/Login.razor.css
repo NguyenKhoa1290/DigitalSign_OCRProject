@@ -1,0 +1,22 @@
+.password-wrapper .form-control {
+    padding-right: 44px;
+}
+
+.login-spinner {
+    border-top-color: white;
+}
+
+.login-links {
+    margin-top: 12px;
+    text-align: center;
+}
+
+.login-link {
+    color: var(--color-primary);
+    font-size: 13.5px;
+    text-decoration: none;
+}
+
+.login-link:hover {
+    text-decoration: underline;
+}

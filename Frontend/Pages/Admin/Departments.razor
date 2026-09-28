@@ -26,14 +26,14 @@
 }
 else
 {
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+    <div class="department-layout">
         <!-- Tree View -->
         <div class="card">
             <div class="card-header"><span class="card-title">Cơ cấu tổ chức</span></div>
             <div class="card-body">
                 @if (_departments == null || !_departments.Any())
                 {
-                    <div class="empty-state" style="padding:40px 20px">
+                    <div class="empty-state department-empty-state">
                         <p class="empty-state-title">Chưa có phòng ban nào</p>
                     </div>
                 }
@@ -54,7 +54,7 @@ else
                 <span class="card-title">@(_selectedDept != null ? _selectedDept.Name : "Thông tin Phòng ban")</span>
                 @if (_selectedDept != null)
                 {
-                    <div style="display:flex;gap:6px;">
+                                <div class="department-actions">
                         <button class="btn btn-outline btn-sm" @onclick="() => ShowEditModal(_selectedDept)">Sửa</button>
                         <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteConfirm(_selectedDept)">Xóa</button>
                     </div>
@@ -63,7 +63,7 @@ else
             <div class="card-body">
                 @if (_selectedDept == null)
                 {
-                    <p style="color:var(--color-text-muted);font-size:14px;">Chọn một phòng ban để xem chi tiết.</p>
+                            <p class="department-placeholder">Chọn một phòng ban để xem chi tiết.</p>
                 }
                 else
                 {
@@ -100,18 +100,18 @@ else
                     </div>
                     @if (!string.IsNullOrEmpty(_selectedDept.Description))
                     {
-                        <div style="margin-top:14px;padding:14px;background:var(--color-bg);border-radius:var(--radius-md);">
+                                <div class="department-description">
                             <div class="detail-label">Mô tả</div>
-                            <p style="margin-top:4px;font-size:13.5px;color:var(--color-text-secondary);">@_selectedDept.Description</p>
+                                    <p class="department-description-text">@_selectedDept.Description</p>
                         </div>
                     }
                     @if (_selectedDept.Children.Any())
                     {
-                        <div style="margin-top:14px;">
-                            <div class="detail-label" style="margin-bottom:8px;">Phòng ban trực thuộc (@_selectedDept.Children.Count)</div>
+                                <div class="department-children">
+                                    <div class="detail-label department-children-label">Phòng ban trực thuộc (@_selectedDept.Children.Count)</div>
                             @foreach (var child in _selectedDept.Children)
                             {
-                                <div style="padding:8px 12px;border:1px solid var(--color-border-light);border-radius:var(--radius-sm);margin-bottom:6px;font-size:13.5px;">
+                                        <div class="department-child">
                                     @child.Name
                                 </div>
                             }
@@ -142,19 +142,11 @@ else
                     <input type="text" class="form-control" placeholder="VD: DAO-TAO" @bind="_formCode" />
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Phòng ban cha</label>
-                    <select class="form-control" @bind="_formParentId">
-                        <option value="">-- Không có (đơn vị gốc) --</option>
-                        @if (_departments != null)
-                        {
-                            // Loại trừ chính nó và toàn bộ con cháu để tránh circular reference
-                            var excluded = _editingDept != null ? GetDescendantIds(_editingDept) : new HashSet<Guid>();
-                            @foreach (var d in _departments.Where(x => !excluded.Contains(x.Id)))
-                            {
-                                <option value="@d.Id">@d.Name (@(d.DeptCode ?? "?"))</option>
-                            }
-                        }
-                    </select>
+                    <label class="form-label" for="department-parent-select">Phòng ban cha</label>
+                    <CustomSelect Id="department-parent-select"
+                                  @bind-Value="_formParentId"
+                                  Options="ParentDepartmentOptions"
+                                  MaxOptionsHeight="160" />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Mô tả</label>
@@ -165,7 +157,7 @@ else
                 <button class="btn btn-outline" @onclick="CloseModal">Hủy</button>
                 <button class="btn btn-primary" @onclick="SaveDepartment" disabled="@_isSaving">
                     @if (_isSaving)
-                    { <div class="spinner spinner-sm" style="border-top-color:white"></div><span>Đang lưu...</span> }
+                    { <div class="spinner spinner-sm department-spinner"></div><span>Đang lưu...</span> }
                     else { <span>@(_editingDept == null ? "Thêm" : "Lưu")</span> }
                 </button>
             </div>
@@ -188,6 +180,23 @@ else
     private bool _isSaving;
     private DepartmentDto? _editingDept;
     private string _formName = "", _formCode = "", _formParentId = "", _formDescription = "";
+
+    private IReadOnlyList<SelectOption> ParentDepartmentOptions
+    {
+        get
+        {
+            var options = new List<SelectOption> { new("", "-- Không có (đơn vị gốc) --") };
+            if (_departments == null) return options;
+
+            var excluded = _editingDept != null ? GetDescendantIds(_editingDept) : new HashSet<Guid>();
+            options.AddRange(_departments
+                .Where(department => !excluded.Contains(department.Id))
+                .Select(department => new SelectOption(
+                    department.Id.ToString(),
+                    $"{department.Name} ({department.DeptCode ?? "?"})")));
+            return options;
+        }
+    }
 
     private bool _showDeleteConfirm;
     private DepartmentDto? _deletingDept;

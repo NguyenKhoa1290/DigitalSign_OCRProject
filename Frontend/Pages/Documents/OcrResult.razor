@@ -15,7 +15,7 @@ else if (_document == null)
 {
     <div class="empty-state">
         <p class="empty-state-title">Không tìm thấy công văn</p>
-        <a href="/documents" class="btn btn-primary" style="margin-top:12px">Quay lại danh sách</a>
+        <a href="/documents" class="btn btn-primary empty-back-button">Quay lại danh sách</a>
     </div>
 }
 else
@@ -55,8 +55,8 @@ else
     }
     else
     {
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start;">
-            <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="ocr-layout">
+            <div class="ocr-column">
                 <div class="card">
                     <div class="card-header"><span class="card-title">Trường OCR đã bóc tách</span></div>
                     <div class="card-body">
@@ -79,9 +79,9 @@ else
                             </div>
                         </div>
 
-                        <div style="margin-top:14px;">
+                        <div class="ocr-title-section">
                             <div class="detail-label">Tiêu đề/trích yếu OCR</div>
-                            <div style="margin-top:6px;padding:14px 16px;border:1px solid var(--color-border-light);background:var(--color-bg);border-radius:var(--radius-md);line-height:1.6;">
+                            <div class="ocr-title-value">
                                 @FirstNotBlank(GetExtracted("title"), _document.Title)
                             </div>
                         </div>
@@ -91,22 +91,22 @@ else
                 <div class="card">
                     <div class="card-header">
                         <span class="card-title">Dòng text nhận diện</span>
-                        <span style="font-size:12px;color:var(--color-text-muted);">@_lines.Count dòng</span>
+                        <span class="ocr-line-count">@_lines.Count dòng</span>
                     </div>
                     <div class="card-body">
                         @if (_lines.Count == 0)
                         {
-                            <p style="color:var(--color-text-secondary);">Không tìm thấy danh sách dòng trong JSON OCR.</p>
+                            <p class="ocr-empty-text">Không tìm thấy danh sách dòng trong JSON OCR.</p>
                         }
                         else
                         {
-                            <div style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;">
+                            <div class="ocr-lines">
                                 @foreach (var line in _lines)
                                 {
-                                    <div style="display:grid;grid-template-columns:70px minmax(0,1fr) 90px;gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--color-border-light);border-radius:var(--radius-sm);background:var(--color-bg);">
-                                        <span style="font-size:12px;color:var(--color-text-muted);">Trang @line.Page</span>
-                                        <span style="white-space:pre-wrap;">@line.Text</span>
-                                        <span style="font-size:12px;color:var(--color-text-muted);text-align:right;">@FormatConfidence(line.Confidence)</span>
+                                    <div class="ocr-line">
+                                        <span class="ocr-line-meta">Trang @line.Page</span>
+                                        <span class="ocr-line-text">@line.Text</span>
+                                        <span class="ocr-line-confidence">@FormatConfidence(line.Confidence)</span>
                                     </div>
                                 }
                             </div>
@@ -119,21 +119,21 @@ else
                     <div class="card-body">
                         @if (!string.IsNullOrEmpty(_parseError))
                         {
-                            <div class="badge badge-red" style="margin-bottom:10px;">JSON không parse được: @_parseError</div>
+                            <div class="badge badge-red ocr-parse-error">JSON không parse được: @_parseError</div>
                         }
-                        <pre style="font-size:12.5px;white-space:pre-wrap;font-family:Consolas, monospace;color:var(--color-text-secondary);max-height:360px;overflow-y:auto;background:var(--color-bg);border:1px solid var(--color-border-light);border-radius:var(--radius-md);padding:14px;">@_prettyRaw</pre>
+                        <pre class="ocr-raw-json">@_prettyRaw</pre>
                     </div>
                 </div>
             </div>
 
-            <div style="display:flex;flex-direction:column;gap:20px;">
+            <div class="ocr-column">
                 <div class="card">
                     <div class="card-header"><span class="card-title">Thông tin công văn</span></div>
                     <div class="card-body">
-                        <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div class="ocr-metadata">
                             <div>
                                 <div class="detail-label">Trạng thái</div>
-                                <div style="margin-top:4px;"><StatusBadge Status="@_document.Status" /></div>
+                                <div class="ocr-status"><StatusBadge Status="@_document.Status" /></div>
                             </div>
                             <div>
                                 <div class="detail-label">Loại văn bản</div>
@@ -141,7 +141,7 @@ else
                             </div>
                             <div>
                                 <div class="detail-label">MinIO path</div>
-                                <div class="detail-value" style="word-break:break-all;">@(_document.MinioPath ?? "—")</div>
+                                <div class="detail-value ocr-object-path">@(_document.MinioPath ?? "—")</div>
                             </div>
                             <div>
                                 <div class="detail-label">Cập nhật lần cuối</div>
@@ -163,7 +163,7 @@ else
 
                         @if (ocrProcesses.Count == 0)
                         {
-                            <p style="color:var(--color-text-secondary);">Chưa có log UpdateOCR.</p>
+                            <p class="ocr-empty-text">Chưa có log UpdateOCR.</p>
                         }
                         else
                         {

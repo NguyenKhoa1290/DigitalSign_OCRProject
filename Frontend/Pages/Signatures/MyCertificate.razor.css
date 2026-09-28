@@ -1,0 +1,48 @@
+.certificate-empty-card,
+.my-certificate-card {
+    max-width: 860px;
+}
+
+.certificate-empty-card .empty-state {
+    padding: 48px 24px;
+}
+
+.certificate-create-button {
+    margin-top: 18px;
+}
+
+.certificate-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.certificate-thumbprint {
+    grid-column: 1 / -1;
+}
+
+.certificate-thumbprint .detail-value {
+    overflow-wrap: anywhere;
+    font-family: monospace;
+}
+
+.certificate-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-border);
+}
+
+.certificate-spinner {
+    border-top-color: white;
+}
+
+@media (max-width: 700px) {
+    .certificate-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .certificate-thumbprint {
+        grid-column: auto;
+    }
+}

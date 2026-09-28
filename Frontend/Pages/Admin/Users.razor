@@ -59,7 +59,7 @@ else
                     <th>Phòng ban</th>
                     <th>Trạng thái</th>
                     <th>Ngày tạo</th>
-                    <th style="text-align:right">Thao tác</th>
+                    <th class="actions-heading">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -67,17 +67,17 @@ else
                 {
                     <tr @onclick:stopPropagation>
                         <td>
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="user-avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;flex-shrink:0;">
+                            <div class="user-cell">
+                                <div class="user-table-avatar">
                                     @(user.FullName.Length > 0 ? user.FullName[0].ToString().ToUpper() : "U")
                                 </div>
                                 <div>
-                                    <div style="font-weight:500">@user.FullName</div>
-                                    <div style="font-size:12px;color:var(--color-text-muted)">@user.Email</div>
+                                    <div class="user-full-name">@user.FullName</div>
+                                    <div class="user-email">@user.Email</div>
                                 </div>
                             </div>
                         </td>
-                        <td style="font-family:monospace;font-size:13px;">@user.Username</td>
+                        <td class="username-cell">@user.Username</td>
                         <td><span class="role-badge role-@user.Role">@GetRoleLabel(user.Role)</span></td>
                         <td>@(user.DepartmentName ?? "—")</td>
                         <td>
@@ -88,7 +88,7 @@ else
                         </td>
                         <td>@user.CreatedAt.ToString("dd/MM/yyyy")</td>
                         <td>
-                            <div style="display:flex;gap:6px;justify-content:flex-end;">
+                            <div class="row-actions">
                                 <button class="btn btn-outline btn-sm" @onclick="() => ShowEditModal(user)">Sửa</button>
                                 <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteConfirm(user)">Xóa</button>
                             </div>
@@ -116,13 +116,13 @@ else
 @if (_showFormModal)
 {
     <div class="modal-overlay" @onclick="CloseModal">
-        <div class="modal modal-lg" @onclick:stopPropagation>
+        <div class="modal modal-lg user-modal" @onclick:stopPropagation>
             <div class="modal-header">
                 <span class="modal-title">@(_editingUser == null ? "Thêm người dùng" : "Chỉnh sửa người dùng")</span>
                 <button class="modal-close" @onclick="CloseModal">&times;</button>
             </div>
             <div class="modal-body">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="user-form-grid">
                     <div class="form-group">
                         <label class="form-label required">Họ tên</label>
                         <input type="text" class="form-control" @bind="_formFullName" />
@@ -143,15 +143,11 @@ else
                         </div>
                     }
                     <div class="form-group">
-                        <label class="form-label required">Vai trò</label>
-                        <select class="form-control" @bind="_formRole">
-                            <option value="">-- Chọn vai trò --</option>
-                            <option value="Admin">Quản trị viên</option>
-                            <option value="Clerk">Văn thư</option>
-                            <option value="Specialist">Chuyên viên</option>
-                            <option value="Manager">Lãnh đạo Phòng</option>
-                            <option value="BoardOfDirectors">Ban Giám hiệu</option>
-                        </select>
+                        <label class="form-label required" for="user-role-select">Vai trò</label>
+                        <CustomSelect Id="user-role-select"
+                                      @bind-Value="_formRole"
+                                      Options="RoleOptions"
+                                      MaxOptionsHeight="160" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Số điện thoại</label>
@@ -161,9 +157,9 @@ else
                 @if (_editingUser != null)
                 {
                     <div class="form-group">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <label class="active-checkbox">
                             <input type="checkbox" @bind="_formIsActive" />
-                            <span class="form-label" style="margin:0">Tài khoản đang hoạt động</span>
+                            <span class="form-label active-checkbox-label">Tài khoản đang hoạt động</span>
                         </label>
                     </div>
                 }
@@ -172,7 +168,7 @@ else
                 <button class="btn btn-outline" @onclick="CloseModal">Hủy</button>
                 <button class="btn btn-primary" @onclick="SaveUser" disabled="@_isSaving">
                     @if (_isSaving)
-                    { <div class="spinner spinner-sm" style="border-top-color:white"></div><span>Đang lưu...</span> }
+                    { <div class="spinner spinner-sm user-spinner"></div><span>Đang lưu...</span> }
                     else { <span>@(_editingUser == null ? "Thêm" : "Lưu thay đổi")</span> }
                 </button>
             </div>
@@ -196,6 +192,16 @@ else
     private UserDto? _editingUser;
     private string _formFullName = "", _formUsername = "", _formEmail = "", _formPassword = "", _formRole = "", _formPhone = "";
     private bool _formIsActive = true;
+
+    private static readonly IReadOnlyList<SelectOption> RoleOptions = new List<SelectOption>
+    {
+        new("", "-- Chọn vai trò --"),
+        new("Admin", "Quản trị viên"),
+        new("Clerk", "Văn thư"),
+        new("Specialist", "Chuyên viên"),
+        new("Manager", "Lãnh đạo Phòng"),
+        new("BoardOfDirectors", "Ban Giám hiệu")
+    };
 
     private bool _showDeleteConfirm;
     private UserDto? _deletingUser;

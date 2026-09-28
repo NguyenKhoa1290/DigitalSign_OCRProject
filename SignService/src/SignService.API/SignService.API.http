@@ -1,6 +1,21 @@
-@SignService.API_HostAddress = http://localhost:5275
+@SignService_HostAddress = http://localhost:5050
+@AccessToken = paste-jwt-here
 
-GET {{SignService.API_HostAddress}}/weatherforecast/
+### Chứng thư của tài khoản đang đăng nhập
+GET {{SignService_HostAddress}}/api/signatures/certificates/me
+Authorization: Bearer {{AccessToken}}
 Accept: application/json
 
-###
+### Manager/Ban Giám hiệu tự tạo chứng thư
+POST {{SignService_HostAddress}}/api/signatures/certificates/me/issue
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "validityDays": 365
+}
+
+### Admin lấy danh sách chứng thư
+GET {{SignService_HostAddress}}/api/signatures/certificates
+Authorization: Bearer {{AccessToken}}
+Accept: application/json

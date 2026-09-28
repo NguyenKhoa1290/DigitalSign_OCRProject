@@ -1,0 +1,95 @@
+<div class="custom-select @CssClass">
+    <button id="@Id"
+            type="button"
+            class="form-control custom-select-trigger"
+            disabled="@Disabled"
+            aria-label="@AriaLabel"
+            aria-labelledby="@AriaLabelledBy"
+            aria-haspopup="listbox"
+            aria-controls="@_listboxId"
+            aria-expanded="@_isOpen.ToString().ToLowerInvariant()"
+            @onclick="ToggleOptions"
+            @onkeydown="HandleKeyDown">
+        <span class="custom-select-value">@SelectedLabel</span>
+        <svg class="custom-select-arrow @(_isOpen ? "custom-select-arrow-open" : null)"
+             width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+        </svg>
+    </button>
+
+    @if (_isOpen)
+    {
+        <div id="@_listboxId"
+             class="custom-select-options"
+             style="@OptionsStyle"
+             role="listbox"
+             aria-label="@AriaLabel"
+             aria-labelledby="@AriaLabelledBy">
+            @if (Options.Count == 0)
+            {
+                <div class="custom-select-empty">Không có lựa chọn.</div>
+            }
+            else
+            {
+                @foreach (var option in Options)
+                {
+                    var isSelected = string.Equals(option.Value, Value, StringComparison.Ordinal);
+                    <button type="button"
+                            class="custom-select-option @(isSelected ? "custom-select-option-selected" : null)"
+                            role="option"
+                            aria-selected="@(isSelected ? "true" : "false")"
+                            @key="option.Value"
+                            @onclick="() => SelectOptionAsync(option.Value)">
+                        <span>@option.Label</span>
+                        @if (isSelected)
+                        {
+                            <span class="custom-select-check" aria-hidden="true">✓</span>
+                        }
+                    </button>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<SelectOption> Options { get; set; } = Array.Empty<SelectOption>();
+    [Parameter] public EventCallback AfterValueChanged { get; set; }
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string? AriaLabelledBy { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public int? MaxOptionsHeight { get; set; }
+
+    private readonly string _listboxId = $"custom-select-{Guid.NewGuid():N}";
+    private bool _isOpen;
+
+    private string SelectedLabel => Options.FirstOrDefault(option =>
+        string.Equals(option.Value, Value, StringComparison.Ordinal))?.Label ?? "Chọn một giá trị";
+
+    private string? OptionsStyle => MaxOptionsHeight is > 0
+        ? $"max-height: {MaxOptionsHeight.Value}px"
+        : null;
+
+    private void ToggleOptions() => _isOpen = !_isOpen;
+
+    private async Task SelectOptionAsync(string value)
+    {
+        _isOpen = false;
+        if (string.Equals(value, Value, StringComparison.Ordinal)) return;
+
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+        await AfterValueChanged.InvokeAsync();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") _isOpen = false;
+        else if (args.Key == "ArrowDown" && !_isOpen) _isOpen = true;
+    }
+}

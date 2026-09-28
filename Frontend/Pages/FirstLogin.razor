@@ -7,7 +7,7 @@
 <PageTitle>Đổi mật khẩu lần đầu - HAU Công văn</PageTitle>
 
 <div class="login-page">
-    <div class="login-card" style="max-width:480px;">
+    <div class="login-card first-login-card">
         <div class="login-logo">
             <div class="login-logo-icon">
                 <img src="images/hau-logo.png" alt="Biểu trưng Trường Đại học Kiến trúc Hà Nội" />
@@ -18,13 +18,12 @@
             </div>
         </div>
 
-        <div style="background:#fef9c3;border:1px solid #fde047;border-radius:var(--radius-md);
-                    padding:12px 16px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ca8a04" stroke-width="2" style="flex-shrink:0;margin-top:2px;">
+        <div class="security-notice">
+            <svg class="security-notice-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ca8a04" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round"
                       d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <div style="font-size:13.5px;color:#854d0e;">
+            <div class="security-notice-text">
                 <strong>Yêu cầu bảo mật:</strong> Đây là lần đăng nhập đầu tiên của bạn.
                 Vui lòng đặt mật khẩu mới trước khi sử dụng hệ thống.
             </div>
@@ -42,10 +41,9 @@
 
         @if (_success)
         {
-            <div style="background:#dcfce7;border:1px solid #86efac;border-radius:var(--radius-md);
-                        padding:14px 16px;text-align:center;color:#166534;margin-bottom:16px;">
+            <div class="first-login-success">
                 <strong>✅ Đổi mật khẩu thành công!</strong><br/>
-                <span style="font-size:13px;">Đang chuyển hướng vào hệ thống...</span>
+                <span class="first-login-success-note">Đang chuyển hướng vào hệ thống...</span>
             </div>
         }
         else
@@ -74,17 +72,16 @@
                 </div>
                 @if (!string.IsNullOrEmpty(_model.NewPassword))
                 {
-                    <div style="margin-top:6px;">
-                        <div style="display:flex;gap:4px;margin-bottom:4px;">
+                    <div class="password-strength">
+                        <div class="password-strength-bars">
                             @for (int i = 0; i < 4; i++)
                             {
                                 var filled = i < _strength;
                                 var color = _strength <= 1 ? "#ef4444" : _strength == 2 ? "#f97316" : _strength == 3 ? "#eab308" : "#22c55e";
-                                <div style="flex:1;height:4px;border-radius:2px;background:@(filled ? color : "#e5e7eb");
-                                            transition:background .3s;"></div>
+                                <div class="password-strength-bar" style="background:@(filled ? color : "#e5e7eb");"></div>
                             }
                         </div>
-                        <span style="font-size:12px;color:@(_strength <= 1 ? "#ef4444" : _strength == 2 ? "#f97316" : _strength == 3 ? "#eab308" : "#22c55e");">
+                        <span class="password-strength-label" style="color:@(_strength <= 1 ? "#ef4444" : _strength == 2 ? "#f97316" : _strength == 3 ? "#eab308" : "#22c55e");">
                             @_strengthLabel
                         </span>
                     </div>
@@ -103,23 +100,23 @@
                 </div>
                 @if (!string.IsNullOrEmpty(_model.ConfirmPassword) && _model.NewPassword != _model.ConfirmPassword)
                 {
-                    <span style="font-size:12px;color:#ef4444;">Mật khẩu xác nhận không khớp.</span>
+                    <span class="password-mismatch">Mật khẩu xác nhận không khớp.</span>
                 }
             </div>
 
-            <div style="border-top:1px solid var(--color-border-light);margin:20px 0 16px;">
-                <p style="font-size:13px;color:var(--color-text-muted);margin:16px 0 12px;">
+            <div class="email-verification-section">
+                <p class="email-verification-title">
                     Xác minh email để có thể khôi phục mật khẩu sau này
                 </p>
             </div>
 
             <div class="form-group">
                 <label class="form-label required">Email khôi phục</label>
-                <div style="display:flex;gap:8px;">
+                <div class="email-verification-row">
                     <input type="email" class="form-control" placeholder="vd: nguyenvan@hau.edu.vn"
                            @bind="_model.Email" @bind:event="oninput"
                            disabled="@(_isSaving || _isSendingOtp)"/>
-                    <button type="button" class="btn btn-secondary" style="white-space:nowrap;"
+                    <button type="button" class="btn btn-secondary verification-button"
                             @onclick="SendVerificationOtp"
                             disabled="@(_isSaving || _isSendingOtp || string.IsNullOrWhiteSpace(_model.Email))">
                         @if (_isSendingOtp)
@@ -141,7 +138,7 @@
                     <input type="text" inputmode="numeric" maxlength="6" class="form-control"
                            placeholder="Nhập OTP 6 chữ số"
                            @bind="_model.EmailVerificationOtp" disabled="@_isSaving"/>
-                    <span style="font-size:12px;color:var(--color-text-muted);">
+                    <span class="verification-hint">
                         Mã có hiệu lực trong 15 phút và chỉ dùng một lần.
                     </span>
                 </div>
@@ -156,7 +153,7 @@
             <button class="btn btn-primary login-btn" @onclick="HandleSubmit" disabled="@_isSaving">
                 @if (_isSaving)
                 {
-                    <div class="spinner spinner-sm" style="border-top-color:white;"></div>
+                    <div class="spinner spinner-sm first-login-spinner"></div>
                     <span>Đang lưu...</span>
                 }
                 else

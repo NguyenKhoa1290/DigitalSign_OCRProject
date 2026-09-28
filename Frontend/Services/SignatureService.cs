@@ -23,6 +23,15 @@ public class SignatureService
     public async Task<SignatureVerifyResult?> VerifyAsync(Guid documentId)
         => await _api.GetAsync<SignatureVerifyResult>($"api/signatures/document/{documentId}/verify");
 
+    // Chứng thư của tài khoản Manager/Ban Giám hiệu đang đăng nhập.
+    public async Task<CertificateDto?> GetMyCertificateAsync()
+        => await _api.GetAsync<CertificateDto>("api/signatures/certificates/me");
+
+    public async Task<CertificateDto?> IssueMyCertificateAsync(int validityDays = 365)
+        => await _api.PostAsync<CertificateDto>(
+            "api/signatures/certificates/me/issue",
+            new IssueOwnCertificateDto { ValidityDays = validityDays });
+
     // Gọi personal-sign hay legal-seal theo loại thao tác trên UI.
     public async Task<SignResultDto?> SignAsync(SignRequestDto request)
     {

@@ -15,19 +15,19 @@ else if (_document == null)
 {
     <div class="empty-state">
         <p class="empty-state-title">Không tìm thấy công văn</p>
-        <a href="/documents" class="btn btn-primary" style="margin-top:12px">Quay lại danh sách</a>
+        <a href="/documents" class="btn btn-primary empty-back-button">Quay lại danh sách</a>
     </div>
 }
 else
 {
     <div class="page-header">
         <div>
-            <h1 class="page-title" style="max-width:600px;white-space:normal;line-height:1.4">@_document.Title</h1>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+            <h1 class="page-title document-title">@_document.Title</h1>
+            <div class="document-meta">
                 <StatusBadge Status="@_document.Status" />
                 @if (!string.IsNullOrEmpty(_document.DocumentNumber))
                 {
-                    <span style="font-size:13px;color:var(--color-text-secondary)">Số: @_document.DocumentNumber</span>
+                    <span class="document-number">Số: @_document.DocumentNumber</span>
                 }
             </div>
         </div>
@@ -42,7 +42,7 @@ else
     </div>
 
     <!-- Action Buttons by Role/Status -->
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;">
+    <div class="document-actions">
         @if (_document.Status == "Draft" && (_role == "Clerk" || _role == "Specialist"))
         {
             <button class="btn btn-primary" @onclick='() => ShowActionModal("submit")'>
@@ -51,12 +51,12 @@ else
                 </svg>
                 Nộp trình duyệt
             </button>
-            <label class="btn btn-outline" style="cursor:pointer">
+            <label class="btn btn-outline upload-label">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 Tải lên PDF
-                <InputFile OnChange="OnFileUpload" accept=".pdf" style="display:none" />
+                <InputFile OnChange="OnFileUpload" accept=".pdf" class="hidden-file-input" />
             </label>
             <button class="btn btn-outline" @onclick="RunOcr" disabled="@_isActionLoading">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -128,8 +128,8 @@ else
         </a>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
-        <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="document-detail-layout">
+        <div class="document-detail-column">
             <!-- Document Info -->
             <div class="card">
                 <div class="card-header"><span class="card-title">Thông tin Công văn</span></div>
@@ -176,7 +176,7 @@ else
                             Mở trong tab mới
                         </a>
                     </div>
-                    <div class="card-body" style="padding:0">
+                    <div class="card-body pdf-card-body">
                         <iframe class="pdf-frame" src="@_presignedUrl"></iframe>
                     </div>
                 </div>
@@ -201,13 +201,13 @@ else
                                 <div class="detail-value">@(_document.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</div>
                             </div>
                         </div>
-                        <pre style="font-size:12.5px;white-space:pre-wrap;font-family:Consolas, monospace;color:var(--color-text-secondary);max-height:180px;overflow-y:auto;background:var(--color-bg);border:1px solid var(--color-border-light);border-radius:var(--radius-md);padding:12px;margin-top:12px;">@_document.OcrDataRaw</pre>
+                        <pre class="ocr-raw">@_document.OcrDataRaw</pre>
                     </div>
                 </div>
             }
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="document-detail-column">
             <!-- Signatures -->
             @if (_document.Signatures.Any())
             {
@@ -284,7 +284,7 @@ else
                 <button class="btn @GetActionButtonClass()" @onclick="ExecuteAction" disabled="@_isActionLoading">
                     @if (_isActionLoading)
                     {
-                        <div class="spinner spinner-sm" style="border-top-color:white"></div>
+                        <div class="spinner spinner-sm action-spinner"></div>
                         <span>Đang xử lý...</span>
                     }
                     else

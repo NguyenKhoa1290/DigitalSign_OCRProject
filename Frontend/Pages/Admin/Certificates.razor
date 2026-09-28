@@ -50,7 +50,7 @@ else
                     <th>Hiệu lực từ</th>
                     <th>Hết hạn</th>
                     <th>Trạng thái</th>
-                    <th style="text-align:right">Thao tác</th>
+                    <th class="actions-heading">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,34 +58,32 @@ else
                 {
                     <tr>
                         <td>
-                            <div style="font-weight:500">@cert.UserFullName</div>
-                            <div style="font-size:12px;color:var(--color-text-muted)">@cert.UserName</div>
+                            <div class="certificate-owner">@cert.FullName</div>
+                            <div class="certificate-username">@cert.Username</div>
                         </td>
-                        <td style="font-size:12px;font-family:monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@cert.Subject">@cert.Subject</td>
+                        <td class="certificate-subject" title="@CertificateSubject(cert)">@CertificateSubject(cert)</td>
                         <td>
                             <span class="badge @(cert.CertificateType == "Organization" ? "badge-purple" : "badge-blue")">
                                 @(cert.CertificateType == "Organization" ? "Pháp nhân" : "Cá nhân")
                             </span>
                         </td>
-                        <td>@cert.ValidFrom.ToString("dd/MM/yyyy")</td>
+                        <td>@cert.NotBefore.ToLocalTime().ToString("dd/MM/yyyy")</td>
                         <td>
                             @{
-                                var isExpiring = cert.ValidTo < DateTime.Now.AddDays(30);
-                                var isExpired = cert.ValidTo < DateTime.Now;
+                                var isExpiring = cert.NotAfter < DateTime.UtcNow.AddDays(30);
+                                var isExpired = cert.NotAfter < DateTime.UtcNow;
                             }
                             <span style="color: @(isExpired ? "var(--color-danger)" : isExpiring ? "var(--color-warning)" : "inherit")">
-                                @cert.ValidTo.ToString("dd/MM/yyyy")
+                                @cert.NotAfter.ToLocalTime().ToString("dd/MM/yyyy")
                             </span>
                         </td>
                         <td>
-                            @if (cert.IsRevoked) { <span class="badge badge-red">Đã thu hồi</span> }
-                            else if (!cert.IsActive) { <span class="badge badge-gray">Vô hiệu</span> }
-                            else if (cert.ValidTo < DateTime.Now) { <span class="badge badge-orange">Hết hạn</span> }
+                            @if (!cert.IsValid || cert.NotAfter < DateTime.UtcNow) { <span class="badge badge-orange">Hết hạn</span> }
                             else { <span class="badge badge-green">Đang hoạt động</span> }
                         </td>
                         <td>
-                            <div style="display:flex;justify-content:flex-end;">
-                                @if (!cert.IsRevoked && cert.IsActive)
+                            <div class="certificate-actions">
+                                @if (cert.IsValid)
                                 {
                                     <button class="btn btn-danger btn-sm" @onclick="() => ShowRevokeConfirm(cert)">Thu hồi</button>
                                 }
@@ -115,34 +113,123 @@ else
                     <span>Hệ thống sẽ tự động tạo cặp khóa RSA và chứng thư X.509.</span>
                 </div>
                 <div class="form-group">
-                    <label class="form-label required">ID Người dùng</label>
-                    <input type="text" class="form-control" placeholder="Nhập User ID (GUID)..."
-                           @bind="_issueUserId" />
-                    <div class="form-hint">Lấy từ trang Quản lý Người dùng</div>
+                    <label class="form-label required" for="certificate-user-search">Người dùng</label>
+                    <div class="certificate-user-picker">
+                        <input id="certificate-user-search"
+                               type="text"
+                               class="form-control"
+                               placeholder="Nhập họ tên, username, email hoặc GUID..."
+                               value="@_issueUserSearch"
+                               @oninput="SearchIssueUsers"
+                               autocomplete="off"
+                               aria-autocomplete="list"
+                               aria-controls="certificate-user-suggestions"
+                               aria-expanded="@_showUserSuggestions.ToString().ToLowerInvariant()" />
+
+                        @if (_showUserSuggestions)
+                        {
+                            <div id="certificate-user-suggestions" class="certificate-user-suggestions" role="listbox">
+                                @if (_isSearchingUsers)
+                                {
+                                    <div class="certificate-user-message">Đang tìm người dùng...</div>
+                                }
+                                else if (!string.IsNullOrEmpty(_userSearchError))
+                                {
+                                    <div class="certificate-user-message certificate-user-message-error">@_userSearchError</div>
+                                }
+                                else if (_userSuggestions.Count == 0)
+                                {
+                                    <div class="certificate-user-message">Không tìm thấy người dùng phù hợp.</div>
+                                }
+                                else
+                                {
+                                    @foreach (var user in _userSuggestions)
+                                    {
+                                        <button type="button"
+                                                class="certificate-user-suggestion"
+                                                role="option"
+                                                @key="user.Id"
+                                                @onclick="() => SelectIssueUser(user)">
+                                            <span class="certificate-user-name">@user.FullName</span>
+                                            <span class="certificate-user-details">
+                                                <span>@@@user.Username</span>
+                                                @if (!string.IsNullOrWhiteSpace(user.Email))
+                                                {
+                                                    <span>@user.Email</span>
+                                                }
+                                            </span>
+                                        </button>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                    @if (_selectedIssueUser != null)
+                    {
+                        <div class="certificate-selected-user">
+                            <span class="certificate-selected-check">✓</span>
+                            <span>
+                                Đã chọn <strong>@_selectedIssueUser.FullName</strong>
+                                (@_selectedIssueUser.Username) · @_selectedIssueUser.Email
+                            </span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-hint">Chọn đúng người dùng trong danh sách gợi ý; hệ thống sẽ tự lấy GUID.</div>
+                    }
                 </div>
                 <div class="form-group">
-                    <label class="form-label required">Loại chứng thư</label>
-                    <select class="form-control" @bind="_issueCertType">
-                        <option value="Personal">Cá nhân (Personal)</option>
-                        <option value="Organization">Pháp nhân (Organization)</option>
-                    </select>
+                    <label class="form-label required" id="certificate-type-label">Loại chứng thư</label>
+                    <div class="certificate-select-picker">
+                        <button type="button"
+                                class="form-control certificate-select-trigger"
+                                aria-labelledby="certificate-type-label"
+                                aria-haspopup="listbox"
+                                aria-expanded="@_showCertificateTypeOptions.ToString().ToLowerInvariant()"
+                                @onclick="ToggleCertificateTypeOptions">
+                            <span>@IssueCertificateTypeLabel</span>
+                            <svg class="certificate-select-arrow @(_showCertificateTypeOptions ? "certificate-select-arrow-open" : null)"
+                                 width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+
+                        @if (_showCertificateTypeOptions)
+                        {
+                            <div class="certificate-select-options" role="listbox" aria-labelledby="certificate-type-label">
+                                <button type="button"
+                                        class="certificate-select-option @(_issueCertType == "Personal" ? "certificate-select-option-selected" : null)"
+                                        role="option"
+                                        aria-selected="@(_issueCertType == "Personal" ? "true" : "false")"
+                                        @onclick='() => SelectCertificateType("Personal")'>
+                                    <span>Cá nhân (Personal)</span>
+                                    @if (_issueCertType == "Personal") { <span aria-hidden="true">✓</span> }
+                                </button>
+                                <button type="button"
+                                        class="certificate-select-option @(_issueCertType == "Organization" ? "certificate-select-option-selected" : null)"
+                                        role="option"
+                                        aria-selected="@(_issueCertType == "Organization" ? "true" : "false")"
+                                        @onclick='() => SelectCertificateType("Organization")'>
+                                    <span>Pháp nhân (Organization)</span>
+                                    @if (_issueCertType == "Organization") { <span aria-hidden="true">✓</span> }
+                                </button>
+                            </div>
+                        }
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label required">Thời hạn (ngày)</label>
                     <input type="number" class="form-control" @bind="_issueValidityDays" min="30" max="1825" />
                     <div class="form-hint">Mặc định 365 ngày (1 năm)</div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Mật khẩu khóa (tùy chọn)</label>
-                    <input type="password" class="form-control" placeholder="Để trống nếu không cần mật khẩu"
-                           @bind="_issueKeyPassword" />
-                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" @onclick="CloseModal">Hủy</button>
                 <button class="btn btn-primary" @onclick="IssueCertificate" disabled="@_isSaving">
                     @if (_isSaving)
-                    { <div class="spinner spinner-sm" style="border-top-color:white"></div><span>Đang cấp...</span> }
+                    { <div class="spinner spinner-sm certificate-spinner"></div><span>Đang cấp...</span> }
                     else
                     {
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -157,7 +244,7 @@ else
 }
 
 <ConfirmDialog @bind-IsVisible="_showRevokeConfirm" Title="Thu hồi chứng thư"
-    Message="@($"Thu hồi chứng thư của '{_revokingCert?.UserFullName}'? Người dùng sẽ không thể ký số sau khi thu hồi.")"
+    Message="@($"Thu hồi chứng thư của '{_revokingCert?.FullName}'? Người dùng sẽ không thể ký số sau khi thu hồi.")"
     OnConfirm="RevokeCertificate" ConfirmText="Thu hồi" />
 
 @code {
@@ -166,10 +253,16 @@ else
 
     private bool _showIssueModal;
     private bool _isSaving;
-    private string _issueUserId = "";
+    private string _issueUserSearch = "";
+    private UserDto? _selectedIssueUser;
+    private readonly List<UserDto> _userSuggestions = new();
+    private bool _showUserSuggestions;
+    private bool _isSearchingUsers;
+    private string? _userSearchError;
+    private int _userSearchVersion;
     private string _issueCertType = "Personal";
+    private bool _showCertificateTypeOptions;
     private int _issueValidityDays = 365;
-    private string? _issueKeyPassword;
 
     private bool _showRevokeConfirm;
     private CertificateDto? _revokingCert;
@@ -186,16 +279,118 @@ else
 
     private void ShowIssueModal()
     {
-        _issueUserId = ""; _issueCertType = "Personal"; _issueValidityDays = 365; _issueKeyPassword = null;
+        _issueUserSearch = "";
+        _selectedIssueUser = null;
+        _userSuggestions.Clear();
+        _showUserSuggestions = false;
+        _isSearchingUsers = false;
+        _userSearchError = null;
+        _userSearchVersion++;
+        _issueCertType = "Personal";
+        _showCertificateTypeOptions = false;
+        _issueValidityDays = 365;
         _showIssueModal = true;
     }
-    private void CloseModal() => _showIssueModal = false;
+
+    private void CloseModal()
+    {
+        _userSearchVersion++;
+        _showIssueModal = false;
+        _showUserSuggestions = false;
+        _showCertificateTypeOptions = false;
+    }
+
+    private async Task SearchIssueUsers(ChangeEventArgs args)
+    {
+        _issueUserSearch = args.Value?.ToString() ?? "";
+        _selectedIssueUser = null;
+        _userSuggestions.Clear();
+        _userSearchError = null;
+        _showCertificateTypeOptions = false;
+
+        var query = _issueUserSearch.Trim();
+        var searchVersion = ++_userSearchVersion;
+        if (string.IsNullOrEmpty(query))
+        {
+            _showUserSuggestions = false;
+            _isSearchingUsers = false;
+            return;
+        }
+
+        _showUserSuggestions = true;
+        _isSearchingUsers = true;
+
+        try
+        {
+            await Task.Delay(250);
+            if (searchVersion != _userSearchVersion) return;
+
+            if (Guid.TryParse(query, out var userId))
+            {
+                var user = await AdminService.GetUserAsync(userId);
+                if (user != null) _userSuggestions.Add(user);
+            }
+            else
+            {
+                var result = await AdminService.GetUsersAsync(page: 1, pageSize: 20, search: query);
+                if (result?.Items != null) _userSuggestions.AddRange(result.Items);
+            }
+        }
+        catch
+        {
+            if (searchVersion == _userSearchVersion)
+                _userSearchError = "Không thể tải danh sách người dùng.";
+        }
+        finally
+        {
+            if (searchVersion == _userSearchVersion)
+                _isSearchingUsers = false;
+        }
+    }
+
+    private void SelectIssueUser(UserDto user)
+    {
+        _selectedIssueUser = user;
+        _issueUserSearch = user.FullName;
+        _userSuggestions.Clear();
+        _showUserSuggestions = false;
+        _userSearchError = null;
+        _userSearchVersion++;
+    }
+
+    private string IssueCertificateTypeLabel => _issueCertType == "Organization"
+        ? "Pháp nhân (Organization)"
+        : "Cá nhân (Personal)";
+
+    private void ToggleCertificateTypeOptions()
+    {
+        _showUserSuggestions = false;
+        _showCertificateTypeOptions = !_showCertificateTypeOptions;
+    }
+
+    private void SelectCertificateType(string certificateType)
+    {
+        _issueCertType = certificateType;
+        _showCertificateTypeOptions = false;
+    }
 
     private async Task IssueCertificate()
     {
-        if (!Guid.TryParse(_issueUserId, out var uid)) { Toast.ShowWarning("ID người dùng không hợp lệ."); return; }
+        if (_selectedIssueUser == null)
+        {
+            Toast.ShowWarning("Vui lòng chọn người dùng trong danh sách gợi ý.");
+            return;
+        }
+
         _isSaving = true;
-        var dto = new IssueCertificateDto { UserId = uid, CertificateType = _issueCertType, ValidityDays = _issueValidityDays, KeyPassword = _issueKeyPassword };
+        var dto = new IssueCertificateDto
+        {
+            UserId = _selectedIssueUser.Id,
+            Username = _selectedIssueUser.Username,
+            FullName = _selectedIssueUser.FullName,
+            CertificateType = _issueCertType,
+            ValidityDays = _issueValidityDays
+        };
         try
         {
             var result = await AdminService.IssueCertificateAsync(dto);
@@ -211,8 +406,11 @@ else
     private async Task RevokeCertificate()
     {
         if (_revokingCert == null) return;
-        var ok = await AdminService.RevokeCertificateAsync(_revokingCert.Id);
+        var ok = await AdminService.RevokeCertificateAsync(_revokingCert.UserId);
         if (ok) { Toast.ShowSuccess("Thu hồi thành công!"); await LoadCertificates(); }
         else Toast.ShowError("Thu hồi thất bại.");
     }
+
+    private static string CertificateSubject(CertificateDto certificate)
+        => $"CN={certificate.FullName}, OU={certificate.Username}, O=HAU";
 }

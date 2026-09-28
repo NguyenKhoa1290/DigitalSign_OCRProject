@@ -1416,6 +1416,445 @@ Kiểm tra kỹ thuật đã đạt: build IdentityService, 29/29 unit test, Doc
 | Màu cảnh báo/lỗi/trạng thái nghiệp vụ vẫn được giữ | Pass |
 | Build Frontend | Pass, 0 warning/0 error |
 | Docker Compose config/build/up | Pass |
+
 | Frontend | HTTP 200, container `running` |
 | Playwright dashboard desktop 1440 × 900 | Pass |
 | Playwright login mobile 390 × 844 | Pass |
+
+## TC-FE-CSS-022 — CSS isolation riêng cho từng page
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận mỗi page có CSS riêng, scoped CSS được đóng gói và giao diện không bị lỗi sau refactor |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Số page Razor trong `Frontend/Pages` | 13 |
+| Số page có file `.razor.css` cùng tên | 13/13, pass |
+| Static inline style còn lại | 0 |
+| Inline style động theo runtime | 3, đúng chủ đích |
+| Build Frontend | Pass, 0 warning/0 error |
+| `docker compose config --quiet` | Pass |
+| Build/recreate image `frontend` | Pass |
+| `GET http://localhost:5227/` | HTTP 200 |
+| `GET /HauDocumentApp.styles.css` | HTTP 200 |
+| Marker page trong CSS bundle Docker | 13/13 |
+| Playwright Dashboard desktop 1440 × 900 | Pass |
+| Playwright Admin Users desktop 1440 × 900 | Pass |
+| Playwright Admin Departments desktop 1440 × 900 | Pass |
+| Playwright Login mobile 390 × 844 | Pass |
+
+### Kết luận
+
+- CSS đặc thù của page được giới hạn bằng Blazor CSS isolation và không còn trộn trong markup.
+- Style dùng chung vẫn nằm tại `wwwroot/css/app.css`, tránh sao chép giữa các page.
+- Ba inline style còn lại đều nhận giá trị từ trạng thái runtime, không phải style tĩnh bị bỏ sót.
+
+## TC-FE-DASHBOARD-023 — Dashboard theo mẫu HAU Docs
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Dashboard Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận Dashboard mới bám bố cục mẫu, hiển thị đủ dữ liệu và responsive |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Frontend và `HauDocumentApp.styles.css` | HTTP 200 |
+| Đăng nhập Admin và mở Dashboard | Pass |
+| Tiêu đề và lời chào | Pass |
+| Typography đề mục sau khi thu nhỏ | Pass |
+| Thẻ thống kê desktop/tablet/mobile | `min-height: 100px`, `padding: 15px`, bo góc `10px`, pass |
+| Sidebar mobile | Bo góc `10px`, pass |
+| Màu sidebar/menu active/avatar do người dùng cấu hình | Giữ nguyên, pass |
+| 4 thẻ thống kê Admin | Pass |
+| Giá trị mặc định khi API trả `null` | Hiển thị `0`, pass |
+| Khối `Thao tác nhanh` | Pass |
+| Desktop 1440 × 900 | 4 cột, pass |
+| Mobile 390 × 844 | 1 cột, bottom navigation hoạt động, pass |
+
+### Kết luận
+
+- Dashboard mới giữ nguyên phân quyền và các thao tác nghiệp vụ hiện có.
+- Style chỉ nằm trong `Dashboard.razor.css`, không làm thay đổi bố cục của các page khác.
+
+## TC-FE-ACCOUNT-RESPONSIVE-024 — Popup tài khoản và ba trạng thái chiều rộng
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + IdentityService + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận không còn sidebar compact, popup tài khoản hoạt động và màn hình quá hẹp bị khóa |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Desktop 1440 × 900 | Sidebar đầy đủ, pass |
+| Popup user card | Có `Chỉnh sửa thông tin` và `Đăng xuất`, pass |
+| `GET /api/users/me` từ modal | Tải đúng hồ sơ Admin, pass |
+| Lưu lại hồ sơ không đổi qua `PUT /api/users/{id}` | Pass |
+| Đăng xuất từ popup | Về `/login`, pass |
+| Viewport 900 × 800 | Bottom navigation, không có sidebar compact, pass |
+| Viewport 340 × 700 | Ứng dụng bị khóa, hiện cảnh báo tối thiểu 450px, pass |
+| Màu sidebar/menu/avatar do người dùng cấu hình | Giữ nguyên, pass |
+
+### Kết luận
+
+- Layout chỉ còn desktop, mobile và trạng thái không hỗ trợ khi quá hẹp.
+- Popup tài khoản sử dụng API thật; người dùng không được sửa vai trò hoặc trạng thái tài khoản từ giao diện này.
+
+## TC-FE-MOBILE-TASKBAR-025 — Nội dung cuộn phía sau taskbar mobile
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium mobile |
+| Mục tiêu | Nội dung được phép cuộn phía sau taskbar nhưng phần tử cuối không bị taskbar che |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Viewport | 390 × 844 |
+| Chiều cao taskbar | 68px |
+| Khoảng cách taskbar tới đáy | 10px |
+| Padding đáy `.main-content` | 0px, pass |
+| Padding đáy `.page-container` | 106px, pass |
+| Vùng nội dung nằm phía sau taskbar | Chồng 78px, pass |
+| Khoảng hở giữa nội dung cuối và taskbar sau khi cuộn hết | 37px, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+
+### Kết luận
+
+- Taskbar tiếp tục nổi ở vị trí người dùng đã cấu hình.
+- Nội dung không bị cắt sớm trước taskbar và phần tử cuối vẫn truy cập được hoàn toàn.
+
+## TC-FE-VIEWPORT-LIMIT-026 — Chiều rộng tối thiểu 450px
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận chính xác biên khóa ứng dụng mới tại 450px |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Viewport 449 × 800 | Ứng dụng bị khóa, pass |
+| Nội dung cảnh báo tại 449px | Yêu cầu chiều rộng tối thiểu 450px, pass |
+| Form đăng nhập tại 449px | Bị ẩn và không thể thao tác, pass |
+| Viewport 450 × 800 | Ứng dụng hoạt động, pass |
+| Đăng nhập tại 450px | Pass |
+| Navigation tại 450px | Bottom navigation dạng mobile, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+
+## TC-FE-SIGN-BACK-027 — Nút quay lại trang xem chữ ký
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận trang ký số luôn có lối quay về công văn tương ứng |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Chi tiết chữ ký, viewport 1440 × 900 | Nút `Quay lại` hiển thị, pass |
+| Chi tiết chữ ký, viewport 450 × 844 | Nút `Quay lại` hiển thị toàn chiều rộng, pass |
+| Đích từ `/signatures/{docId}` | `/documents/{docId}`, pass |
+| Đích từ `/signatures` | `/documents`, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 3/3 |
+
+## TC-FE-BUTTON-COLOR-028 — Màu nền cố định cho nút primary
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận nút primary dùng nền `#304e8a` và không còn gradient |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| CSS `.btn-primary` trạng thái thường | `background-color: rgb(48, 78, 138)`, pass |
+| CSS `.btn-primary` trạng thái hover | `background-color: rgb(48, 78, 138)`, pass |
+| `background-image` ở trạng thái thường/hover | `none`, pass |
+| Desktop 1440 × 900 | Pass |
+| Mobile 450 × 844 | Pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 2/2 |
+
+## TC-FE-CERT-USER-PICKER-029 — Tìm người dùng khi cấp chứng thư
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + IdentityService + Nginx Docker + Chromium |
+| Mục tiêu | Cấp chứng thư bằng cách tìm và chọn người dùng mà không cần biết GUID |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Tìm theo họ tên | Pass |
+| Hai người dùng có cùng họ tên | Hiển thị đủ 2 mục riêng, pass |
+| Thông tin phân biệt trong gợi ý | Username và email, pass |
+| Chọn người dùng thứ hai trong danh sách trùng tên | Pass |
+| GUID gửi tới API cấp chứng thư | Đúng GUID của mục thứ hai, pass |
+| Tìm trực tiếp bằng GUID | Pass |
+| Viewport mobile 450 × 844 | Danh sách nằm trong màn hình, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 3/3 |
+
+## TC-FE-CERT-TYPE-DROPDOWN-030 — Dropdown loại chứng thư tùy biến
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 27/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Đồng bộ ô chọn loại chứng thư với giao diện gợi ý người dùng |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `<select>` mặc định trong modal | Đã loại bỏ, pass |
+| Giá trị mặc định | `Cá nhân (Personal)`, pass |
+| Danh sách tùy biến | Hiển thị đủ 2 lựa chọn, pass |
+| Chọn `Pháp nhân (Organization)` | Cập nhật đúng và đóng danh sách, pass |
+| Nền và bo góc so với ô tìm người dùng | Đồng bộ, pass |
+| Thuộc tính ARIA | Xuất đúng `true`/`false`, pass |
+| Viewport mobile 450 × 844 | Danh sách nằm trong màn hình, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 2/2 |
+
+## TC-FE-CUSTOM-SELECT-031 — Chuẩn hóa các ô chọn frontend
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + IdentityService + Nginx Docker + Chromium |
+| Mục tiêu | Thay toàn bộ select native bằng dropdown đồng bộ với ô tìm người dùng |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Thẻ `<select>` còn lại trong page/shared | 0, pass |
+| Dropdown vai trò | 6 lựa chọn, hiển thị đúng vai trò Admin, pass |
+| Mapping response `roles[]` | Hiển thị `Quản trị viên`, pass |
+| Dropdown phòng ban cha | Dữ liệu động hiển thị, pass |
+| Dropdown loại văn bản | Dữ liệu động và binding giá trị, pass |
+| Bộ lọc trạng thái công văn | Chọn `Nháp` và tải lại danh sách, pass |
+| Bộ lọc loại công văn | Hiển thị danh sách tùy biến, pass |
+| Nền và bo góc so với input | Đồng bộ, pass |
+| Viewport mobile 450 × 844 | Dropdown nằm trong màn hình, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 5/5 |
+
+## TC-FE-CUSTOM-SELECT-032 — Dropdown dài không che thao tác modal
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Xác nhận dropdown vai trò giữ đúng mẫu loại chứng thư và không che phần chân modal |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Hướng mở danh sách | Mở xuống giống dropdown loại chứng thư, pass |
+| Chiều cao danh sách vai trò | Giới hạn 160px và cuộn bên trong, pass |
+| Nút `Hủy` / `Lưu thay đổi` khi danh sách mở | Vẫn hiển thị, không bị che, pass |
+| Chọn mục cuối `Ban Giám hiệu` | Cuộn, chọn đúng giá trị và tự đóng danh sách, pass |
+| Mapping vai trò hiện tại từ `roles[]` | Hiển thị `Quản trị viên`, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 1/1 |
+
+## TC-FE-CUSTOM-SELECT-CACHE-033 — Tải đúng CSS dropdown sau khi triển khai
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Không để trình duyệt ghép WASM mới với stylesheet CSS isolation cũ |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| URL `app.css` và `HauDocumentApp.styles.css` | Có phiên bản `v=20260928-2`, pass |
+| Cache header của `index.html` | `no-cache, no-store, must-revalidate`, pass |
+| Cache header của stylesheet | `no-cache, no-store, must-revalidate`, pass |
+| Dropdown phòng ban cha | Danh sách nền trắng, vị trí absolute, item flex toàn chiều rộng, pass |
+| Dropdown vai trò | CSS isolation được áp dụng, pass |
+| Dropdown bộ lọc công văn | CSS isolation được áp dụng, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 1/1 |
+
+## TC-FE-ROLE-DROPDOWN-OVERLAY-034 — Dropdown vai trò vượt khung modal
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Danh sách vai trò không bị cắt bởi đáy modal và vẫn cuộn được |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Danh sách vượt đường biên dưới modal | Hiển thị đầy đủ trên lớp nội dung, pass |
+| Chiều cao tối đa | Không quá 160px, pass |
+| Cuộn danh sách | `overflow-y: auto`, pass |
+| Cụm nút thao tác bên phải | Không bị danh sách che, pass |
+| Chọn mục cuối `Ban Giám hiệu` | Cuộn, chọn đúng và tự đóng danh sách, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 1/1 |
+
+## TC-FE-RESPONSIVE-MODAL-035 — Popup responsive và giới hạn viewport
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Popup luôn trên navigation, vừa viewport và chỉ cho dùng từ kích thước 450 × 720 |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Viewport 449 × 720 | Ứng dụng bị khóa, pass |
+| Viewport 450 × 719 | Ứng dụng bị khóa, pass |
+| Viewport 450 × 720 | Ứng dụng hoạt động, pass |
+| Modal người dùng tại 450 × 720 | Toàn màn hình, body cuộn, header/footer hiển thị, pass |
+| Popup chỉnh sửa tài khoản tại 450 × 720 | Toàn màn hình và nằm trên taskbar, pass |
+| Popup chứng thư dài tại 450 × 720 | Header/footer cố định, body cuộn, pass |
+| Viewport 1000 × 744 | Modal toàn màn hình và nằm trên dashboard/sidebar, pass |
+| Viewport 1366 × 768 | Modal toàn màn hình, pass |
+| Viewport 1366 × 900 | Modal căn giữa, overlay vẫn nằm trên sidebar, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 7/7 |
+
+## TC-FE-VIEWPORT-HEIGHT-036 — Chiều cao viewport tối thiểu 500px
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Cho phép sử dụng ứng dụng từ kích thước 450 × 500 và giữ popup sử dụng được trên màn hình thấp |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Viewport 450 × 499 | Ứng dụng bị khóa, pass |
+| Viewport 450 × 500 | Ứng dụng hoạt động, pass |
+| Viewport 449 × 600 | Ứng dụng bị khóa, pass |
+| Viewport 450 × 600 | Ứng dụng hoạt động, pass |
+| Modal người dùng tại 450 × 500 | Toàn màn hình, body cuộn, header/footer hiển thị, pass |
+| Modal người dùng tại 1366 × 500 | Toàn màn hình, footer hiển thị, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 4/4 |
+
+## TC-FE-MODAL-BREAKPOINT-037 — Phân biệt popup desktop và toàn màn hình
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Chỉ dùng modal toàn màn hình trên mobile/máy tính nhỏ, giữ popup căn giữa trên desktop thông thường |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Mobile 450 × 500 | Modal toàn màn hình, pass |
+| Desktop nhỏ 1200 × 800 | Modal toàn màn hình, pass |
+| Desktop rất thấp 1366 × 650 | Modal toàn màn hình, pass |
+| Desktop mặc định 1366 × 768 | Popup căn giữa, không chiếm toàn màn hình, pass |
+| Desktop lớn 1920 × 1080 | Popup căn giữa, không chiếm toàn màn hình, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 5/5 |
+
+## TC-SIGN-CERT-SELF-SERVICE-038 — Người ký tự tạo chứng thư số
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | SignService + API Gateway + Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Cho Manager/Ban Giám hiệu tự tạo chứng thư của chính mình mà không mở quyền cấp cho người khác |
+| Kết quả | Pass |
+
+### Kết quả API
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Manager tự cấp chứng thư | HTTP 200; `UserId`, username, họ tên lấy từ JWT; loại `Personal`, pass |
+| Manager tự cấp lần hai khi chứng thư còn hạn | HTTP 409, pass |
+| Manager gọi API Admin để cấp cho người khác | HTTP 403, pass |
+| Clerk tự cấp chứng thư | HTTP 403, pass |
+| Ban Giám hiệu tự cấp chứng thư | HTTP 200; loại `Organization`, pass |
+| Admin cấp chứng thư bằng DTO đã đồng bộ | HTTP 200, pass |
+| Admin lấy danh sách chứng thư thật | Có đủ chứng thư vừa cấp, pass |
+| Thu hồi dữ liệu chứng thư test | Pass |
+
+### Kết quả giao diện và đóng gói
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Trang `Chứng thư của tôi` của Manager | Hiển thị trạng thái chưa có chứng thư và nút tự tạo, pass |
+| Xác nhận tự tạo trên desktop 1366 × 768 | Modal căn giữa, pass |
+| Tạo và hiển thị chứng thư trên giao diện | Chủ thể, loại cá nhân, trạng thái hoạt động hiển thị đúng, pass |
+| Modal Admin tìm/chọn người dùng | Hiển thị đúng người dùng và thời hạn mặc định 365 ngày, pass |
+| Trường mật khẩu khóa không được xử lý | Đã loại bỏ khỏi form, pass |
+| Build toàn solution | Pass, 0 warning/0 error |
+| xUnit toàn solution | Pass 36/36 |
+| Docker Compose config/build/up | Pass |
+| Kiểm tra API qua Gateway | Pass 7/7 |
+| Playwright Chromium | Pass 2/2 |

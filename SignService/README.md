@@ -44,7 +44,11 @@ POST   /api/signatures/legal-seal
 GET    /api/signatures/document/{docId}
 GET    /api/signatures/document/{docId}/verify
 POST   /api/signatures/certificates/issue
+POST   /api/signatures/certificates/me/issue
+GET    /api/signatures/certificates/me
+GET    /api/signatures/certificates
 GET    /api/signatures/certificates/{userId}
+DELETE /api/signatures/certificates/{userId}
 ```
 
 ## Chứng thư số
@@ -52,6 +56,10 @@ GET    /api/signatures/certificates/{userId}
 - Khi startup, service tự khởi tạo Root CA nếu chưa có.
 - Docker mount thư mục cert vào volume `hau_sign_certs` tại `/app/certs`.
 - Cần backup volume `hau_sign_certs` nếu muốn mang dữ liệu chữ ký/certificate sang máy khác.
+- `Admin` được cấp, xem danh sách và thu hồi chứng thư của người dùng.
+- `Manager` và `BoardOfDirectors` được tự tạo chứng thư cho chính mình qua endpoint `/certificates/me/issue`; danh tính lấy từ JWT, client không được truyền `UserId`.
+- `Manager` nhận chứng thư `Personal`; `BoardOfDirectors` nhận chứng thư `Organization`.
+- Chứng thư tự cấp còn hiệu lực không được cấp trùng; API trả HTTP `409`.
 
 ## Lưu ý tích hợp hiện tại
 

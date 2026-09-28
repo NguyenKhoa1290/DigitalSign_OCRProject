@@ -310,6 +310,7 @@ DTO:
 - `SignatureDto`
 - `VerifyResultDto`
 - `IssueCertificateDto`
+- `IssueOwnCertificateDto`
 - `CertificateDto`
 
 Interfaces:
@@ -360,6 +361,18 @@ Program.cs startup
 POST /api/signatures/certificates/issue
   -> CertificateService.IssueCertificateAsync
   -> tạo PFX user trong certs/{userId}.pfx
+
+POST /api/signatures/certificates/me/issue
+  -> lấy UserId, username, full name từ JWT
+  -> Manager: Personal; BoardOfDirectors: Organization
+  -> chặn cấp trùng khi chứng thư hiện tại còn hiệu lực
+  -> CertificateService.IssueCertificateAsync
+
+GET /api/signatures/certificates
+  -> Admin đọc danh sách PFX trong volume certs
+
+DELETE /api/signatures/certificates/{userId}
+  -> Admin thu hồi bằng cách xóa PFX của user
 ```
 
 ### API
@@ -373,6 +386,8 @@ Authorization:
 - `personal-sign`: `Manager,Admin`
 - `legal-seal`: `BoardOfDirectors,Admin`
 - `certificates/issue`: `Admin`
+- `certificates/me`, `certificates/me/issue`: `Manager,BoardOfDirectors`
+- `GET certificates`, `DELETE certificates/{userId}`: `Admin`
 
 Startup:
 
@@ -439,25 +454,34 @@ File chính:
 - `Services/DocumentService.cs`: document workflow.
   - `RunOcrAsync` gọi `api/ocr/process` qua Gateway, lấy object name từ `DocumentDto.MinioPath`.
 - `Services/SignatureService.cs`: signature API, gửi `SignRequestDto` đúng backend và map thao tác UI sang endpoint ký.
-- `wwwroot/css/app.css`: theme HAU glassmorphism, responsive desktop/tablet/mobile và fallback trình duyệt.
+- `Shared/CustomSelect.razor` + `.razor.css`: dropdown dùng chung thay cho `<select>` native; nhận danh sách `SelectOption`, hỗ trợ binding, callback sau khi đổi, ARIA và giới hạn chiều cao danh sách trong modal.
+- `Models/SelectOption.cs`: model giá trị/nhãn cho dropdown dùng chung.
+- `wwwroot/index.html` + `nginx.conf`: gắn phiên bản cho stylesheet và tắt cache HTML/CSS để CSS isolation luôn đồng bộ với bản WASM vừa triển khai.
+- `Models/UserDto.cs`: tương thích response `roles[]` của IdentityService và cung cấp `Role` chính cho giao diện hiện tại.
+- `wwwroot/css/app.css`: theme HAU glassmorphism, design token, component dùng chung, responsive desktop/tablet/mobile và fallback trình duyệt.
 - `wwwroot/images/hau-logo.png`: logo HAU nền trong suốt dùng chung cho sidebar, auth, loading và favicon.
 - `Layout/NavMenu.razor`: sidebar kính trên desktop, tự chuyển thành bottom navigation trên mobile bằng CSS.
+- `Layout/NavMenu.razor.css`: popup tài khoản và modal chỉnh sửa hồ sơ; popup gọi `GET /api/users/me`, lưu qua `PUT /api/users/{id}`.
+- `App.razor`: chứa lớp cảnh báo chặn ứng dụng khi viewport rộng dưới `450px` hoặc cao dưới `500px`.
 
 Pages:
 
-- `Pages/Login.razor`
-- `Pages/FirstLogin.razor`
-- `Pages/ForgotPassword.razor`
-- `Pages/ResetPassword.razor`
-- `Pages/Dashboard.razor`
-- `Pages/Admin/Users.razor`
-- `Pages/Admin/Departments.razor`
-- `Pages/Admin/Certificates.razor`
-- `Pages/Documents/Index.razor`
-- `Pages/Documents/Create.razor`
-- `Pages/Documents/Detail.razor`
-- `Pages/Documents/OcrResult.razor`
-- `Pages/Signatures/Index.razor`
+- Mỗi page dùng một cặp file `TênPage.razor` + `TênPage.razor.css` để Blazor CSS isolation tự giới hạn selector trong đúng page.
+- Nhóm xác thực: `Login`, `FirstLogin`, `ForgotPassword`, `ResetPassword`.
+- Dashboard: `Dashboard`.
+- Nhóm quản trị: `Admin/Users`, `Admin/Departments`, `Admin/Certificates`.
+- Nhóm ký số: `Signatures/Index`, `Signatures/MyCertificate`; mỗi page có file CSS isolation riêng.
+- Nhóm văn bản: `Documents/Index`, `Documents/Create`, `Documents/Detail`, `Documents/OcrResult`.
+- Nhóm ký số: `Signatures/Index`.
+
+Quy ước CSS frontend:
+
+- Style chỉ dùng trong một page đặt trong file `.razor.css` cùng tên.
+- Biến màu, font, layout khung, button/form/table/modal và style dùng lại nhiều page đặt trong `wwwroot/css/app.css`.
+- Không dùng inline style cho giá trị tĩnh. Inline style chỉ được giữ khi giá trị được tính động từ trạng thái runtime.
+- Blazor đóng gói toàn bộ scoped CSS vào `HauDocumentApp.styles.css`; file này đã được tham chiếu trong `wwwroot/index.html`.
+- Responsive cấp layout dùng desktop `>960px`, mobile `450–960px`; dưới `450px` hoặc thấp hơn `500px` chỉ hiển thị cảnh báo. Modal dùng toàn màn hình trên mobile/máy tính nhỏ khi rộng không quá `1200px`, hoặc khi viewport cao không quá `650px`; desktop thông thường vẫn dùng popup căn giữa.
+- Chiều cao/vị trí taskbar mobile dùng biến `--mobile-taskbar-height` và `--mobile-taskbar-bottom`; padding cuối `.page-container` được tính từ các biến này để nội dung cuộn dưới taskbar nhưng dừng ở vị trí an toàn.
 
 ## 8. Điểm cần chú ý khi sửa code
 

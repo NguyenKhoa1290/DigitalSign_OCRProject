@@ -124,6 +124,19 @@ public class ApiService
         // Không throw — để caller quyết định
     }
 
+    public async Task<bool> DeleteWithResultAsync(string url)
+    {
+        var client = await GetClientAsync();
+        var resp = await client.DeleteAsync(url);
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            _navManager.NavigateTo("/login");
+            return false;
+        }
+
+        return resp.IsSuccessStatusCode;
+    }
+
     public async Task<HttpResponseMessage> PostFormAsync(string url, MultipartFormDataContent content)
     {
         var client = await GetClientAsync();

@@ -73,7 +73,12 @@ public class CertificateService : ICertificateService
         _logger.LogInformation("Root CA đã được tạo thành công tại: {Path}", rootCaPath);
     }
 
-    public async Task<UserCertificate> IssueCertificateAsync(Guid userId, string username, string fullName, int validityYears = 2)
+    public async Task<UserCertificate> IssueCertificateAsync(
+        Guid userId,
+        string username,
+        string fullName,
+        string certificateType = "Personal",
+        int validityDays = 365)
     {
         _logger.LogInformation("Đang cấp certificate cho user: {UserId} - {FullName}", userId, fullName);
 
@@ -85,14 +90,14 @@ public class CertificateService : ICertificateService
             // Tạo key pair cho user
             var userKeyPair = GenerateRsaKeyPair(2048);
 
-            var subjectDn = new X509Name($"CN={fullName}, OU={username}, O=HAU, C=VN");
+            var subjectDn = new X509Name($"CN={fullName}, OU={username}, T={certificateType}, O=HAU, C=VN");
 
             var certGen = new X509V3CertificateGenerator();
             certGen.SetSerialNumber(GenerateSerial());
             certGen.SetIssuerDN(rootCert.SubjectDN);
             certGen.SetSubjectDN(subjectDn);
             certGen.SetNotBefore(DateTime.UtcNow.AddHours(-1));
-            certGen.SetNotAfter(DateTime.UtcNow.AddYears(validityYears));
+            certGen.SetNotAfter(DateTime.UtcNow.AddDays(validityDays));
             certGen.SetPublicKey(userKeyPair.Public);
 
             certGen.AddExtension(X509Extensions.BasicConstraints, false,
@@ -125,6 +130,7 @@ public class CertificateService : ICertificateService
                 UserId = userId,
                 Username = username,
                 FullName = fullName,
+                CertificateType = certificateType,
                 CertificatePfx = pfxBytes,
                 CertificateThumbprint = thumbprint,
                 NotBefore = userCert.NotBefore.ToUniversalTime(),
@@ -169,18 +175,51 @@ public class CertificateService : ICertificateService
             var subject = cert.SubjectDN.ToString();
             var fullName = ExtractDnComponent(subject, "CN") ?? string.Empty;
             var username = ExtractDnComponent(subject, "OU") ?? string.Empty;
+            var certificateType = ExtractDnComponent(subject, "T") ?? "Personal";
 
             return new UserCertificate
             {
                 UserId = userId,
                 Username = username,
                 FullName = fullName,
+                CertificateType = certificateType,
                 CertificatePfx = pfxBytes,
                 CertificateThumbprint = thumbprint,
                 NotBefore = cert.NotBefore.ToUniversalTime(),
                 NotAfter = cert.NotAfter.ToUniversalTime()
             };
         });
+    }
+
+    public async Task<IReadOnlyList<UserCertificate>> GetAllCertificatesAsync()
+    {
+        var certificates = new List<UserCertificate>();
+
+        foreach (var path in Directory.EnumerateFiles(_certsDirectory, "*.pfx"))
+        {
+            var fileName = Path.GetFileNameWithoutExtension(path);
+            if (!Guid.TryParse(fileName, out var userId))
+                continue;
+
+            var certificate = await GetUserCertificateAsync(userId);
+            if (certificate != null)
+                certificates.Add(certificate);
+        }
+
+        return certificates
+            .OrderBy(certificate => certificate.FullName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public Task<bool> RevokeCertificateAsync(Guid userId)
+    {
+        var pfxPath = Path.Combine(_certsDirectory, $"{userId}.pfx");
+        if (!File.Exists(pfxPath))
+            return Task.FromResult(false);
+
+        File.Delete(pfxPath);
+        _logger.LogInformation("Đã thu hồi certificate của user: {UserId}", userId);
+        return Task.FromResult(true);
     }
 
     public bool IsCertificateValid(UserCertificate cert)

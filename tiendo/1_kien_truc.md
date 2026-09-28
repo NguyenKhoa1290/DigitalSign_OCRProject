@@ -141,6 +141,7 @@ Chức năng chính:
 
 - Tạo Root CA nội bộ nếu chưa có.
 - Cấp certificate cho user.
+- Cho `Manager` và `BoardOfDirectors` tự tạo certificate cho chính tài khoản bằng danh tính trong JWT; Admin vẫn quản lý tập trung.
 - Ký nháy: `PersonalSignature`, dành cho `Manager` hoặc `Admin`.
 - Ký pháp nhân: `LegalSeal`, dành cho `BoardOfDirectors` hoặc `Admin`, yêu cầu đã có chữ ký nháy.
 - Verify chữ ký trên PDF.
@@ -193,7 +194,7 @@ Frontend là Blazor WebAssembly:
 - Màn chi tiết công văn có link xem kết quả OCR tại `/documents/{id}/ocr`.
 - Màn OCR đọc `OcrDataRaw`, hiển thị trường bóc tách, dòng text, raw JSON và lịch sử `UpdateOCR`.
 - Màn ký số lấy `SignerId`/`SignerName` từ JWT và gửi đúng `SignRequestDto` backend.
-- Có màn hình login, first login, forgot/reset password, dashboard, admin users/departments/certificates, documents, signatures.
+- Có màn hình login, first login, forgot/reset password, dashboard, admin users/departments/certificates, documents, signatures và chứng thư của tôi.
 
 Base API hiện trỏ đến Gateway:
 

@@ -45,7 +45,7 @@
                 <div class="password-wrapper">
                     <input id="password" type="@(_showPassword ? "text" : "password")" class="form-control"
                            placeholder="Nhập mật khẩu" @bind="_model.Password" @bind:event="oninput"
-                           disabled="@_isLoading" style="padding-right: 44px;" />
+                           disabled="@_isLoading" />
                     <button type="button" class="password-toggle" @onclick="() => _showPassword = !_showPassword">
                         @if (_showPassword)
                         {
@@ -67,7 +67,7 @@
             <button type="submit" class="btn btn-primary login-btn" disabled="@_isLoading">
                 @if (_isLoading)
                 {
-                    <div class="spinner spinner-sm" style="border-top-color: white;"></div>
+                    <div class="spinner spinner-sm login-spinner"></div>
                     <span>Đang đăng nhập...</span>
                 }
                 else
@@ -80,9 +80,8 @@
             </button>
         </EditForm>
 
-        <div style="text-align:center;margin-top:12px;">
-            <a href="/forgot-password"
-               style="font-size:13.5px;color:var(--color-primary);text-decoration:none;">
+        <div class="login-links">
+            <a href="/forgot-password" class="login-link">
                 Quên mật khẩu?
             </a>
         </div>

@@ -21,7 +21,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+<div class="create-layout">
     <div class="card">
         <div class="card-header">
             <span class="card-title">Thông tin Công văn</span>
@@ -36,7 +36,7 @@
                            @bind="_model.Title" @bind:event="oninput" />
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="create-form-grid">
                     <div class="form-group">
                         <label class="form-label">Số hiệu văn bản</label>
                         <input type="text" class="form-control" placeholder="VD: 01/2024/QĐ-HAU"
@@ -50,17 +50,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Loại văn bản</label>
-                    <select class="form-control" @bind="_selectedTypeId">
-                        <option value="">-- Chọn loại văn bản --</option>
-                        @if (_documentTypes != null)
-                        {
-                            @foreach (var t in _documentTypes)
-                            {
-                                <option value="@t.Id">@t.Name</option>
-                            }
-                        }
-                    </select>
+                    <label class="form-label" for="document-type-select">Loại văn bản</label>
+                    <CustomSelect Id="document-type-select" @bind-Value="_selectedTypeId" Options="DocumentTypeOptions" />
                 </div>
 
                 @if (!string.IsNullOrEmpty(_errorMessage))
@@ -68,12 +59,12 @@
                     <div class="alert alert-danger">@_errorMessage</div>
                 }
 
-                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+                <div class="create-actions">
                     <a href="/documents" class="btn btn-outline">Hủy</a>
                     <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
                         @if (_isSubmitting)
                         {
-                            <div class="spinner spinner-sm" style="border-top-color:white"></div>
+                            <div class="spinner spinner-sm create-spinner"></div>
                             <span>Đang tạo...</span>
                         }
                         else
@@ -103,25 +94,25 @@
                 <div class="file-upload-text">
                     @if (_selectedFile != null)
                     {
-                        <strong style="color:var(--color-primary)">@_selectedFile.Name</strong>
+                        <strong class="file-emphasis">@_selectedFile.Name</strong>
                         <br /><small>@(_selectedFile.Size / 1024) KB</small>
                     }
                     else
                     {
-                        <span>Kéo thả hoặc <strong style="color:var(--color-primary)">chọn file</strong></span>
+                        <span>Kéo thả hoặc <strong class="file-emphasis">chọn file</strong></span>
                     }
                 </div>
                 <div class="file-upload-hint">Chấp nhận file PDF (tối đa 50MB)</div>
             </div>
-            <InputFile id="fileInput" OnChange="OnFileSelected" accept=".pdf" style="display:none" />
+            <InputFile id="fileInput" OnChange="OnFileSelected" accept=".pdf" class="file-input" />
 
             @if (_selectedFile != null)
             {
-                <div style="margin-top:12px;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--color-success-light);border-radius:var(--radius-sm);border:1px solid #a7f3d0;">
+                <div class="file-ready">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span style="font-size:13px;color:#065f46">File sẵn sàng tải lên</span>
+                    <span class="file-ready-text">File sẵn sàng tải lên</span>
                 </div>
             }
         </div>
@@ -132,6 +123,16 @@
     private readonly CreateDocumentDto _model = new();
     private List<DocumentTypeDto>? _documentTypes;
     private string _selectedTypeId = "";
+    private IReadOnlyList<SelectOption> DocumentTypeOptions
+    {
+        get
+        {
+            var options = new List<SelectOption> { new("", "-- Chọn loại văn bản --") };
+            if (_documentTypes != null)
+                options.AddRange(_documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.Name)));
+            return options;
+        }
+    }
     private DateTime? _issuedDate;
     private IBrowserFile? _selectedFile;
     private bool _isSubmitting;

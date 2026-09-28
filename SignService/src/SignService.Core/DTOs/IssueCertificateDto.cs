@@ -13,5 +13,16 @@ public class IssueCertificateDto
     [Required]
     public string FullName { get; set; } = string.Empty;
 
-    public int ValidityYears { get; set; } = 2; // Cert có hiệu lực 2 năm
+    [Required]
+    [RegularExpression("Personal|Organization")]
+    public string CertificateType { get; set; } = "Personal";
+
+    [Range(1, 3650)]
+    public int ValidityDays { get; set; } = 365;
+}
+
+public class IssueOwnCertificateDto
+{
+    [Range(1, 3650)]
+    public int ValidityDays { get; set; } = 365;
 }

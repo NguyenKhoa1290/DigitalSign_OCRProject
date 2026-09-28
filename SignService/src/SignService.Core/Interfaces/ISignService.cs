@@ -21,4 +21,10 @@ public interface ISignService
 
     // Lấy thông tin certificate của user
     Task<CertificateDto?> GetCertificateAsync(Guid userId);
+
+    // Lấy toàn bộ certificate (dùng cho quản trị)
+    Task<IEnumerable<CertificateDto>> GetCertificatesAsync();
+
+    // Thu hồi certificate của user
+    Task<bool> RevokeCertificateAsync(Guid userId);
 }

@@ -179,10 +179,20 @@ public class SignService : ISignService
             request.UserId,
             request.Username,
             request.FullName,
-            request.ValidityYears);
+            request.CertificateType,
+            request.ValidityDays);
 
         return ToCertificateDto(cert);
     }
+
+    public async Task<IEnumerable<CertificateDto>> GetCertificatesAsync()
+    {
+        var certificates = await _certService.GetAllCertificatesAsync();
+        return certificates.Select(ToCertificateDto);
+    }
+
+    public Task<bool> RevokeCertificateAsync(Guid userId)
+        => _certService.RevokeCertificateAsync(userId);
 
     public async Task<CertificateDto?> GetCertificateAsync(Guid userId)
     {
@@ -203,6 +213,7 @@ public class SignService : ISignService
             UserId = cert.UserId,
             Username = cert.Username,
             FullName = cert.FullName,
+            CertificateType = cert.CertificateType,
             Thumbprint = cert.CertificateThumbprint,
             NotBefore = cert.NotBefore,
             NotAfter = cert.NotAfter,

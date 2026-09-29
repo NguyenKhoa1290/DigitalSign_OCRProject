@@ -153,7 +153,7 @@ public class UserServiceTests
             CreateTestUser(),
             CreateTestUser()
         };
-        _userRepositoryMock.Setup(r => r.GetAllAsync(1, 10, null))
+        _userRepositoryMock.Setup(r => r.GetAllAsync(1, 10, null, null))
             .ReturnsAsync((users, 2));
 
         // Act
@@ -165,6 +165,44 @@ public class UserServiceTests
         result.Items.Should().HaveCount(2);
         result.Page.Should().Be(1);
         result.PageSize.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task GetAllUsersAsync_WithDepartment_ShouldIncludeDescendantDepartments()
+    {
+        // Arrange
+        var rootId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        var grandChildId = Guid.NewGuid();
+        var unrelatedId = Guid.NewGuid();
+        var departments = new List<Department>
+        {
+            new() { Id = rootId, DeptName = "Trường", DeptCode = "HAU" },
+            new() { Id = childId, ParentId = rootId, DeptName = "Khoa", DeptCode = "KHOA" },
+            new() { Id = grandChildId, ParentId = childId, DeptName = "Bộ môn", DeptCode = "BM" },
+            new() { Id = unrelatedId, DeptName = "Đơn vị khác", DeptCode = "OTHER" }
+        };
+
+        _departmentRepositoryMock.Setup(repository => repository.GetAllAsync())
+            .ReturnsAsync(departments);
+        _userRepositoryMock
+            .Setup(repository => repository.GetAllAsync(
+                1,
+                20,
+                "Nguyễn",
+                It.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Count == 3 &&
+                    ids.Contains(rootId) &&
+                    ids.Contains(childId) &&
+                    ids.Contains(grandChildId) &&
+                    !ids.Contains(unrelatedId))))
+            .ReturnsAsync((Array.Empty<AppUser>(), 0));
+
+        // Act
+        await _userService.GetAllUsersAsync(1, 20, "Nguyễn", rootId);
+
+        // Assert
+        _userRepositoryMock.VerifyAll();
     }
 
     [Fact]

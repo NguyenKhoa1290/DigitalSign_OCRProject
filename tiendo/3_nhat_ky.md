@@ -1430,6 +1430,107 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 38 — 28/09/2026
+### Lọc người dùng theo Trường/Ban/Khoa khi Admin cấp chứng thư
+
+**Đã thực hiện:**
+- Thêm dropdown đơn vị theo cấu trúc cây vào trước ô tìm người dùng trong modal cấp chứng thư.
+- Hiển thị tên, mã đơn vị và cấp phân nhánh để phân biệt Trường/Ban/Khoa.
+- Khi đổi đơn vị, xóa lựa chọn và kết quả tìm kiếm cũ để tránh cấp nhầm người.
+- Hiển thị tên đơn vị trong từng gợi ý người dùng.
+- Mở rộng `GET /api/users` với query `departmentId`; kết hợp lọc đơn vị với họ tên, username, email hoặc GUID ngay tại PostgreSQL.
+- Chọn đơn vị cha sẽ bao gồm chính đơn vị đó và toàn bộ đơn vị con; có lựa chọn `Tất cả đơn vị` để giữ khả năng tìm toàn hệ thống.
+
+**Đã kiểm tra theo quy trình:**
+- Build toàn solution: pass, 0 warning/0 error.
+- xUnit toàn solution: pass 37/37; có test mới kiểm tra tập ID đơn vị cha/con.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `identity-service` và `frontend`: pass.
+- API Docker/Gateway: pass 3/3 cho lọc đơn vị con, đơn vị cha bao gồm con và kết hợp từ khóa; user test đã được xóa.
+- Playwright Chromium: pass 2/2 trên desktop 1366×768 và mobile 450×500.
+- Test case: `TC-FE-CERT-DEPARTMENT-FILTER-039`.
+
+---
+
+## Công việc số 39 — 28/09/2026
+### Tách bộ lọc Trường, Ban/Khoa và đơn vị cấp dưới khi cấp chứng thư
+
+**Đã thực hiện:**
+- Thay dropdown cây chung bằng ba dropdown phụ thuộc: `Trường`, `Ban/Khoa/Phòng trực thuộc`, `Đơn vị cấp dưới`.
+- Chỉ mở dropdown cấp sau khi đã chọn cấp cha và có dữ liệu con; đổi cấp cha sẽ xóa lựa chọn cấp dưới cùng kết quả tìm người dùng cũ.
+- Tìm người dùng theo đơn vị cụ thể nhất đã chọn; lựa chọn `Tất cả...` tại từng cấp vẫn tìm trong đơn vị cha và toàn bộ đơn vị trực thuộc.
+- Giữ danh sách dropdown giới hạn chiều cao và cuộn nội bộ; tăng phiên bản cache stylesheet.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- xUnit toàn solution: pass 37/37.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass; container đang chạy.
+- Playwright Chromium: pass 2/2 trên desktop 1366×768 và mobile 450×500.
+- Kiểm tra chuỗi phụ thuộc, lọc theo Phòng Tổng hợp, quay về phạm vi Trường và modal toàn màn hình mobile: pass.
+- Test case: `TC-FE-CERT-ORG-CASCADE-040`.
+
+---
+
+## Công việc số 40 — 28/09/2026
+### Tổ chức tài liệu thành ba thư mục chuyên trách
+
+**Đã thực hiện:**
+- Tạo `tai_lieu/01_test_cases` để quản lý danh mục test case, quy tắc và mẫu ghi test.
+- Tạo `tai_lieu/02_trien_khai_tung_service` với hướng dẫn riêng cho hạ tầng và từng service Docker.
+- Tạo `tai_lieu/03_nhat_ky_thay_doi` để lưu nhật ký tóm tắt và mẫu cập nhật.
+- Giữ tài liệu `tiendo` làm lịch sử chi tiết, bổ sung liên kết hai chiều trong quy trình làm việc.
+
+**Đã kiểm tra:**
+- Kiểm tra 15 file Markdown trong `tai_lieu`: không có liên kết tương đối bị hỏng.
+- `docker compose config --quiet`: pass.
+- Đối chiếu danh sách Compose: đủ 11 service/hạ tầng và đúng tên dùng trong hướng dẫn.
+- Không build lại ứng dụng vì thay đổi chỉ gồm tài liệu, không thay code hoặc cấu hình runtime.
+- Test case: `TC-DOC-041`.
+
+---
+
+## Công việc số 41 — 28/09/2026
+### Bổ sung tài khoản mặc định dùng cho kiểm thử
+
+**Đã thực hiện:**
+- Tạo `tai_lieu/04_tai_khoan_mac_dinh` và liên kết từ mục lục tài liệu.
+- Ghi đúng tài khoản ứng dụng được seed trong code: `admin`, role `Admin`.
+- Ghi tài khoản hạ tầng local mặc định của PostgreSQL, MinIO và Mailpit theo Docker Compose.
+- Nêu rõ các role còn lại chưa có user mặc định và phải được Admin tạo để kiểm thử phân quyền.
+- Cảnh báo không dùng các user timestamp của test cũ như tài khoản mặc định.
+
+**Đã kiểm tra:**
+- Login `admin` qua ApiGateway: pass, nhận đúng role `Admin`.
+- Logout sau kiểm tra: pass.
+- Kiểm tra liên kết Markdown và `docker compose config --quiet`: pass.
+- Không build lại ứng dụng vì không thay code hoặc cấu hình runtime.
+- Test case: `TC-AUTH-DEFAULT-042`.
+
+---
+
+## Công việc số 42 — 28/09/2026
+### Mở rộng thao tác nhanh cho theo dõi hệ thống và thông báo
+
+**Đã thực hiện:**
+- Thêm nút `Nhật ký hệ thống` và `Hoạt động ứng dụng` cho Admin trong Dashboard.
+- Thêm nút `Trung tâm thông báo` cho mọi tài khoản đã đăng nhập.
+- Tạo route `/admin/system-logs`, `/admin/activity` có phân quyền Admin và `/notifications` có xác thực.
+- Tạo giao diện nền mô tả nguồn log, nhóm audit event và loại thông báo dự kiến; ghi rõ dữ liệu thật chưa được kết nối.
+- Mỗi page mới có file CSS isolation riêng, đồng bộ desktop/mobile và màu giao diện hiện tại.
+- Tăng cache version stylesheet lên `20260928-11`.
+
+**Đã kiểm tra theo quy trình:**
+- Build Frontend: pass, 0 warning/0 error.
+- xUnit toàn solution: pass 37/37.
+- `docker compose config --quiet`: pass.
+- Build/recreate image `frontend`: pass; container đang chạy.
+- Playwright Chromium: pass 2/2 trên desktop 1366×768 và mobile 450×500.
+- Điều hướng ba route, nội dung trạng thái và kiểm tra không tràn ngang mobile: pass.
+- Test case: `TC-FE-DASHBOARD-QUICK-ACTIONS-043`.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

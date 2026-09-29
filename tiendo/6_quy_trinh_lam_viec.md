@@ -113,3 +113,7 @@ Khi code thay đổi, cần cập nhật tài liệu tương ứng:
 - Quy trình làm việc/test: `tiendo/6_quy_trinh_lam_viec.md`
 - Test case đã chạy: `tiendo/7_test_cases.md`
 - Hướng dẫn deploy: `TRIEN_KHAI_DOCKER.md`
+- Danh mục và mẫu test case mới: `tai_lieu/01_test_cases/`
+- Hướng dẫn triển khai riêng từng service: `tai_lieu/02_trien_khai_tung_service/`
+- Nhật ký thay đổi tóm tắt và mẫu cập nhật: `tai_lieu/03_nhat_ky_thay_doi/`
+- Danh sách tài khoản ứng dụng/hạ tầng local để test: `tai_lieu/04_tai_khoan_mac_dinh/`

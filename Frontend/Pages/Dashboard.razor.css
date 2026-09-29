@@ -135,6 +135,17 @@
     height: 20px;
 }
 
+.quick-action-status {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(48, 78, 138, 0.1);
+    color: #304e8a;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+}
+
 @media (max-width: 960px) {
     .dashboard-header {
         margin-bottom: 16px;

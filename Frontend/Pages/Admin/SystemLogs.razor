@@ -1,0 +1,61 @@
+@page "/admin/system-logs"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Nhật ký hệ thống - HAU Admin</PageTitle>
+
+<div class="page-header monitoring-header">
+    <div>
+        <h1 class="page-title">Nhật ký hệ thống</h1>
+        <p class="page-subtitle">Khu vực quản trị log tập trung của các service trong hệ thống.</p>
+    </div>
+    <a href="/" class="btn btn-outline">Quay lại Dashboard</a>
+</div>
+
+<div class="monitoring-notice">
+    <div class="monitoring-notice-icon">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    </div>
+    <div>
+        <strong>Nền giao diện đã sẵn sàng</strong>
+        <p>Dữ liệu log chưa được đưa ra API. Bước tiếp theo sẽ bổ sung nguồn log tập trung, phân trang và quyền xem log an toàn.</p>
+    </div>
+</div>
+
+<div class="monitoring-grid">
+    <section class="monitoring-card">
+        <h2>Nguồn log dự kiến</h2>
+        <div class="monitoring-items">
+            @foreach (var source in Sources)
+            {
+                <div class="monitoring-item">
+                    <span class="monitoring-dot"></span>
+                    <span>@source</span>
+                    <span class="monitoring-badge">Chờ kết nối</span>
+                </div>
+            }
+        </div>
+    </section>
+    <section class="monitoring-card">
+        <h2>Bộ lọc sẽ hỗ trợ</h2>
+        <div class="monitoring-tags">
+            <span>Service</span>
+            <span>Mức độ</span>
+            <span>Khoảng thời gian</span>
+            <span>Trace ID</span>
+            <span>Người dùng</span>
+        </div>
+    </section>
+</div>
+
+@code {
+    private static readonly string[] Sources =
+    [
+        "IdentityService",
+        "DocumentService",
+        "SignService",
+        "OCRService",
+        "ApiGateway"
+    ];
+}

@@ -112,13 +112,43 @@ else
                     </svg>
                     <span>Hệ thống sẽ tự động tạo cặp khóa RSA và chứng thư X.509.</span>
                 </div>
+                <div class="certificate-organization-filters">
+                    <div class="form-group">
+                        <label class="form-label" for="certificate-school-select">Trường</label>
+                        <CustomSelect Id="certificate-school-select"
+                                      Value="@_issueSchoolId"
+                                      ValueChanged="SelectIssueSchool"
+                                      Options="SchoolOptions"
+                                      MaxOptionsHeight="200"
+                                      Disabled="_isLoadingDepartments" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="certificate-unit-select">Ban / Khoa / Phòng trực thuộc</label>
+                        <CustomSelect Id="certificate-unit-select"
+                                      Value="@_issueUnitId"
+                                      ValueChanged="SelectIssueUnit"
+                                      Options="UnitOptions"
+                                      MaxOptionsHeight="200"
+                                      Disabled="@(_isLoadingDepartments || string.IsNullOrEmpty(_issueSchoolId) || UnitOptions.Count <= 1)" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="certificate-subunit-select">Đơn vị cấp dưới</label>
+                        <CustomSelect Id="certificate-subunit-select"
+                                      Value="@_issueSubUnitId"
+                                      ValueChanged="SelectIssueSubUnit"
+                                      Options="SubUnitOptions"
+                                      MaxOptionsHeight="200"
+                                      Disabled="@(_isLoadingDepartments || string.IsNullOrEmpty(_issueUnitId) || SubUnitOptions.Count <= 1)" />
+                    </div>
+                    <div class="form-hint">Các ô sau phụ thuộc ô trước. Hệ thống tìm trong đơn vị cụ thể nhất đã chọn và toàn bộ đơn vị trực thuộc.</div>
+                </div>
                 <div class="form-group">
                     <label class="form-label required" for="certificate-user-search">Người dùng</label>
                     <div class="certificate-user-picker">
                         <input id="certificate-user-search"
                                type="text"
                                class="form-control"
-                               placeholder="Nhập họ tên, username, email hoặc GUID..."
+                               placeholder="Nhập họ tên, username, email hoặc GUID trong đơn vị đã chọn..."
                                value="@_issueUserSearch"
                                @oninput="SearchIssueUsers"
                                autocomplete="off"
@@ -156,6 +186,10 @@ else
                                                 @if (!string.IsNullOrWhiteSpace(user.Email))
                                                 {
                                                     <span>@user.Email</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(user.DepartmentName))
+                                                {
+                                                    <span>@user.DepartmentName</span>
                                                 }
                                             </span>
                                         </button>
@@ -253,6 +287,11 @@ else
 
     private bool _showIssueModal;
     private bool _isSaving;
+    private bool _isLoadingDepartments;
+    private List<DepartmentDto> _departments = new();
+    private string _issueSchoolId = "";
+    private string _issueUnitId = "";
+    private string _issueSubUnitId = "";
     private string _issueUserSearch = "";
     private UserDto? _selectedIssueUser;
     private readonly List<UserDto> _userSuggestions = new();
@@ -267,7 +306,62 @@ else
     private bool _showRevokeConfirm;
     private CertificateDto? _revokingCert;
 
-    protected override async Task OnInitializedAsync() => await LoadCertificates();
+    protected override async Task OnInitializedAsync()
+    {
+        var departmentsTask = LoadDepartmentOptions();
+        await LoadCertificates();
+        await departmentsTask;
+    }
+
+    private async Task LoadDepartmentOptions()
+    {
+        _isLoadingDepartments = true;
+        try
+        {
+            _departments = await AdminService.GetDepartmentsAsync() ?? new();
+        }
+        catch
+        {
+            _departments.Clear();
+            Toast.ShowError("Không thể tải danh sách Trường/Ban/Khoa.");
+        }
+        finally
+        {
+            _isLoadingDepartments = false;
+        }
+    }
+
+    private IReadOnlyList<SelectOption> SchoolOptions => BuildDepartmentOptions(
+        _departments.Where(department => department.ParentId == null),
+        "Tất cả trường");
+
+    private IReadOnlyList<SelectOption> UnitOptions => BuildDepartmentOptions(
+        ChildrenOf(_issueSchoolId),
+        "Tất cả Ban/Khoa/Phòng trực thuộc");
+
+    private IReadOnlyList<SelectOption> SubUnitOptions => BuildDepartmentOptions(
+        ChildrenOf(_issueUnitId),
+        "Tất cả đơn vị cấp dưới");
+
+    private IEnumerable<DepartmentDto> ChildrenOf(string parentId)
+        => Guid.TryParse(parentId, out var id)
+            ? _departments.Where(department => department.ParentId == id)
+            : Enumerable.Empty<DepartmentDto>();
+
+    private static IReadOnlyList<SelectOption> BuildDepartmentOptions(
+        IEnumerable<DepartmentDto> departments,
+        string defaultLabel)
+    {
+        var options = new List<SelectOption> { new("", defaultLabel) };
+        options.AddRange(departments
+            .OrderBy(department => department.DeptName)
+            .Select(department => new SelectOption(
+                department.Id.ToString(),
+                string.IsNullOrWhiteSpace(department.DeptCode)
+                    ? department.DeptName
+                    : $"{department.DeptName} ({department.DeptCode})")));
+        return options;
+    }
 
     private async Task LoadCertificates()
     {
@@ -280,6 +374,9 @@ else
     private void ShowIssueModal()
     {
         _issueUserSearch = "";
+        _issueSchoolId = "";
+        _issueUnitId = "";
+        _issueSubUnitId = "";
         _selectedIssueUser = null;
         _userSuggestions.Clear();
         _showUserSuggestions = false;
@@ -325,16 +422,15 @@ else
             await Task.Delay(250);
             if (searchVersion != _userSearchVersion) return;
 
-            if (Guid.TryParse(query, out var userId))
-            {
-                var user = await AdminService.GetUserAsync(userId);
-                if (user != null) _userSuggestions.Add(user);
-            }
-            else
-            {
-                var result = await AdminService.GetUsersAsync(page: 1, pageSize: 20, search: query);
-                if (result?.Items != null) _userSuggestions.AddRange(result.Items);
-            }
+            var departmentId = Guid.TryParse(SelectedIssueDepartmentId, out var selectedDepartmentId)
+                ? selectedDepartmentId
+                : (Guid?)null;
+            var result = await AdminService.GetUsersAsync(
+                page: 1,
+                pageSize: 20,
+                search: query,
+                departmentId: departmentId);
+            if (result?.Items != null) _userSuggestions.AddRange(result.Items);
         }
         catch
         {
@@ -346,6 +442,43 @@ else
             if (searchVersion == _userSearchVersion)
                 _isSearchingUsers = false;
         }
+    }
+
+    private string SelectedIssueDepartmentId => !string.IsNullOrEmpty(_issueSubUnitId)
+        ? _issueSubUnitId
+        : !string.IsNullOrEmpty(_issueUnitId)
+            ? _issueUnitId
+            : _issueSchoolId;
+
+    private void SelectIssueSchool(string departmentId)
+    {
+        _issueSchoolId = departmentId;
+        _issueUnitId = "";
+        _issueSubUnitId = "";
+        ResetIssueUserSelection();
+    }
+
+    private void SelectIssueUnit(string departmentId)
+    {
+        _issueUnitId = departmentId;
+        _issueSubUnitId = "";
+        ResetIssueUserSelection();
+    }
+
+    private void SelectIssueSubUnit(string departmentId)
+    {
+        _issueSubUnitId = departmentId;
+        ResetIssueUserSelection();
+    }
+
+    private void ResetIssueUserSelection()
+    {
+        _issueUserSearch = "";
+        _selectedIssueUser = null;
+        _userSuggestions.Clear();
+        _showUserSuggestions = false;
+        _userSearchError = null;
+        _userSearchVersion++;
     }
 
     private void SelectIssueUser(UserDto user)

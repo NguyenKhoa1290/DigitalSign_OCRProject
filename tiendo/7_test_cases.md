@@ -1858,3 +1858,122 @@ Kiểm tra kỹ thuật đã đạt: build IdentityService, 29/29 unit test, Doc
 | Docker Compose config/build/up | Pass |
 | Kiểm tra API qua Gateway | Pass 7/7 |
 | Playwright Chromium | Pass 2/2 |
+
+## TC-FE-CERT-DEPARTMENT-FILTER-039 — Lọc người dùng theo đơn vị khi cấp chứng thư
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | IdentityService + API Gateway + Frontend Blazor WASM + PostgreSQL + Docker + Chromium |
+| Mục tiêu | Thu hẹp danh sách tìm người dùng theo Trường/Ban/Khoa trước khi Admin cấp chứng thư |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Dropdown cơ cấu tổ chức | Hiển thị `Tất cả đơn vị`, Trường HAU và Phòng Tổng hợp theo đúng cấp cây, pass |
+| Chọn đơn vị con rồi tìm `admin` | Không trả Admin thuộc đơn vị gốc, pass |
+| Chuyển về `Tất cả đơn vị` rồi tìm `admin` | Trả đúng System Administrator, pass |
+| Chọn đơn vị cha | Trả người dùng thuộc đơn vị con, pass |
+| Kết hợp `departmentId` và từ khóa | Lọc tại API/PostgreSQL, pass |
+| Thông tin gợi ý | Hiển thị họ tên, username, email và đơn vị, pass |
+| Modal mobile 450 × 500 | Toàn màn hình, dropdown dùng được, footer không bị che, pass |
+| User tạm dùng kiểm thử | Đã xóa, pass |
+| Build toàn solution | Pass, 0 warning/0 error |
+| xUnit toàn solution | Pass 37/37 |
+| Docker Compose config/build/up | Pass |
+| API Docker/Gateway | Pass 3/3 |
+| Playwright Chromium | Pass 2/2 |
+
+## TC-FE-CERT-ORG-CASCADE-040 — Tách bộ lọc cơ cấu tổ chức khi cấp chứng thư
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + API Gateway + IdentityService + Docker + Chromium |
+| Mục tiêu | Tách Trường, Ban/Khoa/Phòng và đơn vị cấp dưới thành các lựa chọn phụ thuộc để thu hẹp phạm vi tìm người dùng |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Trạng thái ban đầu | Ô Trường dùng được; hai cấp sau bị khóa, pass |
+| Chọn Trường HAU | Ô Ban/Khoa/Phòng được mở và hiển thị `Phòng Tổng hợp (TH)`, pass |
+| Chọn Phòng Tổng hợp | Ô đơn vị cấp dưới tiếp tục khóa vì dữ liệu hiện tại không có cấp con, pass |
+| Tìm `admin` trong Phòng Tổng hợp | Không trả Admin thuộc Trường, pass |
+| Chuyển về toàn bộ đơn vị trực thuộc của Trường | Tìm thấy `System Administrator`, pass |
+| Đổi cấp cha | Xóa cấp con, người dùng đã chọn và kết quả tìm cũ, pass |
+| Mobile 450 × 500 | Modal toàn màn hình; ba dropdown và footer đều truy cập được, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| xUnit toàn solution | Pass 37/37 |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 2/2 |
+
+## TC-DOC-041 — Kiểm tra bộ tài liệu theo thư mục
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Tài liệu Markdown + Docker Compose |
+| Mục tiêu | Xác nhận bộ tài liệu có đủ ba nhóm, liên kết dùng được và hướng dẫn gọi đúng service thực tế |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Thư mục test case | Có README, danh mục và mẫu test case, pass |
+| Thư mục triển khai | Có hướng dẫn hạ tầng và 6 thành phần ứng dụng, pass |
+| Thư mục nhật ký | Có README, nhật ký tóm tắt và mẫu ghi, pass |
+| Liên kết tương đối trong `tai_lieu` | 15 file Markdown, 0 liên kết hỏng, pass |
+| `docker compose config --quiet` | Pass |
+| Tên service trong tài liệu | Đối chiếu đủ 11 service/hạ tầng từ Compose, pass |
+| Build ứng dụng | Không áp dụng vì không thay code hoặc cấu hình runtime |
+
+## TC-AUTH-DEFAULT-042 — Xác nhận tài khoản mặc định để kiểm thử
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | IdentityService + ApiGateway + PostgreSQL + tài liệu |
+| Mục tiêu | Xác nhận tài khoản ứng dụng seed và thông tin hạ tầng local trong tài liệu đúng với hệ thống đang chạy |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Seed trong `AppDbContext` | Chỉ có user `admin`, role `Admin`, pass |
+| Login `admin` qua Gateway | Pass |
+| Role trả về | `Admin`, pass |
+| Logout và thu hồi phiên kiểm tra | Pass |
+| Tài khoản PostgreSQL/MinIO/Mailpit | Khớp default trong Docker Compose, pass |
+| Phân biệt user test timestamp | Đã ghi rõ không phải tài khoản mặc định, pass |
+| Build ứng dụng | Không áp dụng vì không thay code hoặc cấu hình runtime |
+
+## TC-FE-DASHBOARD-QUICK-ACTIONS-043 — Theo dõi hệ thống và thông báo từ Dashboard
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 28/09/2026 |
+| Phạm vi | Frontend Blazor WASM + Nginx Docker + Chromium |
+| Mục tiêu | Bổ sung lối vào log, hoạt động ứng dụng và thông báo mà không tạo route chết hoặc hiển thị dữ liệu giả |
+| Kết quả | Pass |
+
+### Kết quả
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Quick action `Nhật ký hệ thống` | Hiển thị cho Admin, mở `/admin/system-logs`, pass |
+| Quick action `Hoạt động ứng dụng` | Hiển thị cho Admin, mở `/admin/activity`, pass |
+| Quick action `Trung tâm thông báo` | Mở `/notifications`, pass |
+| Phân quyền trang log/hoạt động | Có `[Authorize(Roles = "Admin")]`, pass |
+| Trạng thái dữ liệu | Ghi rõ là giao diện nền chờ API, không hiển thị log/audit giả, pass |
+| Desktop 1366 × 768 | Ba route và điều hướng hoạt động, pass |
+| Mobile 450 × 500 | Nút truy cập được, trang không tràn ngang, pass |
+| Build Frontend | Pass, 0 warning/0 error |
+| xUnit toàn solution | Pass 37/37 |
+| Docker Compose config/build/up | Pass |
+| Playwright Chromium | Pass 2/2 |

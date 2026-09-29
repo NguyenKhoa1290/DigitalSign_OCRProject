@@ -8,10 +8,15 @@ public class AdminService
     public AdminService(ApiService api) => _api = api;
 
     // ── Users ── (IdentityService: GET/POST/PUT/DELETE api/users)
-    public async Task<PagedResult<UserDto>?> GetUsersAsync(int page = 1, int pageSize = 20, string? search = null)
+    public async Task<PagedResult<UserDto>?> GetUsersAsync(
+        int page = 1,
+        int pageSize = 20,
+        string? search = null,
+        Guid? departmentId = null)
     {
         var q = $"api/users?page={page}&pageSize={pageSize}";
         if (!string.IsNullOrEmpty(search)) q += $"&search={Uri.EscapeDataString(search)}";
+        if (departmentId.HasValue) q += $"&departmentId={departmentId.Value}";
         return await _api.GetAsync<PagedResult<UserDto>>(q);
     }
 

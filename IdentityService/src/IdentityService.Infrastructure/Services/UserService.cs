@@ -28,9 +28,39 @@ public class UserService : IUserService
 
     // ── Read ──────────────────────────────────────────────────────────────────
 
-    public async Task<PagedResult<UserDto>> GetAllUsersAsync(int page, int pageSize, string? search = null)
+    public async Task<PagedResult<UserDto>> GetAllUsersAsync(
+        int page,
+        int pageSize,
+        string? search = null,
+        Guid? departmentId = null)
     {
-        var (users, total) = await _userRepository.GetAllAsync(page, pageSize, search);
+        IReadOnlyCollection<Guid>? departmentIds = null;
+        if (departmentId.HasValue)
+        {
+            var departments = (await _departmentRepository.GetAllAsync()).ToList();
+            if (departments.All(department => department.Id != departmentId.Value))
+                throw new DepartmentNotFoundException($"Không tìm thấy phòng/khoa với Id = {departmentId.Value}.");
+
+            var selectedIds = new HashSet<Guid> { departmentId.Value };
+            var pendingIds = new Queue<Guid>();
+            pendingIds.Enqueue(departmentId.Value);
+
+            while (pendingIds.Count > 0)
+            {
+                var parentId = pendingIds.Dequeue();
+                foreach (var childId in departments
+                             .Where(department => department.ParentId == parentId)
+                             .Select(department => department.Id))
+                {
+                    if (selectedIds.Add(childId))
+                        pendingIds.Enqueue(childId);
+                }
+            }
+
+            departmentIds = selectedIds;
+        }
+
+        var (users, total) = await _userRepository.GetAllAsync(page, pageSize, search, departmentIds);
         return PagedResult<UserDto>.Create(users.Select(MapToDto).ToList(), total, page, pageSize);
     }
 

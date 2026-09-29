@@ -16,7 +16,12 @@ public interface IUserService
     /// <param name="pageSize">Số bản ghi mỗi trang (tối đa 100).</param>
     /// <param name="search">Từ khóa tìm kiếm theo tên, username hoặc email. Null = lấy tất cả.</param>
     /// <returns>PagedResult chứa danh sách UserDto và thông tin phân trang.</returns>
-    Task<PagedResult<UserDto>> GetAllUsersAsync(int page, int pageSize, string? search = null);
+    /// <param name="departmentId">Đơn vị dùng để lọc; bao gồm cả các đơn vị con.</param>
+    Task<PagedResult<UserDto>> GetAllUsersAsync(
+        int page,
+        int pageSize,
+        string? search = null,
+        Guid? departmentId = null);
 
     /// <summary>
     /// Lấy thông tin chi tiết người dùng theo ID.

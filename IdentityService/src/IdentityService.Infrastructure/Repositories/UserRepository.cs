@@ -34,7 +34,11 @@ public class UserRepository : IUserRepository
             .Include(u => u.Department)
             .FirstOrDefaultAsync(u => u.Email == email);
 
-    public async Task<(IEnumerable<AppUser> Users, int Total)> GetAllAsync(int page, int pageSize, string? search)
+    public async Task<(IEnumerable<AppUser> Users, int Total)> GetAllAsync(
+        int page,
+        int pageSize,
+        string? search,
+        IReadOnlyCollection<Guid>? departmentIds = null)
     {
         var query = _context.AppUsers
             .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
@@ -44,10 +48,17 @@ public class UserRepository : IUserRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLower();
+            var isUserId = Guid.TryParse(search.Trim(), out var userId);
             query = query.Where(u =>
+                (isUserId && u.Id == userId) ||
                 u.Username.ToLower().Contains(term) ||
                 u.FullName.ToLower().Contains(term) ||
                 (u.Email != null && u.Email.ToLower().Contains(term)));
+        }
+
+        if (departmentIds is { Count: > 0 })
+        {
+            query = query.Where(u => u.DepartmentId.HasValue && departmentIds.Contains(u.DepartmentId.Value));
         }
 
         var total = await query.CountAsync();

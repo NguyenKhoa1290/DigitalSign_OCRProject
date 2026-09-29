@@ -27,8 +27,13 @@ public interface IUserRepository
     /// <param name="page">Số trang (bắt đầu từ 1).</param>
     /// <param name="pageSize">Số bản ghi mỗi trang.</param>
     /// <param name="search">Từ khóa tìm kiếm (tên, username, email). Null = lấy tất cả.</param>
+    /// <param name="departmentIds">Danh sách đơn vị được phép; null = không lọc theo đơn vị.</param>
     /// <returns>Tuple gồm danh sách người dùng và tổng số bản ghi.</returns>
-    Task<(IEnumerable<AppUser> Users, int Total)> GetAllAsync(int page, int pageSize, string? search);
+    Task<(IEnumerable<AppUser> Users, int Total)> GetAllAsync(
+        int page,
+        int pageSize,
+        string? search,
+        IReadOnlyCollection<Guid>? departmentIds = null);
 
     /// <summary>Tạo người dùng mới.</summary>
     /// <param name="user">Đối tượng AppUser cần tạo.</param>

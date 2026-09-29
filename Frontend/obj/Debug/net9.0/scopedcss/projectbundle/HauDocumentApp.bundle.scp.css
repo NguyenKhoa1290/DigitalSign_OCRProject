@@ -282,6 +282,77 @@ main[b-r1gjb39ice] {
         padding: 0;
     }
 }
+/* /Pages/Admin/Activity.razor.rz.scp.css */
+.activity-header[b-ufs5nsew08] {
+    align-items: center;
+}
+
+.activity-card[b-ufs5nsew08] {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    min-height: 330px;
+    justify-content: center;
+    padding: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    background: rgba(247, 252, 255, 0.82);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.activity-icon[b-ufs5nsew08] {
+    display: grid;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    place-items: center;
+    border-radius: 18px;
+    background: rgba(48, 78, 138, 0.1);
+    color: #304e8a;
+}
+
+.activity-card h2[b-ufs5nsew08] {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 19px;
+}
+
+.activity-card p[b-ufs5nsew08] {
+    max-width: 650px;
+    margin: 10px 0 18px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.activity-tags[b-ufs5nsew08] {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.activity-tags span[b-ufs5nsew08] {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(48, 78, 138, 0.09);
+    color: #304e8a;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+@media (max-width: 960px) {
+    .activity-header[b-ufs5nsew08] {
+        align-items: stretch;
+    }
+
+    .activity-card[b-ufs5nsew08] {
+        min-height: 280px;
+        padding: 24px 18px;
+        border-radius: 20px;
+    }
+}
 /* /Pages/Admin/Certificates.razor.rz.scp.css */
 .actions-heading[b-gacwemiy66] {
     text-align: right;
@@ -308,6 +379,16 @@ main[b-r1gjb39ice] {
 .certificate-actions[b-gacwemiy66] {
     display: flex;
     justify-content: flex-end;
+}
+
+.certificate-organization-filters[b-gacwemiy66] {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.certificate-organization-filters .form-group[b-gacwemiy66] {
+    margin-bottom: 0;
 }
 
 .certificate-user-picker[b-gacwemiy66],
@@ -504,6 +585,122 @@ main[b-r1gjb39ice] {
 @media (max-width: 900px) {
     .department-layout[b-28pjhsbejw] {
         grid-template-columns: 1fr;
+    }
+}
+/* /Pages/Admin/SystemLogs.razor.rz.scp.css */
+.monitoring-header[b-07dwt3fcth] {
+    align-items: center;
+}
+
+.monitoring-notice[b-07dwt3fcth] {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding: 18px;
+    border: 1px solid rgba(48, 78, 138, 0.2);
+    border-radius: 16px;
+    background: rgba(247, 252, 255, 0.84);
+}
+
+.monitoring-notice-icon[b-07dwt3fcth] {
+    display: grid;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(48, 78, 138, 0.1);
+    color: #304e8a;
+}
+
+.monitoring-notice strong[b-07dwt3fcth],
+.monitoring-card h2[b-07dwt3fcth] {
+    color: var(--color-text-primary);
+}
+
+.monitoring-notice p[b-07dwt3fcth] {
+    margin: 5px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.monitoring-grid[b-07dwt3fcth] {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 18px;
+}
+
+.monitoring-card[b-07dwt3fcth] {
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    background: rgba(247, 252, 255, 0.82);
+    box-shadow: var(--shadow-md);
+}
+
+.monitoring-card h2[b-07dwt3fcth] {
+    margin: 0 0 16px;
+    font-size: 16px;
+}
+
+.monitoring-items[b-07dwt3fcth] {
+    display: grid;
+    gap: 8px;
+}
+
+.monitoring-item[b-07dwt3fcth] {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--color-border-light);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.55);
+    font-size: 13px;
+}
+
+.monitoring-dot[b-07dwt3fcth] {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #304e8a;
+}
+
+.monitoring-badge[b-07dwt3fcth],
+.monitoring-tags span[b-07dwt3fcth] {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(48, 78, 138, 0.09);
+    color: #304e8a;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.monitoring-tags[b-07dwt3fcth] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 960px) {
+    .monitoring-header[b-07dwt3fcth] {
+        align-items: stretch;
+    }
+
+    .monitoring-grid[b-07dwt3fcth] {
+        grid-template-columns: 1fr;
+    }
+
+    .monitoring-item[b-07dwt3fcth] {
+        grid-template-columns: auto 1fr;
+    }
+
+    .monitoring-badge[b-07dwt3fcth] {
+        grid-column: 2;
+        justify-self: start;
     }
 }
 /* /Pages/Admin/Users.razor.rz.scp.css */
@@ -729,6 +926,17 @@ main[b-r1gjb39ice] {
 .quick-action-buttons .btn svg[b-qvzh2rxx4c] {
     width: 20px;
     height: 20px;
+}
+
+.quick-action-status[b-qvzh2rxx4c] {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(48, 78, 138, 0.1);
+    color: #304e8a;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
 }
 
 @media (max-width: 960px) {
@@ -1265,6 +1473,77 @@ main[b-r1gjb39ice] {
 
 .login-link:hover[b-hvwtd8f9pw] {
     text-decoration: underline;
+}
+/* /Pages/Notifications.razor.rz.scp.css */
+.notification-header[b-ei14h6si1a] {
+    align-items: center;
+}
+
+.notification-empty[b-ei14h6si1a] {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    min-height: 330px;
+    justify-content: center;
+    padding: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 24px;
+    background: rgba(247, 252, 255, 0.82);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.notification-icon[b-ei14h6si1a] {
+    display: grid;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    place-items: center;
+    border-radius: 18px;
+    background: rgba(48, 78, 138, 0.1);
+    color: #304e8a;
+}
+
+.notification-empty h2[b-ei14h6si1a] {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 19px;
+}
+
+.notification-empty p[b-ei14h6si1a] {
+    max-width: 660px;
+    margin: 10px 0 18px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.notification-types[b-ei14h6si1a] {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.notification-types span[b-ei14h6si1a] {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(48, 78, 138, 0.09);
+    color: #304e8a;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+@media (max-width: 960px) {
+    .notification-header[b-ei14h6si1a] {
+        align-items: stretch;
+    }
+
+    .notification-empty[b-ei14h6si1a] {
+        min-height: 280px;
+        padding: 24px 18px;
+        border-radius: 20px;
+    }
 }
 /* /Pages/ResetPassword.razor.rz.scp.css */
 .reset-subtitle[b-fjv3wauipt] {

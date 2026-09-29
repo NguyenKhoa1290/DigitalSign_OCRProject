@@ -34,6 +34,17 @@ DocumentService/tests/DocumentService.Tests
 SignService/tests/SignService.Tests
 ```
 
+Tài liệu vận hành:
+
+```text
+tai_lieu/01_test_cases/
+tai_lieu/02_trien_khai_tung_service/
+tai_lieu/03_nhat_ky_thay_doi/
+tai_lieu/04_tai_khoan_mac_dinh/
+```
+
+Các thư mục trên lần lượt quản lý danh mục test case, triển khai từng service, nhật ký thay đổi và tài khoản local mặc định. Nội dung lịch sử chi tiết tiếp tục được giữ trong `tiendo/`.
+
 ## 2. ApiGateway
 
 File chính:
@@ -128,6 +139,15 @@ File chính:
 - `Services/DepartmentService.cs`
 - `Services/EmailService.cs`
 - `Data/AuthStoreInitializer.cs`
+
+Lọc người dùng theo cơ cấu tổ chức:
+
+```text
+GET /api/users?departmentId={departmentId}&search={keyword}
+  -> UserService lấy ID đơn vị được chọn và toàn bộ đơn vị con
+  -> UserRepository kết hợp điều kiện DepartmentId với họ tên/username/email/GUID
+  -> PostgreSQL chỉ trả trang kết quả phù hợp
+```
 
 `AppDbContext` dùng `HasData()` để seed roles, departments và admin.
 
@@ -469,7 +489,10 @@ Pages:
 - Mỗi page dùng một cặp file `TênPage.razor` + `TênPage.razor.css` để Blazor CSS isolation tự giới hạn selector trong đúng page.
 - Nhóm xác thực: `Login`, `FirstLogin`, `ForgotPassword`, `ResetPassword`.
 - Dashboard: `Dashboard`.
+- Theo dõi hệ thống: `Admin/SystemLogs`, `Admin/Activity` (role Admin; hiện là giao diện nền chờ API).
+- Thông báo: `Notifications` (mọi tài khoản đã đăng nhập; hiện là giao diện nền chờ backend notification).
 - Nhóm quản trị: `Admin/Users`, `Admin/Departments`, `Admin/Certificates`.
+- `Admin/Certificates` dùng ba `CustomSelect` phụ thuộc theo cây `Trường` → `Ban/Khoa/Phòng trực thuộc` → `Đơn vị cấp dưới`; tìm người dùng theo ID của cấp cụ thể nhất đã chọn.
 - Nhóm ký số: `Signatures/Index`, `Signatures/MyCertificate`; mỗi page có file CSS isolation riêng.
 - Nhóm văn bản: `Documents/Index`, `Documents/Create`, `Documents/Detail`, `Documents/OcrResult`.
 - Nhóm ký số: `Signatures/Index`.

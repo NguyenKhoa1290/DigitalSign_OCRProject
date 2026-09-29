@@ -243,6 +243,7 @@ DELETE /api/signatures/certificates/{userId}
 - Đã tách CSS theo Blazor CSS isolation: toàn bộ 14 page có file `.razor.css` cùng tên; `wwwroot/css/app.css` chỉ giữ theme, token và style dùng chung.
 - Static inline style đã được loại bỏ khỏi các page. Chỉ giữ 3 style động phụ thuộc dữ liệu runtime: thanh/nhãn độ mạnh mật khẩu và màu hạn chứng thư.
 - Dashboard đã được làm lại theo mẫu HAU Docs: tiêu đề/lời chào rõ hơn, 4 thẻ thống kê một hàng trên desktop, khối thao tác nhanh toàn chiều rộng và responsive 2/1 cột trên tablet/mobile.
+- Thao tác nhanh Dashboard có thêm `Nhật ký hệ thống`, `Hoạt động ứng dụng` cho Admin và `Trung tâm thông báo` cho mọi tài khoản. Ba route nền đã sẵn sàng để kết nối API audit/log và luồng thông báo sau này.
 - Khi nguồn thống kê chưa có dữ liệu, Dashboard hiển thị `0` thay vì để trống.
 - Đã bỏ sidebar thu gọn kiểu tablet; giao diện chỉ còn desktop trên `960px`, mobile từ `450px` đến `960px`, và khóa thao tác nếu rộng dưới `450px` hoặc cao dưới `500px`.
 - Thẻ tài khoản mở popup có `Chỉnh sửa thông tin` và `Đăng xuất`; cập nhật họ tên/email/số điện thoại dùng API người dùng hiện tại.
@@ -258,6 +259,7 @@ DELETE /api/signatures/certificates/{userId}
 - Modal luôn nằm trên sidebar/taskbar; chỉ chuyển sang toàn màn hình trên mobile/máy tính nhỏ khi rộng không quá 1200px hoặc viewport rất thấp, cao không quá 650px. Desktop thông thường giữ popup căn giữa.
 - Manager và Ban Giám hiệu có trang `Chứng thư của tôi` để tự tạo chứng thư bằng danh tính trong JWT; Manager nhận loại cá nhân, Ban Giám hiệu nhận loại pháp nhân. Clerk/Specialist không được tự cấp.
 - Trang Admin Certificates đã dùng API danh sách/thu hồi thật và DTO cấp chứng thư đã đồng bộ với SignService.
+- Modal Admin cấp chứng thư tách bộ lọc thành 3 cấp phụ thuộc: `Trường` → `Ban/Khoa/Phòng trực thuộc` → `Đơn vị cấp dưới`; tìm kiếm dùng cấp cụ thể nhất đã chọn. API lọc trực tiếp trong PostgreSQL theo `departmentId` và tự bao gồm các đơn vị con.
 
 ### Màn hình chính
 
@@ -266,6 +268,8 @@ DELETE /api/signatures/certificates/{userId}
 - Forgot password.
 - Reset password.
 - Dashboard.
+- Admin System Logs và Admin Activity (giao diện nền, chờ API audit/log).
+- Notifications (giao diện nền, chờ luồng thông báo).
 - Admin Users.
 - Admin Departments.
 - Admin Certificates.
@@ -273,6 +277,14 @@ DELETE /api/signatures/certificates/{userId}
 - Documents list/create/detail.
 - Documents OCR result.
 - Signatures page.
+
+### Tài liệu vận hành
+
+- `tai_lieu/01_test_cases`: danh mục 42 test case, quy tắc và mẫu ghi test.
+- `tai_lieu/02_trien_khai_tung_service`: hướng dẫn triển khai riêng hạ tầng và từng service bằng Docker Compose.
+- `tai_lieu/03_nhat_ky_thay_doi`: nhật ký thay đổi tóm tắt và mẫu cập nhật.
+- `tai_lieu/04_tai_khoan_mac_dinh`: tài khoản ứng dụng seed, tài khoản hạ tầng local và hướng dẫn tạo user test theo role.
+- Tài liệu lịch sử trong `tiendo/` vẫn được giữ nguyên và liên kết từ bộ tài liệu mới.
 
 ## 7. Những việc còn lại
 

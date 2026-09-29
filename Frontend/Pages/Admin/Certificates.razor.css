@@ -25,6 +25,16 @@
     justify-content: flex-end;
 }
 
+.certificate-organization-filters {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.certificate-organization-filters .form-group {
+    margin-bottom: 0;
+}
+
 .certificate-user-picker,
 .certificate-select-picker {
     position: relative;

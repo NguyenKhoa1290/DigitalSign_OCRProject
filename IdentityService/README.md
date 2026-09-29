@@ -160,7 +160,7 @@ Tham khảo: [Google App Password](https://support.google.com/accounts/answer/18
 
 | Method | Endpoint | Mô tả |
 |---|---|---|
-| GET | `/` | Danh sách user, phân trang/tìm kiếm |
+| GET | `/` | Danh sách user, phân trang/tìm kiếm; hỗ trợ `departmentId` |
 | GET | `/{id}` | Lấy user theo ID |
 | GET | `/me` | Thông tin user hiện tại |
 | POST | `/` | Tạo user |
@@ -168,6 +168,14 @@ Tham khảo: [Google App Password](https://support.google.com/accounts/answer/18
 | DELETE | `/{id}` | Xóa user |
 | POST | `/{id}/roles/{roleId}` | Gán role |
 | DELETE | `/{id}/roles/{roleId}` | Gỡ role |
+
+Ví dụ lọc người dùng theo đơn vị rồi tìm tên:
+
+```text
+GET /api/users?page=1&pageSize=20&departmentId={departmentId}&search=Nguyễn
+```
+
+Khi `departmentId` là đơn vị cha, kết quả bao gồm người dùng thuộc chính đơn vị đó và toàn bộ Ban/Khoa/đơn vị con. Từ khóa `search` hỗ trợ họ tên, username, email hoặc GUID.
 
 ### Departments - `/api/departments`
 

@@ -1,0 +1,115 @@
+.monitoring-header {
+    align-items: center;
+}
+
+.monitoring-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding: 18px;
+    border: 1px solid rgba(48, 78, 138, 0.2);
+    border-radius: 16px;
+    background: rgba(247, 252, 255, 0.84);
+}
+
+.monitoring-notice-icon {
+    display: grid;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(48, 78, 138, 0.1);
+    color: #304e8a;
+}
+
+.monitoring-notice strong,
+.monitoring-card h2 {
+    color: var(--color-text-primary);
+}
+
+.monitoring-notice p {
+    margin: 5px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.monitoring-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 18px;
+}
+
+.monitoring-card {
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    background: rgba(247, 252, 255, 0.82);
+    box-shadow: var(--shadow-md);
+}
+
+.monitoring-card h2 {
+    margin: 0 0 16px;
+    font-size: 16px;
+}
+
+.monitoring-items {
+    display: grid;
+    gap: 8px;
+}
+
+.monitoring-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--color-border-light);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.55);
+    font-size: 13px;
+}
+
+.monitoring-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #304e8a;
+}
+
+.monitoring-badge,
+.monitoring-tags span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(48, 78, 138, 0.09);
+    color: #304e8a;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.monitoring-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 960px) {
+    .monitoring-header {
+        align-items: stretch;
+    }
+
+    .monitoring-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .monitoring-item {
+        grid-template-columns: auto 1fr;
+    }
+
+    .monitoring-badge {
+        grid-column: 2;
+        justify-self: start;
+    }
+}

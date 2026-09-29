@@ -1,0 +1,29 @@
+@page "/admin/activity"
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Hoạt động ứng dụng - HAU Admin</PageTitle>
+
+<div class="page-header activity-header">
+    <div>
+        <h1 class="page-title">Hoạt động ứng dụng</h1>
+        <p class="page-subtitle">Theo dõi các hành động nghiệp vụ quan trọng theo người dùng và thời gian.</p>
+    </div>
+    <a href="/" class="btn btn-outline">Quay lại Dashboard</a>
+</div>
+
+<div class="activity-card">
+    <div class="activity-icon">
+        <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l3-8 4 16 3-8h4" />
+        </svg>
+    </div>
+    <h2>Chưa có dữ liệu hoạt động</h2>
+    <p>Trang đã được chuẩn bị để nhận audit event từ đăng nhập, thay đổi người dùng, xử lý công văn, OCR, cấp chứng thư và ký số.</p>
+    <div class="activity-tags">
+        <span>Đăng nhập</span>
+        <span>Công văn</span>
+        <span>OCR</span>
+        <span>Chứng thư</span>
+        <span>Ký số</span>
+    </div>
+</div>

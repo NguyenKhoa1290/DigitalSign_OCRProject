@@ -67,6 +67,10 @@ build_metadata.AdditionalFiles.CssScope = b-r1gjb39ice
 build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE5hdk1lbnUucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-63kntdloo1
 
+[F:/DigitalSign_OCRProject/Frontend/Pages/Admin/Activity.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQWN0aXZpdHkucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-ufs5nsew08
+
 [F:/DigitalSign_OCRProject/Frontend/Pages/Admin/Certificates.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQ2VydGlmaWNhdGVzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = b-gacwemiy66
@@ -74,6 +78,10 @@ build_metadata.AdditionalFiles.CssScope = b-gacwemiy66
 [F:/DigitalSign_OCRProject/Frontend/Pages/Admin/Departments.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cRGVwYXJ0bWVudHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-28pjhsbejw
+
+[F:/DigitalSign_OCRProject/Frontend/Pages/Admin/SystemLogs.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cU3lzdGVtTG9ncy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-07dwt3fcth
 
 [F:/DigitalSign_OCRProject/Frontend/Pages/Admin/Users.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cVXNlcnMucmF6b3I=
@@ -110,6 +118,10 @@ build_metadata.AdditionalFiles.CssScope = b-7d6vw8utw5
 [F:/DigitalSign_OCRProject/Frontend/Pages/Login.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTG9naW4ucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-hvwtd8f9pw
+
+[F:/DigitalSign_OCRProject/Frontend/Pages/Notifications.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTm90aWZpY2F0aW9ucy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-ei14h6si1a
 
 [F:/DigitalSign_OCRProject/Frontend/Pages/ResetPassword.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVzZXRQYXNzd29yZC5yYXpvcg==

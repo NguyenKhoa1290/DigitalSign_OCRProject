@@ -103,7 +103,7 @@
             Quản lý người dùng (CRUD). Chỉ Admin có quyền thêm/sửa/xóa.
             </summary>
         </member>
-        <member name="M:IdentityService.API.Controllers.UsersController.GetAll(System.Int32,System.Int32,System.String)">
+        <member name="M:IdentityService.API.Controllers.UsersController.GetAll(System.Int32,System.Int32,System.String,System.Nullable{System.Guid})">
             <summary>
             Lấy danh sách người dùng có phân trang và tìm kiếm.
             </summary>

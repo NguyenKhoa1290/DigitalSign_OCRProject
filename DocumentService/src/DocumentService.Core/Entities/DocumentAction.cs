@@ -2,6 +2,7 @@ namespace DocumentService.Core.Entities;
 
 public static class DocumentAction
 {
+    public const string Update = "Update"; // Cập nhật thông tin văn bản
     public const string Submit = "Submit";           // Trình duyệt
     public const string DeptSign = "DeptSign";       // Ký nháy cấp phòng
     public const string SubmitDirector = "SubmitDirector"; // Trình Ban Giám hiệu ký

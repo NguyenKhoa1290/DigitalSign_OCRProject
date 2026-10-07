@@ -1,0 +1,75 @@
+@inject MonitoringService MonitoringService
+
+<div class="card journal-filters">
+    <div class="card-body">
+        <div class="filter-grid">
+            <div class="form-group"><label class="form-label" for="journal-service">Service</label><CustomSelect Id="journal-service" Options="ServiceOptions" @bind-Value="_service" /></div>
+            <div class="form-group"><label class="form-label" for="journal-level">Mức độ</label><CustomSelect Id="journal-level" Options="LevelOptions" @bind-Value="_level" /></div>
+            <div class="form-group"><label class="form-label" for="journal-from">Từ ngày (Việt Nam)</label><InputDate id="journal-from" class="form-control" @bind-Value="_from" /></div>
+            <div class="form-group"><label class="form-label" for="journal-to">Đến ngày (Việt Nam)</label><InputDate id="journal-to" class="form-control" @bind-Value="_to" /></div>
+            <div class="form-group"><label class="form-label" for="journal-trace">Trace ID</label><input id="journal-trace" class="form-control" maxlength="100" @bind="_trace" /></div>
+            <div class="form-group"><label class="form-label" for="journal-actor">ID người dùng</label><input id="journal-actor" class="form-control" maxlength="36" @bind="_actor" /></div>
+        </div>
+        <button class="btn btn-primary" @onclick="ApplyFilters" disabled="@_loading">Lọc / Làm mới</button>
+    </div>
+</div>
+@if (_error != null) { <div class="alert alert-warning" role="alert">@_error</div> }
+@if (_loading) { <LoadingSpinner Message="Đang tải nhật ký..." /> }
+else if (_data != null)
+{
+    <p class="journal-count">@_data.TotalCount bản ghi · Trang @_page · Thời gian Việt Nam</p>
+    @if (_data.Items.Count == 0) { <div class="card"><div class="card-body">Không có bản ghi phù hợp.</div></div> }
+    @foreach (var entry in _data.Items)
+    {
+        <article class="card journal-entry">
+            <div class="card-body">
+                <div class="journal-entry-top"><strong>@entry.Service · @ActionLabel(entry.Action)</strong><span class="badge">@entry.Level · @(entry.Method == "" ? "Thành công" : $"HTTP {entry.StatusCode}")</span></div>
+                <p>@entry.Timestamp.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss") · @(entry.ActorName ?? entry.ActorId?.ToString() ?? "Không xác định")</p>
+                @if (entry.Path != "") { <p class="journal-path">@entry.Method @entry.Path · @entry.ElapsedMs.ToString("F1") ms</p> }
+                @if (entry.ResourceId.HasValue) { <p>Đối tượng: @entry.ResourceId</p> }
+                <p class="journal-trace">Trace ID: @entry.TraceId</p>
+            </div>
+        </article>
+    }
+    <div class="journal-pagination">
+        <button class="btn btn-outline" @onclick="Previous" disabled="@(_page <= 1)">Trang trước</button>
+        <button class="btn btn-outline" @onclick="Next" disabled="@((long)_page * _data.PageSize >= _data.TotalCount)">Trang sau</button>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Audit { get; set; }
+    private string _service="",_level="",_trace="",_actor="";
+    private DateTime? _from,_to;
+    private int _page=1;
+    private bool _loading;
+    private string? _error;
+    private JournalPage<JournalEvent>? _data;
+    private static readonly IReadOnlyList<SelectOption> ServiceOptions=new[] {new SelectOption("","Tất cả service")}
+        .Concat(new[]{"IdentityService","DocumentService","SignService","OCRService","ApiGateway"}.Select(s=>new SelectOption(s,s))).ToList();
+    private static readonly IReadOnlyList<SelectOption> LevelOptions=new[] {new SelectOption("","Tất cả mức độ"),new SelectOption("Information","Thông tin"),new SelectOption("Warning","Cảnh báo"),new SelectOption("Error","Lỗi")};
+    protected override Task OnInitializedAsync()=>Load();
+    private async Task Load()
+    {
+        _loading=true;_error=null;
+        try
+        {
+            if(_from>_to || (_actor!="" && !Guid.TryParse(_actor,out _))) {_error="Khoảng ngày hoặc ID người dùng không hợp lệ.";return;}
+            var result=await MonitoringService.GetEventsAsync(Audit,_page,_service,_level,_from,_to,_trace,_actor);
+            if(result==null)_error="Không tải được nhật ký. Hãy thử làm mới.";
+            else _data=result;
+        }
+        catch {_error="Không kết nối được nguồn nhật ký. Hãy thử lại.";}
+        finally {_loading=false;}
+    }
+    private Task ApplyFilters() {_page=1;return Load();}
+    private Task Previous() {_page--;return Load();}
+    private Task Next() {_page++;return Load();}
+    private static string ActionLabel(string action)=>action switch
+    {
+        "Create"=>"Tạo công văn", "Update"=>"Sửa công văn", "Submit"=>"Trình duyệt", "Assign"=>"Phân công", "UpdateOCR"=>"Cập nhật OCR",
+        "DeptSign"=>"Ký nháy", "SubmitDirector"=>"Trình BGH", "DirectorSign"=>"Ký pháp nhân", "Reject"=>"Từ chối", "Publish"=>"Phát hành", "UploadDocument"=>"Tải PDF lên",
+        "Login"=>"Đăng nhập", "Logout"=>"Đăng xuất", "Request"=>"Truy cập API", "Startup"=>"Khởi tạo Gateway", "IssueCertificate"=>"Cấp chứng thư", "RevokeCertificate"=>"Thu hồi chứng thư",
+        _=>action
+    };
+}

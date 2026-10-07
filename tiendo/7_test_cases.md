@@ -2,6 +2,10 @@
 
 > Ghi lại test case đã chạy theo quy trình: viết code → build code → Docker → test case → ghi test case → báo cáo.
 
+> Kết quả trong từng mục thuộc thời điểm chạy, không phải xác nhận runtime hiện tại. Các viewport 390px và ngưỡng cao 720px là thông số lịch sử; source hiện dùng tối thiểu 450×500 và breakpoint modal trong `TC-FE-MODAL-BREAKPOINT-037`.
+
+> Bàn giao ngày 05/10/2026: kiểm thử thực tế/nghiệm thu do người dùng tự thực hiện, trạng thái **Chờ người dùng kiểm thử và xác nhận**. Kết quả tự động/local/mô phỏng bên dưới không thay thế nghiệm thu trên email, PDF/scan và dữ liệu nghiệp vụ thực tế. Danh sách bàn giao tại mục 7.3 của `2_da_lam.md`; chưa có kết quả nghiệm thu mới do người dùng cung cấp.
+
 ## TC-SIGN-001 — SignService dùng đúng `Documents.MinioPath` khi ký PDF
 
 | Mục | Nội dung |
@@ -1265,7 +1269,7 @@ Các bước Playwright:
 | Ngày soạn | 24/09/2026 |
 | Phạm vi | IdentityService + ApiGateway + Gmail SMTP |
 | Mục tiêu | Xác nhận email OTP được gửi ra internet với người gửi là tài khoản Google đã cấu hình |
-| Trạng thái | Đang kiểm thử — SMTP gửi thành công, chờ xác nhận Inbox/Spam và OTP |
+| Trạng thái | Hoàn tất bước gửi/nhận email; chưa chạy reset bằng OTP thật và đăng nhập lại |
 
 Kiểm tra kỹ thuật đã đạt: build IdentityService, 29/29 unit test, Docker Compose config, Docker image và health của IdentityService/Gateway.
 
@@ -1280,8 +1284,10 @@ Kiểm tra kỹ thuật đã đạt: build IdentityService, 29/29 unit test, Doc
 | `POST /api/auth/forgot-password` | HTTP 200 |
 | Log lỗi SMTP | Không có |
 | Gmail SMTP chấp nhận gửi | Pass |
-| Xác nhận email tại Inbox/Spam | Chờ người nhận xác nhận |
+| Xác nhận email tại Inbox/Spam | Người nhận đã xác nhận email trong hộp thư, theo Công việc số 17 trong `3_nhat_ky.md` |
 | Dùng OTP reset password và login lại | Chưa chạy |
+
+Đồng bộ ngày 05/10/2026 theo nhật ký ngày 24/09/2026; không gửi lại email hoặc chạy lại test Gmail trong lần cập nhật tài liệu này.
 
 ### Điều kiện
 
@@ -1977,3 +1983,281 @@ Kiểm tra kỹ thuật đã đạt: build IdentityService, 29/29 unit test, Doc
 | xUnit toàn solution | Pass 37/37 |
 | Docker Compose config/build/up | Pass |
 | Playwright Chromium | Pass 2/2 |
+
+## TC-DOC-SYNC-044 — Đồng bộ tài liệu với source và nhật ký
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | `tai_lieu`, `tiendo`, source frontend/backend và Docker Compose |
+| Mục tiêu | Loại bỏ các tổng kết cũ, ghi đúng phần đã có/chưa hoàn tất và bảo toàn kết quả lịch sử |
+| Dữ liệu test | Không tạo user, document, email hoặc token |
+| Kết quả | Pass — kiểm tra tài liệu/source, không chạy lại runtime |
+
+### Các bước
+
+1. Đối chiếu trang frontend, CSS, các service frontend và controller/backend liên quan.
+2. Đối chiếu `DocumentAction`, `AuthStoreInitializer`, cấu hình Compose và nhật ký Gmail.
+3. Cập nhật tổng kết, việc còn lại, danh mục test và mốc đồng bộ.
+4. Dùng PowerShell đọc toàn bộ Markdown trong hai thư mục, bỏ code fence và kiểm tra đích liên kết tương đối bằng `Test-Path`.
+5. Đếm page `.razor` trong `Frontend/Pages` và kiểm tra file `.razor.css` cùng tên.
+6. Kiểm tra Compose, tính nhất quán mã test/danh mục và diff whitespace.
+
+### Kết quả
+
+| Kiểm tra | Mong đợi | Thực tế | Trạng thái |
+|---|---|---|---|
+| Markdown được kiểm tra | Toàn bộ hai thư mục | 24 file | Pass |
+| Liên kết tương đối | Đích tồn tại | 26 liên kết, 0 lỗi | Pass |
+| Page và CSS isolation | Mỗi page có CSS cùng tên | 17/17 | Pass |
+| Cấu hình Compose | Cú pháp hợp lệ, đúng tên thành phần | 11 service/hạ tầng | Pass |
+| Danh mục test | Mã khớp file chi tiết | 44 mã, `001`–`044` | Pass |
+| Gmail | Khớp nhật ký Công việc số 17 | Gửi/nhận thành công; reset OTP thật chưa chạy | Pass |
+| Dashboard, log/audit/thông báo | Không coi dữ liệu mặc định/trang nền là tính năng backend hoàn tất | Ghi rõ API chưa có/chưa kết nối | Pass |
+| Workflow/DB/CSS | Khớp source hiện tại | Có `SubmitDirector`, initializer email/token và lớp modal/toast mới | Pass |
+| Lịch sử kiểm thử | Giữ kết quả tại thời điểm chạy | Không đổi viewport hoặc số test cũ thành kết quả mới | Pass |
+| Rà soát phần đã làm | Không đưa tính năng đã Pass trở lại danh sách chưa triển khai | Mục 7 ghi riêng phần đã làm, triển khai thiếu, kiểm thử bổ sung và đề xuất; ký/workflow và OCR đã hoàn thành theo luồng kiểm thử | Pass |
+| Kiểm tra lại sau rà soát mục 7 | Liên kết và mã test dẫn chứng tồn tại | 24 file, 28 liên kết hợp lệ; 13 mã test dẫn chứng có mục chi tiết; danh mục vẫn đủ 44 test case | Pass |
+| `git diff --check` | Không lỗi whitespace | Không lỗi | Pass |
+
+### Lệnh đã chạy
+
+```powershell
+Get-ChildItem -LiteralPath tai_lieu,tiendo -Recurse -File -Filter *.md
+Get-ChildItem -LiteralPath Frontend/Pages -Recurse -File -Filter *.razor
+docker compose config --quiet
+docker compose config --services
+git -c safe.directory=E:/DigitalSign_OCRProject diff --check
+```
+
+Kiểm tra liên kết và đối chiếu mã test chạy bằng PowerShell với regex, `Get-Content` và `Test-Path`. Không build ứng dụng, recreate container, gửi email hoặc chạy lại API/UI; thay đổi chỉ gồm tài liệu. `tai_lieu/` bị `.gitignore` bỏ qua nên kiểm tra trực tiếp trên filesystem; `git diff --check` chỉ bao phủ file Git đang theo dõi.
+
+## TC-DOC-EDIT-045 — Sửa metadata công văn và đồng bộ DTO frontend
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | DocumentService, Frontend, IdentityService và Gateway trên Docker local |
+| Mục tiêu | Tạo/sửa gửi đúng metadata, sửa đúng trạng thái và giữ file/OCR/workflow |
+| Dữ liệu | 2 document/PDF tạm; Admin và user test Manager/Specialist |
+| Kết quả | Pass |
+
+### Các bước và kết quả
+
+1. Login Admin, lấy loại văn bản, tạo document Draft và upload PDF trắng hợp lệ; đợi callback OCR trước khi sửa metadata.
+2. PUT sửa tiêu đề/số hiệu/loại/ngày: HTTP 200, trim chuỗi, `MinioPath`/`OcrDataRaw`/`Status` không đổi; lịch sử `Update` có actor đúng JWT.
+3. Xóa số hiệu/ngày bằng null: HTTP 200 và dữ liệu null; title trống hoặc loại không tồn tại: HTTP 400.
+4. Manager sửa: HTTP 403. Unit test chặn đủ 5 trạng thái không phải Draft/Rejected; API PendingDeptReview trả 422, UI ẩn nút sửa. Sau reject, API cho sửa metadata và vẫn giữ Rejected.
+5. Đăng nhập Admin trên trình duyệt; desktop sửa qua modal, request gửi đúng `DocNumber` và ngày DateOnly, heading cập nhật. Mobile 450×500 mở/chọn loại/hủy modal, chân modal thao tác được.
+6. Specialist tạo công văn trên UI kèm PDF: POST 201, số hiệu/loại/ngày đúng; upload 200 unwrap response đúng; điều hướng đến chi tiết và có iframe PDF.
+
+### Build và cách chạy lại
+
+- Build solution: pass, 0 warning/0 error; xUnit 61/61 (Document 25, Identity 35, Sign 1 test rỗng).
+- Docker image Identity/Document/Frontend build và recreate thành công; không đổi schema DB.
+- Script chung cho `045`–`047`: `tests/document-edit-file-assignment.spec.cjs`, kết quả 13 nhóm smoke pass, gồm API và Playwright Chromium.
+- Máy host dùng SDK 10 nhưng thiếu runtime 9: cài ASP.NET Core/runtime 9.0.20 vào `%TEMP%/hau-dotnet9`, không đổi hệ thống. Nếu host đã có runtime .NET 9 thì không cần các biến `DOTNET_*` dưới đây.
+
+```powershell
+dotnet build HAU_DigitalSign_OCR.slnx --no-restore --verbosity quiet
+$env:DOTNET_ROOT = Join-Path $env:TEMP 'hau-dotnet9'
+$env:DOTNET_ROOT_X64 = $env:DOTNET_ROOT
+$env:VSTEST_DOTNET_PATH = Join-Path $env:DOTNET_ROOT 'dotnet.exe'
+dotnet test HAU_DigitalSign_OCR.slnx --no-build --verbosity quiet
+docker compose build identity-service document-service frontend
+docker compose up -d --no-deps identity-service document-service frontend
+npm.cmd install --prefix (Join-Path $env:TEMP 'hau-document-tools') playwright --no-audit --no-fund
+$env:HAU_PLAYWRIGHT_MODULE = Join-Path $env:TEMP 'hau-document-tools/node_modules/playwright'
+node tests/document-edit-file-assignment.spec.cjs
+```
+
+Script yêu cầu Node 20+, Chromium của Playwright và Docker CLI; nếu chưa có Chromium, dùng CLI Playwright `install chromium`. Tài khoản test có thể cấu hình qua `HAU_TEST_USERNAME`/`HAU_TEST_PASSWORD`, phải là Admin local đã hoàn tất first login. Không in token trong output.
+
+### Dọn dẹp
+
+Lần chạy hoàn tất xóa 2 document, 2 user và 2 object PDF tạo bởi script; logout các phiên test. Ảnh modal tại `tests/artifacts` (Git bỏ qua ảnh). Một lần chạy trước chạm rate limit Gateway 429: đã dọn dữ liệu theo GUID document chính xác bằng `HAU_CLEANUP_DOCUMENT`; script hiện xử lý Retry-After cho API và có chờ DocumentService sẵn sàng khi vừa recreate.
+
+## TC-DOC-FILE-046 — Xem/tải PDF đúng object MinIO bằng JWT
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | API file DocumentService và iframe/download Blazor trên Docker/Gateway |
+| Mục tiêu | Đọc đúng PDF đã upload, xác thực và hỗ trợ xem/tải trong trình duyệt |
+| Dữ liệu | PDF trắng hợp lệ do script tạo; object UUID khác document ID |
+| Kết quả | Pass |
+
+### Các bước và kết quả
+
+1. GET file không JWT: 401. Document không có PDF hoặc document không tồn tại: 404.
+2. Upload PDF, GET `/api/documents/{id}/file`: 200, `Content-Type: application/pdf`, `Cache-Control: no-store`; so byte-for-byte với file upload, hoàn toàn khớp.
+3. GET `?download=true`: attachment với tên `.pdf`. Request `Range: bytes=0-9`: 206, dữ liệu đúng 10 byte đầu.
+4. Unit test resolve path `documents/{object}`, object thô và path có slash; dùng tên object đã lưu, không tự tìm `{documentId}.pdf`.
+5. Chi tiết UI hiển thị iframe `blob:`. Nút `Tải PDF` tạo download Chromium, tên `.pdf` và byte-for-byte khớp PDF gốc.
+
+Chạy cùng script và build của `TC-DOC-EDIT-045`. File/blob trên UI không chứa JWT trong URL hoặc hostname MinIO nội bộ. Test xác nhận vận chuyển file và hiển thị iframe; không đánh giá chất lượng OCR của PDF scan thật. Dữ liệu PDF tạm đã xóa khỏi MinIO.
+
+## TC-DOC-ASSIGN-047 — Phân công đúng người nhận và xử lý lỗi
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | Identity danh bạ, Document assign, Frontend modal desktop/mobile |
+| Mục tiêu | Payload `ToUserId` đúng, người nhận hoạt động, lịch sử và UI phản ánh kết quả thật |
+| Dữ liệu | Admin và 2 user test Manager/Specialist; 1 document có PDF |
+| Kết quả | Pass |
+
+### Các bước và kết quả
+
+1. GET `/api/users/assignees?search=admin`: tìm đúng tài khoản; DTO không chứa email/roles.
+2. Payload cũ `assignedToId`, GUID rỗng hoặc người nhận không tồn tại: 400; tài khoản bị khóa: 400.
+3. Assign đúng `toUserId`: 200, lịch sử `Assign` đúng actor, người nhận và comment; trạng thái document giữ nguyên.
+4. Manager có quyền đọc danh bạ/phân công; Specialist phân công bị 403.
+5. Unit test xác nhận không ghi phân công khi danh bạ 404, inactive, 500, 401, JSON lỗi, thiếu data, data null hoặc root array; lỗi dữ liệu/kết nối trả 503 theo controller. Unit test active recipient kiểm tra header Bearer và URL gọi Identity.
+6. UI desktop 1366×768 và mobile 450×500 tìm Admin, chọn dropdown, nhập ghi chú, xác nhận; POST gửi đúng `toUserId`, modal đóng khi thành công. Kiểm tra ảnh cho thấy modal/nút thao tác nằm trong viewport.
+7. Giả lập HTTP 503 trên request phân công bằng Playwright: UI giữ modal và hiện `Phân công thất bại`; bỏ giả lập rồi gửi lại thành công.
+8. Trang chi tiết không có lỗi JavaScript trong lần kiểm tra. Ảnh `document-assignment-1366.png`, `document-assignment-450.png`, `document-edit-450.png` đã được xem lại.
+
+Chạy cùng script/build/dọn dẹp của `TC-DOC-EDIT-045`. Named client `identity-directory` dùng `IdentityService:BaseUrl`, timeout 5 giây. Không chạy phép thử bằng cách tắt IdentityService thật; lỗi danh bạ được kiểm tra ở unit test, lỗi frontend được giả lập trên request test riêng.
+
+## TC-DASHBOARD-STATS-048 — API thống kê toàn dữ liệu và phân quyền
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | DocumentService, IdentityService, SignService, PostgreSQL và Gateway Docker local |
+| Mục tiêu | Thống kê từ nguồn thật, đúng trạng thái/actor/ngày và không bị giới hạn phân trang |
+| Dữ liệu | Admin seed, 4 user theo role, 22 document fixture và 1 chứng thư test |
+| Kết quả | Pass |
+
+### Các bước và kết quả
+
+1. Login Admin, lấy baseline `GET /api/documents/stats`; so toàn bộ 11 trường với SQL PostgreSQL độc lập, khớp hoàn toàn. Ba API stats không JWT trả 401; thành công có `Cache-Control: no-store`.
+2. Tạo Clerk/Specialist/Manager/BoardOfDirectors: mỗi role đọc stats công văn được, stats user/certificate trả 403. Tổng người dùng Admin khớp `SELECT count(*) FROM AppUsers`, không dùng số phần tử trang đầu.
+3. Tạo 22 document của Specialist bằng API; chỉnh metadata/history trên đúng GUID fixture để có 7 trạng thái workflow, PDF chờ OCR, một document tạo từ hôm trước và 2 lần Assign cùng document bởi Manager. Không tạo object MinIO và không thực hiện ký PDF trong test thống kê này.
+4. Tổng document tăng 22 (33 khi chạy, vượt page size 20), hôm nay tăng 21. Mỗi role so toàn bộ response với SQL độc lập, khớp; Specialist có 16 draft của tôi; Manager có 1 document đã phân công dù có 2 event Assign.
+5. Admin stats chứng thư tăng 1 sau cấp Personal cho Manager test; so với danh sách cert còn hiệu lực theo NotBefore/NotAfter. Thu hồi: số giảm về baseline (4 khi chạy); Root CA không tính.
+6. Thêm 4 test xUnit repository: database rỗng trả 0; đếm các status/OCR độc lập; ranh giới ngày Việt Nam đầu bao gồm/cuối loại trừ, không đếm IssuedDate hoặc resubmit mới thành ngày tạo; đúng creator và distinct assignment. Document không có Submit vẫn nằm trong tổng, không tính ngày tạo/của tôi.
+
+### Build và lệnh chạy
+
+- `dotnet build HAU_DigitalSign_OCR.slnx --no-restore --verbosity quiet`: 0 warning/0 error.
+- xUnit toàn solution: 65/65 (Document 29, Identity 35, Sign 1 test rỗng); host dùng runtime 9.0.20 trong `%TEMP%/hau-dotnet9` như `TC-DOC-EDIT-045`.
+- Build/recreate Docker `identity-service document-service sign-service frontend`: pass. Sau sửa phát hiện response thiếu trường, build/recreate riêng Frontend và chạy lại smoke trên image cuối.
+- Không thêm schema/migration hay route Gateway: các route stats nằm dưới catch-all sẵn có.
+
+```powershell
+docker compose build identity-service document-service sign-service frontend
+docker compose up -d --no-deps identity-service document-service sign-service frontend
+$env:HAU_PLAYWRIGHT_MODULE = Join-Path $env:TEMP 'hau-document-tools/node_modules/playwright'
+node tests/dashboard-statistics.spec.cjs
+```
+
+Script yêu cầu Node 20+, Playwright/Chromium đã cài, Docker CLI và stack local; kết nối PostgreSQL bằng `docker exec psql`, lấy tên database/user từ cấu hình container trong bộ nhớ, không in secret. Có thể cấu hình Admin qua `HAU_TEST_USERNAME`/`HAU_TEST_PASSWORD`.
+
+### Dọn dẹp
+
+Xóa đúng 22 GUID document/process fixture trong transaction PostgreSQL vì các fixture Published không thể xóa qua workflow API; không đụng document có sẵn. Xóa 4 user test, thu hồi chứng thư mới và logout các phiên test. Không tạo/xóa file MinIO, không gửi email. Kết quả script hoàn tất 11 nhóm smoke cho `048`–`049` và xác nhận cleanup.
+
+## TC-FE-DASHBOARD-STATS-049 — Dashboard theo role, lỗi nguồn và làm mới
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | Blazor Frontend, 3 API thống kê qua Gateway, Playwright Chromium |
+| Mục tiêu | Hiển thị đúng chỉ số nghiệp vụ, không tự điền 0 khi API lỗi và phục hồi bằng làm mới |
+| Viewport | Desktop 1366×768, mobile 450×500 |
+| Kết quả | Pass |
+
+### Các bước và kết quả
+
+1. Đăng nhập Admin trên UI, đối chiếu từng card với response thật: tổng người dùng, tổng văn bản, chờ xử lý và chứng thư hoạt động đều khớp. Ảnh desktop/mobile đã được xem lại; mobile không tràn ngang.
+2. Clerk: hôm nay UTC+7, đã upload/chưa OCR, Published. Specialist: Draft và đang chờ phê duyệt do chính mình tạo. Manager: PendingDeptReview toàn hệ thống và distinct văn bản do mình phân công. BoardOfDirectors: PendingDirectorSign và DirectorSigned/Published toàn hệ thống. Tất cả card khớp SQL theo actor JWT.
+3. Các role ngoài Admin không phát request stats quản trị user/certificate. Cả 5 role không có lỗi JavaScript trong lần test.
+4. Playwright giả lập certificate stats HTTP 503: card chứng thư hiện `—`, cảnh báo nguồn chưa tải được, số document vẫn giữ đúng.
+5. Giả lập certificate stats HTTP 200 nhưng data thiếu trường: vẫn `—` và cảnh báo; không coi object rỗng là số 0 hợp lệ.
+6. Giả lập thêm Document stats 503: các card công văn hiện `—`, tổng user vẫn giữ dữ liệu nguồn thành công.
+7. Bỏ giả lập, bấm `Làm mới số liệu`: số thật trở lại, cảnh báo biến mất. Zero hợp lệ được format thành 0; null là `—`.
+
+Chạy cùng script, build và cleanup của `TC-DASHBOARD-STATS-048`. Ảnh `tests/artifacts/dashboard-stats-1366.png`, `dashboard-stats-450.png` được Git bỏ qua. Các phép thử lỗi chỉ chặn response trong context Playwright của test; không dừng backend thật.
+
+## TC-GW-LOGS-050 — Nhật ký HTTP thật, bộ lọc, quyền Admin và che dữ liệu
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | ApiGateway, PostgreSQL, bốn downstream service, Blazor/Playwright |
+| Mục tiêu | Log truy cập HTTP có nguồn thật, lọc/phân trang đúng và không lưu secret trong bảng nhật ký |
+| Dữ liệu | Admin seed; 5 user theo role; fixture dùng chung với 051–052 |
+| Mong đợi | Chỉ Admin đọc log/audit, không JWT 401; bộ lọc hợp lệ đúng dữ liệu, sai tham số 400; dữ liệu nhạy cảm không được lưu |
+| Kết quả thực tế | Pass; 14 nhóm smoke dùng chung cả ba test case, 21 test Gateway |
+
+### Các bước và kết quả
+
+1. Không JWT: log/audit/notifications trả 401. Clerk/Specialist/Manager/BoardOfDirectors đọc hai API Admin trả 403. Response thành công có `Cache-Control: no-store`.
+2. Gọi Identity `/users/me`, Document tạo/đọc, Sign certificate và OCR `/health`; mỗi bộ lọc service trả đúng nguồn; startup Gateway tạo nguồn thứ năm. POST `/api/ocr/process-upload` thiếu file trả 422, audit đúng ProcessOCR/Warning và route không bị che nhầm. Đây là HTTP qua Gateway và startup, không kiểm thử bộ thu gom stdout nội bộ.
+3. Lọc service/level/actor/trace/from/to; phân trang audit page size 5, trang 2 đủ 5 với tổng >20. Trace tạo document nằm trong khoảng UTC và chỉ có một audit. Service/level/actor sai, from>to, loại thông báo sai trả 400.
+4. Gửi sentinel riêng qua body comment/reason, URL segment/query; segment ngoài allowlist thành `/api/[unmapped]`. SQL kiểm tra event của đúng actor/document fixture không chứa sentinel, password test hoặc JWT test. Không lưu request body/query/header; full name actor vẫn được hiển thị theo danh bạ.
+5. xUnit Gateway gồm 4 trường hợp che segment nhạy cảm, 2 route không log vòng lặp, giữ resource GUID/service và 14 trường hợp nhận diện action. Tổng 21 test Gateway Pass.
+6. Playwright đăng nhập Admin, mở hai trang thật, lọc DocumentService/trace, còn đúng một card; audit lọc actor và sang trang 2. Giả lập riêng response 503: UI có cảnh báo. Desktop 1366×768, mobile 450×500 không tràn ngang; ảnh được xem lại, không lỗi JavaScript.
+
+### Lệnh chạy chung cho 050–052
+
+```powershell
+dotnet build HAU_DigitalSign_OCR.slnx --no-restore --verbosity quiet
+$env:DOTNET_ROOT = Join-Path $env:TEMP 'hau-dotnet9'
+$env:DOTNET_ROOT_X64 = $env:DOTNET_ROOT
+$env:VSTEST_DOTNET_PATH = Join-Path $env:DOTNET_ROOT 'dotnet.exe'
+dotnet test HAU_DigitalSign_OCR.slnx --no-build --verbosity quiet
+docker compose build api-gateway document-service frontend
+docker compose up -d --no-deps api-gateway document-service frontend
+$env:HAU_PLAYWRIGHT_MODULE = Join-Path $env:TEMP 'hau-document-tools/node_modules/playwright'
+node tests/monitoring-notifications.spec.cjs
+```
+
+Build 0 warning/0 error; xUnit 86/86 (Gateway 21, Identity 35, Document 29, Sign 1 test rỗng). Host runtime 9.0.20 đã cài trong TEMP theo `TC-DOC-EDIT-045`; máy có runtime .NET 9 sẵn không cần ba biến runtime. Playwright path trỏ bản cài ngoài repo; nếu cài thông thường có thể bỏ biến module. Node 20+, Chromium, Docker CLI và stack localhost bắt buộc. Có thể override Admin qua `HAU_TEST_USERNAME`/`HAU_TEST_PASSWORD`; không in secret.
+
+### Dọn dẹp chung
+
+Script tạo 3 document, 5 user, 2 chứng thư Manager/Admin và 1 object PDF trắng. Xóa đúng document/process ID fixture trong PostgreSQL (Published không xóa qua workflow API), notices cascade; thu hồi chứng thư, logout các phiên, xóa user và đúng object GUID PDF trong MinIO. Xóa event chỉ theo actor/document fixture và trace hex đã quan sát; không xóa log khác. Cleanup đã hoàn tất. Không gửi email. SQL/MinIO lấy credential container trong bộ nhớ, không ghi credential vào output/tài liệu. Script xử lý HTTP 429 theo Retry-After và chờ health sau recreate Gateway.
+
+## TC-AUDIT-051 — Audit công văn, callback OCR, upload và trace/persistence
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | Gateway, DocumentService, Identity/Sign, PostgreSQL trigger |
+| Mục tiêu | Audit đúng action/actor/resource, không lặp và giữ sau recreate Gateway |
+| Mong đợi | HTTP và process cùng trace; callback trực tiếp có audit; recreate không mất/nhân bản lịch sử |
+| Kết quả thực tế | Pass |
+
+1. Tạo Draft bởi Specialist: header `X-Trace-Id` khớp audit trigger duy nhất; action `Create`, actor Specialist, resource document ID. Audit không bị ghi hai lần bởi Gateway và trigger.
+2. PATCH OCR thẳng port 5049 bằng internal service token đọc từ container trong bộ nhớ: có audit `UpdateOCR` và thông báo người tạo. Đây là callback mô phỏng, không xác nhận chất lượng PaddleOCR trên scan thật.
+3. Assign, Submit, DeptSign, SubmitDirector, DirectorSign, Publish và Reject bằng tài khoản theo vai trò tạo audit process thật. Đây là chuyển metadata workflow, không thực hiện ký PDF trong test này. Certificate issue do Admin: audit `IssueCertificate` có actor Admin, không nhầm người được cấp là actor.
+4. Submit lại document Published: 422; audit `Submit`/Warning/HTTP 422 theo đúng trace, không gán tên tạo document chung.
+5. Upload PDF trắng ở document thứ ba: có đúng một `UploadDocument` audit theo trace/resource dù upload không tạo process. Chờ callback OCR của PDF trước cleanup; không đánh giá chất lượng OCR bằng PDF trắng.
+6. `docker compose up -d --no-deps --force-recreate api-gateway`, chờ `/health`: audit ID theo trace giữ nguyên, notifications ID/count/read state giữ nguyên, alert chứng thư không bị nhân bản. Initializer không backfill process cũ.
+
+Schema mới được Gateway quản lý bằng `Monitoring/schema.sql` embedded resource, transaction DDL; không EF migration mới. Trigger process/audit/notification cùng transaction; metadata Document vẫn lưu riêng. Chạy/build/cleanup cùng `TC-GW-LOGS-050`.
+
+## TC-NOTIFICATIONS-052 — Thông báo riêng, workflow/chứng thư, đọc/chưa đọc và polling
+
+| Mục | Nội dung |
+|---|---|
+| Ngày chạy | 05/10/2026 |
+| Phạm vi | API Gateway, PostgreSQL trigger, SignService, Blazor/Playwright |
+| Mục tiêu | Đúng người nhận, chống sửa dữ liệu người khác, read state bền vững và tự cập nhật UI |
+| Mong đợi | Thông báo riêng theo JWT, idempotent read; polling hiển thị mới; lỗi không giả thành thành công |
+| Kết quả thực tế | Pass, desktop 1366×768/mobile 450×500 |
+
+1. Assign cho Clerk: chỉ tài khoản đó có Assignment; callback OCR cho Specialist: OcrCompleted. Submit gửi ReviewRequested tới Manager hoạt động, SubmitDirector tới Ban Giám hiệu hoạt động. Signed hai bước tới người tạo; Reject tới người tạo; Publish tới người tạo và người đã được giao.
+2. Lặp Assign 21 lần để vượt page size: Clerk có 23 thông báo, trang 1 đủ 20, trang 2 đủ 3, không trùng ID. Specialist thêm `userId` query của Clerk vẫn chỉ đọc dữ liệu của Specialist.
+3. Specialist PATCH read notification của Clerk trả 404. Clerk đọc một thông báo hai lần: ReadAt không đổi. Lọc unread giảm đúng một; read-all chỉ giảm unread Clerk về 0, Specialist giữ nguyên.
+4. Cấp chứng thư Manager hiệu lực 1 ngày: GET notifications tạo một CertificateExpiring, link `/certificates/me`. Đọc lại/poll không lặp và giữ ReadAt đã đọc. Tạo Admin fixture riêng, cấp chứng thư 1 ngày: alert riêng dẫn tới `/admin/certificates` vì Admin không có quyền trang chứng thư cá nhân. Không thay chứng thư của Admin seed. Kiểm tra này chạy khi đọc API, không xác nhận có worker cảnh báo nền.
+5. Recreate Gateway giữ nguyên số bản ghi/ID/read state. Chứng thư còn hiệu lực ngoài cửa sổ 30 ngày không thuộc rule cảnh báo; expiry không phải trigger workflow.
+6. UI Clerk có loại thông báo, checkbox chỉ chưa đọc, link đúng `/documents/{fixtureId}`. Giả lập PATCH read 503: card vẫn chưa đọc và hiện lỗi; bỏ giả lập, đọc thành công thì card biến mất khỏi bộ lọc unread. GET 503 có cảnh báo, làm mới phục hồi.
+7. Tạo Assign mới khi trang đang mở: card mới tự xuất hiện trong chu kỳ polling 30 giây, timeout kiểm thử 40 giây; không bấm refresh.
+8. Trì hoãn một request refresh 800ms và đổi loại sang Published trong khi đang tải: kết quả cuối đúng bộ lọc mới (0 unread Published), không hiển thị response cũ. Đổi lại Assignment thấy thông báo mới; read-all cập nhật UI, trở Dashboard và đóng context không lỗi JavaScript.
+9. Ảnh desktop/mobile và card sau cuộn đã xem lại; không tràn ngang. Lỗi được giả lập trên context Playwright riêng, không dừng service thật. Timer/request bị hủy khi rời trang; chưa dùng SignalR/push.
+
+Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tests/artifacts` được Git bỏ qua; credentials và payload secret không xuất ra báo cáo.

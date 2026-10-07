@@ -2,6 +2,19 @@
     align-items: center;
 }
 
+.notification-controls { margin-bottom: 18px; }
+.notification-toolbar { display: grid; grid-template-columns: minmax(0,1fr) 1fr; gap: 18px; align-items: center; }
+.notification-unread-filter { display: flex; align-items: center; gap: 8px; }
+.notification-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.notification-summary { color: var(--color-text-secondary); margin-bottom: 12px; }
+.notification-entry { margin-bottom: 12px; }
+.notification-new { border-left: 4px solid #304e8a; }
+.notification-entry-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.notification-entry p { margin-top: 10px; overflow-wrap: anywhere; }
+.notification-time { color: var(--color-text-secondary); font-size: 12px; }
+.notification-pagination { display: flex; justify-content: space-between; gap: 12px; margin-top: 18px; }
+@media(max-width:960px) { .notification-toolbar { grid-template-columns: 1fr; } }
+
 .notification-empty {
     display: flex;
     align-items: center;

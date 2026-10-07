@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "1Ok+LNrCq4g=",
+  "dgSpecHash": "lx94SRL2+Kg=",
   "success": true,
-  "projectFilePath": "F:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Khoa\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.20\\microsoft.netcore.app.ref.9.0.20.nupkg.sha512",
+    "C:\\Users\\Khoa\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\9.0.20\\microsoft.windowsdesktop.app.ref.9.0.20.nupkg.sha512",
+    "C:\\Users\\Khoa\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\9.0.20\\microsoft.aspnetcore.app.ref.9.0.20.nupkg.sha512"
+  ],
   "logs": []
 }

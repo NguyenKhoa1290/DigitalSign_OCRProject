@@ -10,6 +10,7 @@
 <header class="dashboard-header">
     <h1 class="page-title">Dashboard</h1>
     <p class="page-subtitle">Xin chào @_userName! Chào mừng bạn đến với hệ thống quản lý công văn HAU.</p>
+    <button class="btn btn-outline btn-sm" @onclick="LoadStatistics" disabled="@_isLoading">Làm mới số liệu</button>
 </header>
 
 @if (_isLoading)
@@ -18,6 +19,10 @@
 }
 else
 {
+    @if (_stats?.HasUnavailableData == true)
+    {
+        <div class="alert alert-warning" role="alert">Một số số liệu chưa tải được. Hãy thử làm mới số liệu.</div>
+    }
     @if (_role == "Admin")
     {
         <div class="stat-grid">
@@ -29,7 +34,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Tổng người dùng</div>
-                    <div class="stat-value">@_stats?.TotalUsers</div>
+                    <div class="stat-value">@FormatCount(_stats?.TotalUsers)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -40,7 +45,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Tổng văn bản</div>
-                    <div class="stat-value">@_stats?.TotalDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.TotalDocuments)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -51,7 +56,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Chờ xử lý</div>
-                    <div class="stat-value">@_stats?.PendingDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.PendingDocuments)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -62,7 +67,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Chứng thư số hoạt động</div>
-                    <div class="stat-value">@_stats?.ActiveCertificates</div>
+                    <div class="stat-value">@FormatCount(_stats?.ActiveCertificates)</div>
                 </div>
             </div>
         </div>
@@ -78,7 +83,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Công văn hôm nay</div>
-                    <div class="stat-value">@_stats?.TodayDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.TodayDocuments)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -89,7 +94,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Chờ xử lý OCR</div>
-                    <div class="stat-value">@_stats?.PendingDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.PendingOcrDocuments)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -100,7 +105,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Đã ban hành</div>
-                    <div class="stat-value">@_stats?.PublishedDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.PublishedDocuments)</div>
                 </div>
             </div>
         </div>
@@ -116,7 +121,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Dự thảo của tôi</div>
-                    <div class="stat-value">@_stats?.TodayDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.MyDraftDocuments)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -127,7 +132,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Chờ phê duyệt</div>
-                    <div class="stat-value">@_stats?.PendingDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.MyPendingDocuments)</div>
                 </div>
             </div>
         </div>
@@ -143,7 +148,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Chờ ký nháy</div>
-                    <div class="stat-value">@_stats?.PendingDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.PendingDeptDocuments)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -154,7 +159,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Đã phân công</div>
-                    <div class="stat-value">@_stats?.TotalDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.AssignedDocuments)</div>
                 </div>
             </div>
         </div>
@@ -170,7 +175,7 @@ else
                 </div>
                 <div class="stat-content">
                     <div class="stat-label">Chờ ký số pháp nhân</div>
-                    <div class="stat-value">@_stats?.PendingDocuments</div>
+                    <div class="stat-value">@FormatCount(_stats?.PendingDirectorDocuments)</div>
                 </div>
             </div>
             <div class="stat-card">
@@ -180,8 +185,8 @@ else
                     </svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-label">Đã ký ban hành</div>
-                    <div class="stat-value">@_stats?.PublishedDocuments</div>
+                    <div class="stat-label">Đã ký số pháp nhân</div>
+                    <div class="stat-value">@FormatCount(_stats?.DirectorSignedDocuments)</div>
                 </div>
             </div>
         </div>
@@ -234,7 +239,6 @@ else
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     Trung tâm thông báo
-                    <span class="quick-action-status">Sắp triển khai</span>
                 </a>
             </div>
         </div>
@@ -253,9 +257,16 @@ else
         _userName = await AuthService.GetUserNameAsync();
         _role = await AuthService.GetRoleAsync();
 
-        try { _stats = await AdminService.GetStatsAsync() ?? new DashboardStats(); }
-        catch { _stats = new DashboardStats { TotalUsers = 0, TotalDocuments = 0, PendingDocuments = 0, PublishedDocuments = 0, TodayDocuments = 0 }; }
-
-        _isLoading = false;
+        await LoadStatistics();
     }
+
+    private async Task LoadStatistics()
+    {
+        _isLoading = true;
+        try { _stats = await AdminService.GetStatsAsync(_role == "Admin"); }
+        catch { _stats = new DashboardStats { HasUnavailableData = true }; }
+        finally { _isLoading = false; }
+    }
+
+    private static string FormatCount(int? count) => count?.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ?? "—";
 }

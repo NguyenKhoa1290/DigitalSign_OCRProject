@@ -130,6 +130,7 @@ services:
       JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
       ServiceAuth__OcrServiceToken: ${OCR_SERVICE_TOKEN:-hau-dev-ocr-service-token}
       ServiceAuth__OcrServiceUserId: 00000000-0000-0000-0000-000000000051
+      IdentityService__BaseUrl: http://identity-service:8080/
       MinioSettings__Endpoint: minio:9000
       MinioSettings__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
       MinioSettings__SecretKey: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -228,6 +229,7 @@ services:
       JwtSettings__Issuer: ${JWT_ISSUER:-IdentityService}
       JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
       AuthValidation__ValidateTokenUrl: "http://identity-service:8080/api/auth/validate-token"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-DigitalSign_OCR};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-1111};SSL Mode=Disable"
       AuthValidation__TimeoutSeconds: 3
       AuthValidation__FailOpenOnValidationError: "true"
       ReverseProxy__Clusters__identity-cluster__Destinations__identity-1__Address: http://identity-service:8080/

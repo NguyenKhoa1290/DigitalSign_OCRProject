@@ -67,9 +67,27 @@ public class AdminService
     public async Task<bool> RevokeCertificateAsync(Guid userId)
         => await _api.DeleteWithResultAsync($"api/signatures/certificates/{userId}");
 
-    // ── Stats ── (tổng hợp từ Document Service, tính local từ danh sách docs)
-    // Backend không có /stats endpoint — trả về null, UI sẽ ẩn hoặc hiện 0
-    public Task<DashboardStats?> GetStatsAsync() => Task.FromResult<DashboardStats?>(null);
+    // Independent sources: one unavailable service must not erase valid counts from another.
+    public async Task<DashboardStats> GetStatsAsync(bool includeAdministration = false)
+    {
+        var documents = ReadStatisticsAsync("api/documents/stats");
+        var users = includeAdministration ? ReadStatisticsAsync("api/users/stats") : Task.FromResult<DashboardStats?>(null);
+        var certificates = includeAdministration ? ReadStatisticsAsync("api/signatures/certificates/stats") : Task.FromResult<DashboardStats?>(null);
+        await Task.WhenAll(documents, users, certificates);
+        var stats = await documents ?? new DashboardStats();
+        stats.TotalUsers = (await users)?.TotalUsers;
+        stats.ActiveCertificates = (await certificates)?.ActiveCertificates;
+        stats.HasUnavailableData = stats.TotalDocuments == null
+            || (includeAdministration && (stats.TotalUsers == null || stats.ActiveCertificates == null));
+        return stats;
+    }
+
+    private async Task<DashboardStats?> ReadStatisticsAsync(string route)
+    {
+        try { return await _api.GetAsync<DashboardStats>(route); }
+        catch (HttpRequestException) { return null; }
+        catch (OperationCanceledException) { return null; }
+    }
 
     // ── Roles ── (IdentityService: GET api/roles)
     public async Task<List<RoleDto>?> GetRolesAsync() => await _api.GetAsync<List<RoleDto>>("api/roles");
@@ -77,10 +95,18 @@ public class AdminService
 
 public class DashboardStats
 {
-    public int TotalUsers { get; set; }
-    public int TotalDocuments { get; set; }
-    public int TodayDocuments { get; set; }
-    public int PendingDocuments { get; set; }
-    public int PublishedDocuments { get; set; }
-    public int ActiveCertificates { get; set; }
+    public int? TotalUsers { get; set; }
+    public int? TotalDocuments { get; set; }
+    public int? TodayDocuments { get; set; }
+    public int? PendingDocuments { get; set; }
+    public int? PublishedDocuments { get; set; }
+    public int? ActiveCertificates { get; set; }
+    public int? PendingOcrDocuments { get; set; }
+    public int? MyDraftDocuments { get; set; }
+    public int? MyPendingDocuments { get; set; }
+    public int? PendingDeptDocuments { get; set; }
+    public int? PendingDirectorDocuments { get; set; }
+    public int? DirectorSignedDocuments { get; set; }
+    public int? AssignedDocuments { get; set; }
+    public bool HasUnavailableData { get; set; }
 }

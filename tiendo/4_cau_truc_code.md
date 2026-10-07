@@ -1,6 +1,6 @@
 # Cấu Trúc Code Theo Repository Hiện Tại
 
-> Bản đồ nhanh các project, class và luồng chính. Tài liệu này ưu tiên đúng với code hiện có hơn là lịch sử phát triển.
+> Bản đồ project, class và luồng chính, đối chiếu với source ngày 05/10/2026. Kết quả kiểm thử lịch sử nằm trong `7_test_cases.md`.
 
 ## 1. Solution
 
@@ -29,6 +29,7 @@ SignService/src/SignService.Infrastructure/SignService.Infrastructure.csproj
 Test project:
 
 ```text
+ApiGateway/tests/ApiGateway.Tests
 IdentityService/tests/IdentityService.Tests
 DocumentService/tests/DocumentService.Tests
 SignService/tests/SignService.Tests
@@ -51,6 +52,7 @@ File chính:
 
 - `ApiGateway/Program.cs`
 - `ApiGateway/appsettings.json`
+- `ApiGateway/Monitoring/Models.cs`, `EventStore.cs`, `RequestJournal.cs`, `MonitoringControllers.cs`, `schema.sql` (embedded resource).
 
 Nhiệm vụ:
 
@@ -59,6 +61,10 @@ Nhiệm vụ:
 - Cấu hình YARP reverse proxy từ `ReverseProxy` section.
 - Cấu hình rate limit bằng `AspNetCoreRateLimit`.
 - Map `/health`, `/swagger`, `/`.
+- Map controller Admin log/audit và thông báo cá nhân trước reverse proxy; native Npgsql lưu `MonitoringEvents`, `UserNotifications`. Initializer SQL transaction chạy trước khi Gateway nhận request, retry PostgreSQL tối đa 10 lần; không backfill audit cũ.
+- `RequestJournal`: log HTTP và audit auth/quản trị/ký/upload/xóa; chỉ lưu route an toàn, status, actor/resource GUID, trace, thời gian xử lý. Không lưu body/query/header; đọc username login trong bộ nhớ để xác định actor khi đăng nhập thành công.
+- Trigger `hau_document_activity_trigger`: insert process => audit + thông báo trong cùng transaction. `DocumentProcessRepository.CreateAsync` dùng `set_config('hau.trace_id', trace, true)` trong transaction, liên kết W3C trace với Gateway; callback trực tiếp DocumentService vẫn được ghi nhận.
+- `NotificationsController` lấy user từ JWT, kiểm tra chứng thư còn hiệu lực/sắp hết hạn <=30 ngày qua SignService khi đọc danh sách; chống trùng `(UserId, EventKey)`, không worker nền.
 - Route cuối cùng bằng `app.MapReverseProxy()`.
 
 Auth validation:
@@ -204,6 +210,8 @@ Controllers:
 
 - `AuthController`: `/api/auth`
 - `UsersController`: `/api/users`
+- `UsersController.GetAssignees`: `/api/users/assignees`, danh bạ tối thiểu để phân công (Admin/Clerk/Manager/BoardOfDirectors).
+- `UsersController.GetStatistics`: `/api/users/stats`, tổng người dùng toàn DB (Admin).
 - `RolesController`: `/api/roles`
 - `DepartmentsController`: `/api/departments`
 
@@ -216,7 +224,7 @@ Startup:
 - `Program.cs` gọi `AddInfrastructure()`.
 - Auth pipeline: `UseAuthentication()`, `UseAuthorization()`.
 - Database init: `EnsureCreatedAsync()` nếu không phải môi trường `Testing`.
-- Sau `EnsureCreatedAsync()`, `AuthStoreInitializer.EnsureAuthTablesAsync()` tạo bổ sung `RefreshTokens` và `RevokedAccessTokens` cho DB PostgreSQL đã tồn tại từ trước.
+- Sau `EnsureCreatedAsync()`, `AuthStoreInitializer.EnsureAuthTablesAsync()` tạo bổ sung `RefreshTokens`, `RevokedAccessTokens`, `EmailVerificationTokens` và cột `AppUsers.EmailVerifiedAt` cho DB PostgreSQL đã tồn tại. Initializer cũng backfill `EmailVerifiedAt = CreatedAt` cho user có email và `MustChangePassword=false` nhưng chưa có thời điểm xác minh.
 - JWT bearer event `OnTokenValidated` kiểm tra `RevokedAccessTokens` để chặn access token đã logout trong phạm vi IdentityService.
 - ApiGateway cũng gọi `/api/auth/validate-token`, nên blacklist có hiệu lực với route Document/Sign/OCR đi qua Gateway.
 
@@ -235,6 +243,9 @@ Entities:
 DTO:
 
 - `CreateDocumentDto`
+- `UpdateDocumentDto`
+- `DocumentFileDto`
+- `DocumentStatisticsDto`
 - `DocumentDto`
 - `DocumentProcessDto`
 - `DocumentQueryParams`
@@ -296,6 +307,8 @@ DirectorSignAsync: PendingDirectorSign -> DirectorSigned
 PublishAsync: DirectorSigned -> Published
 RejectAsync: pending states -> Rejected
 AssignAsync: ghi DocumentProcess, không đổi status
+UpdateDocumentAsync: sửa metadata Draft/Rejected, giữ file/OCR/status, ghi Update
+GetFileAsync: lấy Documents.MinioPath -> IFileStorageService.DownloadFileAsync
 ```
 
 `DocumentStatus.DeptSigned` là trạng thái dừng sau khi lãnh đạo phòng ký nháy. Từ trạng thái này có thể reject hoặc gọi `SubmitToDirectorAsync` để chuyển sang `PendingDirectorSign`.
@@ -305,6 +318,7 @@ AssignAsync: ghi DocumentProcess, không đổi status
 Controller:
 
 - `DocumentsController`: `/api/documents`
+- `DocumentsController.GetStatistics`: `/api/documents/stats`, JWT; lấy actor từ JWT, gọi service tính ranh giới ngày UTC+7 rồi repository aggregate SQL.
 
 Startup:
 
@@ -312,6 +326,9 @@ Startup:
 - Auth bằng JWT Bearer.
 - Tự chạy `db.Database.MigrateAsync()`.
 - Có global exception handler map lỗi domain sang HTTP status.
+- `PUT /api/documents/{id}`: Admin/Clerk/Specialist; metadata sai trả 400, trạng thái không cho sửa trả 422.
+- `GET /api/documents/{id}/file?download=false`: JWT, PDF/no-store/range; `download=true` trả attachment.
+- `POST /api/documents/{id}/assign`: Admin/Clerk/Manager/BoardOfDirectors, cần `ToUserId` hợp lệ và tài khoản hoạt động. Named HttpClient `identity-directory` dùng `IdentityService:BaseUrl`, timeout 5 giây; lỗi kết nối/phản hồi danh bạ trả 503.
 
 ## 5. SignService
 
@@ -471,9 +488,15 @@ File chính:
 - `Services/ApiService.cs`: GET/POST/PUT/PATCH/DELETE + SmartDeserialize.
 - `Services/AuthService.cs`: login/logout/change/forgot/reset password.
 - `Services/AdminService.cs`: user, department, role, certificate.
+  - `GetStatsAsync(includeAdministration)` đọc `api/documents/stats`; Admin đọc thêm `api/users/stats` và `api/signatures/certificates/stats` song song. Các trường số lượng nullable; lỗi nguồn/thiếu trường giữ `null`, `HasUnavailableData` bật cảnh báo. Dashboard hiển thị `—`, không tự điền 0 khi API lỗi.
 - `Services/DocumentService.cs`: document workflow.
   - `RunOcrAsync` gọi `api/ocr/process` qua Gateway, lấy object name từ `DocumentDto.MinioPath`.
+  - Tạo/sửa map `DocumentNumber`/`DocumentTypeId` sang `DocNumber`/`DocTypeId`, chuyển ngày sang `DateOnly`; upload dùng `PostFormAsync<T>` để unwrap response. Phân công gửi `toUserId` và báo thành công theo response thật.
+  - `GetFileAsync` dùng `ApiService.GetBytesAsync` có JWT; `wwwroot/js/document-files.js` tạo/thu hồi blob URL và tải file. `GetAssigneesAsync` đọc danh bạ tối thiểu để chọn người nhận.
 - `Services/SignatureService.cs`: signature API, gửi `SignRequestDto` đúng backend và map thao tác UI sang endpoint ký.
+- `Models/MonitoringModels.cs`, `Services/MonitoringService.cs`: model/API log, audit và thông báo; đổi ngày lọc Việt Nam sang UTC, phân trang, cập nhật read state.
+- `Shared/EventJournal.razor` + CSS: dùng chung hai trang Admin, lọc service/mức độ/ngày/trace/actor, cảnh báo nguồn và phân trang.
+- `Pages/Notifications.razor`: polling 30 giây, hủy request/timer khi rời trang; nếu đổi bộ lọc trong lúc tải, tải tiếp bộ lọc mới và bỏ response cũ. Đánh dấu đọc theo response API thật.
 - `Shared/CustomSelect.razor` + `.razor.css`: dropdown dùng chung thay cho `<select>` native; nhận danh sách `SelectOption`, hỗ trợ binding, callback sau khi đổi, ARIA và giới hạn chiều cao danh sách trong modal.
 - `Models/SelectOption.cs`: model giá trị/nhãn cho dropdown dùng chung.
 - `wwwroot/index.html` + `nginx.conf`: gắn phiên bản cho stylesheet và tắt cache HTML/CSS để CSS isolation luôn đồng bộ với bản WASM vừa triển khai.
@@ -489,13 +512,12 @@ Pages:
 - Mỗi page dùng một cặp file `TênPage.razor` + `TênPage.razor.css` để Blazor CSS isolation tự giới hạn selector trong đúng page.
 - Nhóm xác thực: `Login`, `FirstLogin`, `ForgotPassword`, `ResetPassword`.
 - Dashboard: `Dashboard`.
-- Theo dõi hệ thống: `Admin/SystemLogs`, `Admin/Activity` (role Admin; hiện là giao diện nền chờ API).
-- Thông báo: `Notifications` (mọi tài khoản đã đăng nhập; hiện là giao diện nền chờ backend notification).
+- Theo dõi hệ thống: `Admin/SystemLogs`, `Admin/Activity` (role Admin; dùng EventJournal và API thật).
+- Thông báo: `Notifications` (mọi tài khoản đã đăng nhập; dữ liệu riêng, read state, link chi tiết, polling 30 giây).
 - Nhóm quản trị: `Admin/Users`, `Admin/Departments`, `Admin/Certificates`.
 - `Admin/Certificates` dùng ba `CustomSelect` phụ thuộc theo cây `Trường` → `Ban/Khoa/Phòng trực thuộc` → `Đơn vị cấp dưới`; tìm người dùng theo ID của cấp cụ thể nhất đã chọn.
 - Nhóm ký số: `Signatures/Index`, `Signatures/MyCertificate`; mỗi page có file CSS isolation riêng.
 - Nhóm văn bản: `Documents/Index`, `Documents/Create`, `Documents/Detail`, `Documents/OcrResult`.
-- Nhóm ký số: `Signatures/Index`.
 
 Quy ước CSS frontend:
 
@@ -517,3 +539,6 @@ Quy ước CSS frontend:
 - Luồng OCR tự động dùng JWT nếu Kafka/request có token; nếu token rỗng thì dùng `SERVICE_TOKEN` để PATCH về DocumentService.
 - Luồng ký số backend đã thống nhất MinIO object path bằng cách SignService đọc `Documents.MinioPath`.
 - Frontend ký số hiện lấy `SignerId`/`SignerName` từ JWT và gửi `DocId`, `SignerId`, `SignerName`, `Reason` đúng `SignRequestDto` backend.
+- Trang chữ ký thực hiện ký PDF qua SignService; trang chi tiết công văn cập nhật workflow qua DocumentService. Endpoint workflow không tự thực hiện hoặc kiểm tra chữ ký PDF.
+- Hiện có 17 page trong `Frontend/Pages`, đủ 17 file CSS isolation cùng tên.
+- DocumentService.Tests có 29 test nghiệp vụ trong `DocumentEditingTests`, `AssignmentValidationTests`, `DocumentStatisticsTests`. Script `tests/document-edit-file-assignment.spec.cjs` và `tests/dashboard-statistics.spec.cjs` kiểm tra Docker/API/UI bằng Node và Playwright. SignService.Tests vẫn chỉ có test rỗng `UnitTest1.Test1`.

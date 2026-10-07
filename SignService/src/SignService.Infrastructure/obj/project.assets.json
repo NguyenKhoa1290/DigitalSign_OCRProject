@@ -5417,32 +5417,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\NguyenKhoa\\.nuget\\packages\\": {},
-    "D:\\Software\\VisualStudio\\VisualStudioSharedcomponents_tools_SDKs\\NuGetPackages": {}
+    "C:\\Users\\Khoa\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "F:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\SignService.Infrastructure.csproj",
+      "projectUniqueName": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\SignService.Infrastructure.csproj",
       "projectName": "SignService.Infrastructure",
-      "projectPath": "F:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\SignService.Infrastructure.csproj",
-      "packagesPath": "C:\\Users\\NguyenKhoa\\.nuget\\packages\\",
-      "outputPath": "F:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\obj\\",
+      "projectPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\SignService.Infrastructure.csproj",
+      "packagesPath": "C:\\Users\\Khoa\\.nuget\\packages\\",
+      "outputPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "D:\\Software\\VisualStudio\\VisualStudioSharedcomponents_tools_SDKs\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\NguyenKhoa\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\Khoa\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -5450,8 +5442,8 @@
           "framework": "net9.0",
           "targetAlias": "net9.0",
           "projectReferences": {
-            "F:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj": {
-              "projectPath": "F:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj"
+            "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj": {
+              "projectPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj"
             }
           }
         }
@@ -5466,7 +5458,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net9.0": {
@@ -5513,12 +5505,26 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[9.0.20, 9.0.20]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[9.0.20, 9.0.20]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[9.0.20, 9.0.20]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

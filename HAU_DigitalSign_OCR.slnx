@@ -21,4 +21,5 @@
     <Project Path="SignService/tests/SignService.Tests/SignService.Tests.csproj" />
   </Folder>
   <Project Path="ApiGateway/ApiGateway.csproj" />
+  <Project Path="ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj" />
 </Solution>

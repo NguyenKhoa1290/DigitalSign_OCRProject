@@ -1,32 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj": {}
+    "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj": {}
   },
   "projects": {
-    "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj": {
+    "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj",
+        "projectUniqueName": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj",
         "projectName": "DocumentService.Core",
-        "projectPath": "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj",
-        "packagesPath": "C:\\Users\\NguyenKhoa\\.nuget\\packages\\",
-        "outputPath": "F:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\obj\\",
+        "projectPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj",
+        "packagesPath": "C:\\Users\\Khoa\\.nuget\\packages\\",
+        "outputPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "D:\\Software\\VisualStudio\\VisualStudioSharedcomponents_tools_SDKs\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\NguyenKhoa\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Khoa\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -46,7 +39,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.300"
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net9.0": {
@@ -63,12 +56,26 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

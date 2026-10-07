@@ -1,5 +1,7 @@
 # Quy Trình Làm Việc Chuẩn
 
+> Đối với thay đổi chỉ gồm tài liệu, không thay code/cấu hình runtime: kiểm tra liên kết, đối chiếu source và tính nhất quán; ghi Build/Docker deployment là không áp dụng. Có thể chạy `docker compose config --quiet` để kiểm tra cú pháp hướng dẫn mà không khởi động hoặc triển khai lại container.
+
 Từ các bước phát triển tiếp theo, quy trình làm việc của dự án sẽ đi theo thứ tự sau:
 
 ```text
@@ -75,6 +77,8 @@ Invoke-WebRequest http://localhost:5051/api/ocr/health -UseBasicParsing
 
 ## 5. Ghi lại test case đã chạy
 
+Kiểm thử log/audit/thông báo local bằng `tests/monitoring-notifications.spec.cjs` (Node 20+, Playwright/Chromium, Docker CLI). Script dùng JWT thật, tạo user/document/chứng thư/PDF tạm, kiểm tra PostgreSQL và recreate riêng Gateway để xác nhận persistence. Script tự dọn đúng ID fixture, object PDF và trace đã quan sát, không xóa log/dữ liệu khác; không gửi email. Chỉ chạy trên stack localhost dành cho kiểm thử. Chi tiết tại `TC-GW-LOGS-050`–`TC-NOTIFICATIONS-052`.
+
 Sau khi test, ghi lại:
 
 | Trường | Nội dung |
@@ -89,6 +93,10 @@ Sau khi test, ghi lại:
 | Ghi chú | Log, lỗi, hướng xử lý |
 
 Nếu test liên quan một tính năng lớn, thêm vào file nhật ký hoặc tạo file test riêng trong `tiendo/`.
+
+Kết quả test phải giữ ngày chạy và phạm vi xác nhận. Khi đồng bộ tài liệu từ bằng chứng cũ, ghi rõ nguồn và không coi đó là lần chạy test mới; thông số lịch sử không tự chuyển thành thông số hiện tại.
+
+Theo yêu cầu người dùng ngày 05/10/2026, kiểm thử thực tế/nghiệm thu do người dùng tự thực hiện. Agent giữ kết quả build/test tự động, local và mô phỏng theo đúng phạm vi; không dùng chúng để xác nhận nghiệm thu thực tế. Các mục nghiệm thu ghi **Chờ người dùng kiểm thử và xác nhận** cho đến khi có kết quả do người dùng cung cấp. Không tự thử email/dữ liệu thực tế hoặc tự đánh dấu Pass; chỉ hỗ trợ khi người dùng yêu cầu. Khi nhận kết quả, ghi ngày, dữ liệu/phạm vi, kết quả và người xác nhận, không ghi secret.
 
 ## 6. Báo cáo kết quả
 

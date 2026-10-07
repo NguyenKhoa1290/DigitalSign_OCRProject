@@ -72,6 +72,9 @@
     border-top-color: white;
 }
 
+.assignee-search-row { display: flex; gap: 8px; }
+.assignee-search-row .form-control { min-width: 0; }
+
 @media (max-width: 1100px) {
     .document-detail-layout {
         grid-template-columns: 1fr;

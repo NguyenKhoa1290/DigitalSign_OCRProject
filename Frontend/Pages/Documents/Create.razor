@@ -145,17 +145,16 @@
 
     private async Task HandleCreate()
     {
-        if (string.IsNullOrWhiteSpace(_model.Title))
+        if (string.IsNullOrWhiteSpace(_model.Title) || !Guid.TryParse(_selectedTypeId, out var selectedType))
         {
-            _errorMessage = "Vui lòng nhập tiêu đề công văn.";
+            _errorMessage = "Vui lòng nhập tiêu đề và chọn loại văn bản.";
             return;
         }
 
         _isSubmitting = true;
         _errorMessage = null;
 
-        if (Guid.TryParse(_selectedTypeId, out var typeId))
-            _model.DocumentTypeId = typeId;
+        _model.DocumentTypeId = selectedType;
         _model.IssuedDate = _issuedDate;
 
         try
@@ -172,7 +171,8 @@
             if (_selectedFile != null)
             {
                 using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 52428800);
-                await DocumentService.UploadFileAsync(created.Id, stream, _selectedFile.Name);
+                if (await DocumentService.UploadFileAsync(created.Id, stream, _selectedFile.Name) is null)
+                    Toast.ShowError("Công văn đã tạo nhưng chưa tải được PDF. Hãy tải lại tại trang chi tiết.");
             }
 
             Toast.ShowSuccess("Tạo công văn thành công!");

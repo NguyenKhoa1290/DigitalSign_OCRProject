@@ -1,6 +1,6 @@
 # Cơ Sở Hạ Tầng & Cơ Sở Dữ Liệu
 
-> Cập nhật theo cấu hình và code hiện tại.
+> Đối chiếu cấu hình và source ngày 05/10/2026. Công việc số 44–46 đã triển khai Docker và kiểm thử runtime; các phần còn lại giữ kết quả theo ngày chạy lịch sử.
 
 ## Tổng quan hạ tầng
 
@@ -58,13 +58,25 @@ Khi chạy bằng Docker Compose, copy `.env.example` ở root thành `.env` và
 | IdentityService | `IdentityService.Infrastructure.Data.AppDbContext` | `EnsureCreatedAsync()` khi startup |
 | DocumentService | `DocumentService.Infrastructure.Data.AppDbContext` | EF Core migrations + `MigrateAsync()` khi startup |
 | SignService | `SignService.Infrastructure.Data.AppDbContext` | EF Core migrations + `MigrateAsync()` khi startup |
+| ApiGateway | Native Npgsql, không DbContext | SQL initializer `Monitoring/schema.sql` trong transaction |
 
 Lưu ý quan trọng:
 
 - `EnsureCreatedAsync()` không cập nhật schema khi entity thay đổi sau lần tạo DB đầu tiên.
 - Nếu IdentityService đã tạo DB rồi mà thêm cột/bảng mới, cần chạy SQL thủ công, chuyển sang migrations, hoặc dùng initializer bổ sung có kiểm soát.
-- Hiện IdentityService có `AuthStoreInitializer.EnsureAuthTablesAsync()` để tạo thêm `RefreshTokens` và `RevokedAccessTokens` trên PostgreSQL Docker/local đã tồn tại.
+- Hiện IdentityService có `AuthStoreInitializer.EnsureAuthTablesAsync()` để bổ sung `RefreshTokens`, `RevokedAccessTokens`, `EmailVerificationTokens` và cột `AppUsers.EmailVerifiedAt` trên PostgreSQL Docker/local đã tồn tại.
+- Initializer backfill `EmailVerifiedAt = CreatedAt` cho user có email, `MustChangePassword=false` và `EmailVerifiedAt` đang null. Đây là hành vi tương thích dữ liệu cũ hiện có trong source, không phải bằng chứng user đã thực hiện OTP.
 - DocumentService và SignService đã có migration folder và startup tự apply migration.
+
+## Log/audit/thông báo tại ApiGateway
+
+- `ConnectionStrings:DefaultConnection`/`ConnectionStrings__DefaultConnection` trỏ cùng PostgreSQL; Compose dùng biến PostgreSQL hiện có. Gateway cần bảng Identity/Document sẵn sàng và retry initializer 10 lần, mỗi lần cách 1 giây. Không thêm EF migration ở DocumentService.
+- `MonitoringEvents`: UUID ID, Kind (`Request`/`Audit`), Service, Level, Action, ActorId/ResourceId nullable, Timestamp UTC, Method, Path, StatusCode, TraceId, ElapsedMs. Không FK actor/resource để giữ audit sau xóa đối tượng. Index Kind+Timestamp+Id và ActorId+Timestamp.
+- `UserNotifications`: UUID ID, UserId FK cascade, EventKey, Kind, Message cố định, TargetUrl nội bộ, DocumentId FK cascade nullable, Timestamp UTC, ReadAt nullable; unique `(UserId, EventKey)`, index UserId+Timestamp+Id.
+- Trigger AFTER INSERT `DocumentProcesses` ghi audit và thông báo trong cùng transaction với process; cập nhật metadata của Document vẫn là thao tác riêng theo service hiện tại. Không khẳng định toàn bộ workflow là một transaction.
+- Assign => người nhận; OCR/Reject/Signed => người tạo sớm nhất; Submit/SubmitDirector => user hoạt động theo role Manager/Ban Giám hiệu; Publish => người tạo và người từng được phân công. Không gửi thông báo khi tạo Draft/sửa metadata.
+- Chứng thư còn hiệu lực và hết hạn trong <=30 ngày: khi đọc API, thêm một alert theo user+thumbprint; đọc lại không tạo trùng hoặc làm mất ReadAt. Không quét nền toàn hệ thống.
+- Không backfill lịch sử trước khi triển khai. PostgreSQL volume giữ bản ghi/read state sau khi recreate Gateway; test xác nhận ID giữ nguyên. Các endpoint monitor/notification không tự ghi log gây vòng lặp.
 
 ## IdentityService database
 
@@ -282,14 +294,20 @@ Actions:
 ```text
 Submit
 DeptSign
+SubmitDirector
 DirectorSign
 Reject
 Publish
 Assign
 UpdateOCR
+Update
 ```
 
 ## SignService database
+
+Thay đổi ngày 05/10/2026: action `Update` dùng cột string `DocumentProcesses.Action` đã có, không cần migration mới. `Update` và `Assign` đều giữ nguyên `Documents.Status`; sửa metadata không thay `MinioPath`/`OcrDataRaw`.
+
+Thống kê Dashboard không đổi schema: người tạo/ngày tạo suy ra từ process `Submit` sớm nhất (process tạo mới của source hiện tại). Văn bản không có process này vẫn nằm trong tổng/trạng thái nhưng không tính vào hôm nay/của tôi. Ngày Việt Nam là khoảng UTC từ 17:00 ngày trước đến trước 17:00 ngày hiện tại. `AssignedDocuments` đếm document có ít nhất một action Assign do actor JWT thực hiện, không đếm số lần phân công. Chờ OCR là đã có MinioPath và OcrDataRaw null. Chứng thư hoạt động đếm file chứng thư user còn lưu và đang trong khoảng NotBefore/NotAfter; Root CA không được tính.
 
 ### DbSets
 
@@ -318,6 +336,8 @@ LegalSeal
 ```
 
 Certificate user không lưu trong DB hiện tại; file PFX được tạo trong thư mục `certs/` theo cấu hình `CertificateSettings:CertsDirectory`.
+
+Manager/Ban Giám hiệu tự cấp chứng thư qua `POST /api/signatures/certificates/me/issue`, danh tính lấy từ JWT. Admin xem danh sách bằng cách đọc PFX trong volume; thao tác thu hồi hiện xóa PFX của user, không có bảng trạng thái thu hồi chứng thư trong DB.
 
 Khi chạy bằng Docker, thư mục này được mount vào volume `hau_sign_certs` tại `/app/certs`. Nếu migrate dữ liệu sang máy khác, cần backup/restore volume này cùng PostgreSQL và MinIO; nếu mất Root CA/PFX user thì các chứng thư đã cấp không còn đồng bộ với dữ liệu cũ.
 

@@ -31,5 +31,6 @@ builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<SignatureService>();
 builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<MonitoringService>();
 
 await builder.Build().RunAsync();

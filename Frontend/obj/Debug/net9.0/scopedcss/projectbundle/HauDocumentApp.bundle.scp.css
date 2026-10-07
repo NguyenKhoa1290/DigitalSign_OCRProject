@@ -1150,6 +1150,9 @@ main[b-r1gjb39ice] {
     border-top-color: white;
 }
 
+.assignee-search-row[b-eo4s0izygq] { display: flex; gap: 8px; }
+.assignee-search-row .form-control[b-eo4s0izygq] { min-width: 0; }
+
 @media (max-width: 1100px) {
     .document-detail-layout[b-eo4s0izygq] {
         grid-template-columns: 1fr;
@@ -1478,6 +1481,19 @@ main[b-r1gjb39ice] {
 .notification-header[b-ei14h6si1a] {
     align-items: center;
 }
+
+.notification-controls[b-ei14h6si1a] { margin-bottom: 18px; }
+.notification-toolbar[b-ei14h6si1a] { display: grid; grid-template-columns: minmax(0,1fr) 1fr; gap: 18px; align-items: center; }
+.notification-unread-filter[b-ei14h6si1a] { display: flex; align-items: center; gap: 8px; }
+.notification-buttons[b-ei14h6si1a] { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.notification-summary[b-ei14h6si1a] { color: var(--color-text-secondary); margin-bottom: 12px; }
+.notification-entry[b-ei14h6si1a] { margin-bottom: 12px; }
+.notification-new[b-ei14h6si1a] { border-left: 4px solid #304e8a; }
+.notification-entry-top[b-ei14h6si1a] { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.notification-entry p[b-ei14h6si1a] { margin-top: 10px; overflow-wrap: anywhere; }
+.notification-time[b-ei14h6si1a] { color: var(--color-text-secondary); font-size: 12px; }
+.notification-pagination[b-ei14h6si1a] { display: flex; justify-content: space-between; gap: 12px; margin-top: 18px; }
+@media(max-width:960px) { .notification-toolbar[b-ei14h6si1a] { grid-template-columns: 1fr; } }
 
 .notification-empty[b-ei14h6si1a] {
     display: flex;
@@ -1850,3 +1866,13 @@ main[b-r1gjb39ice] {
     color: var(--color-text-secondary);
     font-size: 13px;
 }
+/* /Shared/EventJournal.razor.rz.scp.css */
+.journal-filters[b-4hnpj70mj3] { margin-bottom: 20px; }
+.filter-grid[b-4hnpj70mj3] { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.filter-grid .form-group[b-4hnpj70mj3] { min-width: 0; }
+.journal-count[b-4hnpj70mj3] { color: var(--color-text-secondary); margin-bottom: 12px; }
+.journal-entry[b-4hnpj70mj3] { margin-bottom: 12px; }
+.journal-entry-top[b-4hnpj70mj3] { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.journal-entry p[b-4hnpj70mj3] { margin: 8px 0 0; font-size: 13px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.journal-pagination[b-4hnpj70mj3] { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+@media (max-width: 960px) { .filter-grid[b-4hnpj70mj3] { grid-template-columns: 1fr; } }

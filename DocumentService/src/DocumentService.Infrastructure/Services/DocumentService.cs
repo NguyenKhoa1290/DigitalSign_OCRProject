@@ -18,6 +18,13 @@ public class DocumentService : IDocumentService
 
     private const string BucketName = "documents";
 
+    public Task<DocumentStatisticsDto> GetStatisticsAsync(Guid userId)
+    {
+        // Vietnam uses UTC+7. The half-open UTC interval also works in Linux containers.
+        var todayStartUtc = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(7).Date.AddHours(-7), DateTimeKind.Utc);
+        return _documentRepository.GetStatisticsAsync(userId, todayStartUtc, todayStartUtc.AddDays(1));
+    }
+
     public DocumentService(
         IDocumentRepository documentRepository,
         IDocumentTypeRepository documentTypeRepository,
@@ -73,6 +80,44 @@ public class DocumentService : IDocumentService
         var full = await _documentRepository.GetByIdAsync(created.Id, includeProcesses: true)
                    ?? created;
         return MapToDto(full);
+    }
+
+    public async Task<DocumentDto> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto, Guid userId)
+    {
+        var document = await _documentRepository.GetByIdAsync(id)
+            ?? throw new DocumentNotFoundException(id);
+        if (document.Status != DocumentStatus.Draft && document.Status != DocumentStatus.Rejected)
+            throw new InvalidWorkflowTransitionException(document.Status, "Update (chỉ sửa Draft hoặc Rejected)");
+        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 500 || dto.DocNumber?.Length > 50)
+            throw new DocumentServiceException("Tiêu đề hoặc số hiệu văn bản không hợp lệ.");
+        _ = await _documentTypeRepository.GetByIdAsync(dto.DocTypeId)
+            ?? throw new DocumentServiceException("Loại văn bản không tồn tại.");
+
+        document.Title = dto.Title.Trim();
+        document.DocNumber = string.IsNullOrWhiteSpace(dto.DocNumber) ? null : dto.DocNumber.Trim();
+        document.DocTypeId = dto.DocTypeId;
+        document.IssuedDate = dto.IssuedDate;
+        await _documentRepository.UpdateAsync(document);
+        await _documentProcessRepository.CreateAsync(new DocumentProcess
+        {
+            DocId = id, FromUserId = userId, Action = DocumentAction.Update,
+            Comment = "Cập nhật thông tin văn bản.", Timestamp = DateTime.UtcNow
+        });
+        return await GetDocumentByIdAsync(id);
+    }
+
+    public async Task<DocumentFileDto> GetFileAsync(Guid id)
+    {
+        var document = await _documentRepository.GetByIdAsync(id)
+            ?? throw new DocumentNotFoundException(id);
+        if (string.IsNullOrWhiteSpace(document.MinioPath))
+            throw new DocumentNotFoundException("Văn bản chưa có file PDF.");
+
+        var path = document.MinioPath.Trim().Replace('\\', '/').TrimStart('/');
+        const string prefix = BucketName + "/";
+        if (path.StartsWith(prefix, StringComparison.Ordinal)) path = path[prefix.Length..];
+        var stream = await _fileStorageService.DownloadFileAsync(path, BucketName);
+        return new DocumentFileDto(stream, $"cong-van-{id}.pdf");
     }
 
     public async Task<DocumentDto> GetDocumentByIdAsync(Guid id)
@@ -361,6 +406,8 @@ public class DocumentService : IDocumentService
 
     public async Task<DocumentDto> AssignAsync(Guid id, Guid fromUserId, Guid toUserId, string? comment)
     {
+        if (toUserId == Guid.Empty)
+            throw new DocumentServiceException("Người nhận phân công không hợp lệ.");
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
 

@@ -1,6 +1,8 @@
-﻿# 📓 Nhật Ký Làm Việc với Dự Án HAU DigitalSign OCR
+# 📓 Nhật Ký Làm Việc với Dự Án HAU DigitalSign OCR
 
 > Ghi lại theo thứ tự thời gian những gì đã làm, những vấn đề gặp phải và cách giải quyết.
+
+> Tổng kết được đồng bộ ngày 05/10/2026. Các buổi/công việc cũ giữ thông tin theo thời điểm thực hiện; thông số hiện tại xem `1_kien_truc.md`, `2_da_lam.md`, `4_cau_truc_code.md` và `5_co_so_ha_tang_db.md`.
 
 ---
 
@@ -274,6 +276,7 @@ Trong quá trình viết tài liệu phát hiện:
 | 16/09/2026 | Công việc số 2: sửa frontend ký số gửi đúng DTO backend, build/test/Docker/API payload frontend pass |
 | 16/09/2026 | Công việc số 3: nâng `MailKit`/`MimeKit`, cài `wasm-tools`, bổ sung Python cho Docker frontend và build/test pass |
 | 17/09/2026 | Công việc số 4: khôi phục Docker Desktop WSL2 sau khi mất image, build lại full stack, deploy và ghi hướng dẫn phục hồi |
+| 17/09/2026 | Công việc số 5–6: bổ sung OCR service-token và màn hình xem kết quả OCR |
 | 19/09/2026 | Công việc số 7: persist refresh token, rotate token, blacklist logout; build/test/Docker smoke test pass |
 | 19/09/2026 | Công việc số 8: mở rộng ApiGateway kiểm tra blacklist qua IdentityService; build/test/Docker smoke test pass |
 | 19/09/2026 | Công việc số 9: sửa Gateway fallback khi IdentityService validate-token tạm lỗi; build/test/Docker smoke test pass |
@@ -283,10 +286,19 @@ Trong quá trình viết tài liệu phát hiện:
 | 20/09/2026 | Công việc số 13: kiểm thử UI ký số bằng Playwright trên frontend; Manager/Board ký và verify UI pass |
 | 20/09/2026 | Công việc số 14: kiểm thử OCR với PDF dạng scan/image-based; Kafka/PaddleOCR bóc tách pass |
 | 20/09/2026 | Công việc số 15: cấu hình Mailpit SMTP local và test forgot/reset password backend + frontend pass |
+| 20/09/2026 | Công việc số 16: hoàn thiện `DeptSigned`, API `submit-director` và thao tác trình BGH trên UI |
+| 24/09/2026 | Công việc số 17–18: Gmail gửi OTP thành công, người nhận xác nhận email; triển khai xác minh email first login |
+| 27/09/2026 | Công việc số 19–29: theme HAU, CSS isolation, Dashboard, popup tài khoản, responsive, nút quay lại và chọn người nhận chứng thư |
+| 28/09/2026 | Công việc số 30–36: CustomSelect, cache CSS, lớp modal/toast và breakpoint viewport/modal |
+| 28/09/2026 | Công việc số 37–39: tự cấp chứng thư theo role, lọc người dùng theo đơn vị và bộ lọc tổ chức phụ thuộc |
+| 28/09/2026 | Công việc số 40–42: bộ tài liệu vận hành, tài khoản mặc định và ba trang nền log/hoạt động/thông báo |
+| 05/10/2026 | Công việc số 43: đồng bộ tài liệu với source và nhật ký, kiểm tra tính nhất quán tài liệu |
+| 05/10/2026 | Công việc số 44: hoàn thiện sửa metadata, xem/tải PDF và phân công công văn; API/UI pass |
+| 05/10/2026 | Công việc số 45: API thống kê thật và Dashboard theo role; SQL/API/UI desktop/mobile pass |
 
-**Trạng thái hiện tại:** IdentityService, DocumentService, SignService, OCRService backend, API Gateway và Frontend đều đã có code chính.
+**Trạng thái hiện tại (đối chiếu source 05/10/2026):** IdentityService, DocumentService, SignService, OCRService, API Gateway và Frontend đều có code chính; Frontend có 17 page với CSS isolation. Bộ tài liệu có bốn nhóm vận hành. Tích hợp công văn và thống kê Dashboard đã build/triển khai Docker/API/UI trong Công việc số 44–45; xUnit gần nhất 65/65, trong đó Sign vẫn có 1 test rỗng.
 
-**Còn lại đáng chú ý:** khi deploy production, test lại SMTP thật với credential hợp lệ; nếu triển khai thực tế, nên bổ sung thêm bộ tài liệu scan thật của nhà trường để đánh giá chất lượng OCR; tiếp tục test tích hợp sâu khi phát triển thêm nghiệp vụ.
+**Còn lại đáng chú ý:** Backend log/audit/thông báo. Kiểm thử cần bổ sung: reset bằng OTP Gmail thật, bộ scan thật và coverage workflow/ký/OCR; Document hiện có 29 test nghiệp vụ. Ký PDF, workflow, reset qua Mailpit và OCR scan giả lập đã được kiểm thử Pass; gộp ký PDF với chuyển workflow là đề xuất cải tiến nếu nghiệp vụ yêu cầu. Chi tiết xem `2_da_lam.md`, mục 7.
 
 ---
 
@@ -1531,6 +1543,114 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 43 — 05/10/2026
+### Đồng bộ tài liệu với source và nhật ký
+
+**Đã thực hiện:**
+- Đối chiếu `tai_lieu` và `tiendo` với code/cấu hình đang có; cập nhật mốc đối chiếu 05/10/2026.
+- Sửa bộ tài liệu thành bốn nhóm, cập nhật 17 page frontend với đủ CSS isolation và danh mục 44 test case.
+- Đồng bộ trạng thái Gmail theo Công việc số 17: người nhận đã xác nhận email, bước reset bằng OTP thật chưa chạy.
+- Bổ sung trạng thái Dashboard chưa có API thống kê, ba trang nền chờ backend và các điểm tích hợp công văn còn lệch.
+- Bổ sung `SubmitDirector`, phạm vi initializer DB, lớp modal/toast hiện tại và phân biệt ký PDF với chuyển workflow.
+- Bổ sung các công việc còn thiếu trong bảng tổng kết; giữ kết quả test/viewport cũ theo thời điểm thực hiện.
+- Ghi rõ Document/Sign test project chỉ có test rỗng; kết quả xUnit lịch sử không chứng minh coverage của hai service.
+- Rà soát bổ sung theo phản hồi người dùng: mục 7 trong `2_da_lam.md` ghi riêng phần đã hoàn thành, phần source còn thiếu, kiểm thử cần bổ sung và đề xuất cải tiến. Giữ ký/workflow, OCR, reset qua Mailpit và gửi/nhận Gmail trong phần đã làm; gộp ký với workflow không được coi là yêu cầu còn thiếu đã chốt.
+
+**Kiểm tra:**
+- PowerShell kiểm tra 24 file Markdown: 26 liên kết tương đối, 0 liên kết hỏng.
+- Sau rà soát bổ sung mục 7: kiểm tra lại 24 file, 28 liên kết tương đối hợp lệ; 13 mã test được dẫn trong mục 7 đều tồn tại, danh mục vẫn khớp 44 test case và diff whitespace pass.
+- Đối chiếu `Frontend/Pages`: 17 page, 17 CSS isolation cùng tên.
+- `docker compose config --quiet`: pass; `docker compose config --services`: đủ 11 thành phần.
+- `git -c safe.directory=E:/DigitalSign_OCRProject diff --check`: pass.
+- Test case: `TC-DOC-SYNC-044`; không tạo dữ liệu nghiệp vụ.
+- Build ứng dụng, triển khai Docker và test runtime: không áp dụng, chỉ sửa tài liệu.
+- Không sửa `.gitignore`; `tai_lieu/` đang bị bỏ qua, còn các file `tiendo` đã được Git theo dõi vẫn có diff.
+
+---
+
+## Công việc số 44 — 05/10/2026
+### Hoàn thiện tích hợp công văn: sửa metadata, PDF và phân công
+
+**Đã thực hiện:**
+- Bổ sung `UpdateDocumentDto`, API PUT và lịch sử `Update`; Admin/Clerk/Specialist sửa ở Draft/Rejected, giữ nguyên file/OCR/trạng thái. Validate tiêu đề, loại văn bản và số hiệu.
+- Bổ sung API file có JWT, tải đúng object theo `Documents.MinioPath`, PDF/no-store/range và attachment. Frontend tạo blob URL để xem/tải; thu hồi URL khi tải lại hoặc rời trang.
+- Đồng bộ payload tạo/sửa (`DocNumber`, `DocTypeId`, DateOnly), phân công (`ToUserId`) và wrapper upload.
+- Thêm danh bạ người nhận tối thiểu, modal tìm/chọn người nhận và kiểm tra tài khoản tồn tại/hoạt động trước khi phân công. Lỗi danh bạ trả 503, không ghi phân công; frontend giữ modal và hiện lỗi khi thao tác thất bại.
+- Thêm cấu hình `IdentityService__BaseUrl` cho DocumentService trong Docker Compose; cache frontend `20261005-1`.
+- Thay test rỗng DocumentService bằng 25 test nghiệp vụ; thêm script Node/Playwright `tests/document-edit-file-assignment.spec.cjs`. SignService test rỗng vẫn là việc cần bổ sung.
+- Cập nhật kiến trúc, cấu trúc code, trạng thái công việc, triển khai và danh mục thành 47 test case. Không cần migration DB mới.
+
+**Build, Docker và kiểm thử:**
+- Build toàn solution: pass, 0 warning/0 error.
+- xUnit: 61/61 pass (Identity 35, Document 25, Sign 1 test rỗng).
+- Host thiếu runtime .NET 9: cài runtime 9.0.20 riêng trong `%TEMP%/hau-dotnet9`, không thay runtime toàn hệ thống; dùng `DOTNET_ROOT`/`DOTNET_ROOT_X64`/`VSTEST_DOTNET_PATH` khi chạy test.
+- Build/recreate `identity-service`, `document-service`, `frontend`: pass; Identity healthy, Document/Frontend đang chạy. Build/recreate riêng Document lần cuối sau bổ sung kiểm tra JSON danh bạ null/array.
+- Smoke API/UI: 13 nhóm pass trên Docker/Gateway, gồm đăng nhập UI, sửa/tạo công văn kèm upload, xem/tải PDF, phân quyền, người nhận không tồn tại/bị khóa, lỗi API phân công, modal desktop 1366×768 và mobile 450×500.
+- PDF download kiểm tra byte-for-byte; HTTP range trả 206; chưa có file/không có văn bản trả 404; không có JWT trả 401.
+- Ảnh modal được xem lại trong `tests/artifacts`; không lỗi JavaScript ở trang chi tiết.
+- Dữ liệu lần chạy hoàn tất: xóa 2 document, 2 user và 2 object PDF tạm, logout các phiên test. Một lần chạy trước chạm rate limit 429; script đã hỗ trợ Retry-After, dữ liệu còn lại của lần đó đã được dọn bằng chế độ recovery.
+- Test case: `TC-DOC-EDIT-045`, `TC-DOC-FILE-046`, `TC-DOC-ASSIGN-047`.
+- Kiểm tra cuối: 24 file Markdown, 28 liên kết tương đối hợp lệ; danh mục khớp đủ 47 mã test; Compose config và diff whitespace của source/tài liệu pass. Các file build sinh tự động trong bin/obj không thuộc phạm vi diff kiểm tra source.
+
+---
+
+## Công việc số 45 — 05/10/2026
+### Thống kê Dashboard từ dữ liệu thật
+
+**Đã thực hiện:**
+- Thêm `GET /api/documents/stats` có JWT, aggregate toàn database và actor theo JWT; không phụ thuộc phân trang. Ngày hôm nay UTC+7, người tạo/ngày tạo lấy process Submit sớm nhất theo luồng tạo hiện tại.
+- Tách các chỉ số OCR, dự thảo/chờ phê duyệt của tôi, chờ ký nháy/chờ ký pháp nhân, số đã ký pháp nhân và distinct văn bản đã phân công. Phạm vi các chỉ số chung là toàn hệ thống như quyền đọc danh sách công văn hiện tại.
+- Thêm `GET /api/users/stats` và `GET /api/signatures/certificates/stats` giới hạn Admin. Người dùng tính cả tài khoản khóa; chứng thư chỉ tính user certificate còn lưu và trong thời gian hiệu lực, không tính Root CA.
+- Frontend gọi ba nguồn độc lập (Admin) hoặc chỉ Document (role khác). Giữ số liệu nguồn thành công, dùng nullable/`—` và cảnh báo khi nguồn lỗi/thiếu trường; thêm nút làm mới. Không dùng số 0 mặc định cho lỗi API.
+- Thêm 4 test repository thống kê (tổng Document 29 test) và script SQL/API/Playwright `tests/dashboard-statistics.spec.cjs`.
+- Không thay schema/migration, route Gateway hoặc scoped CSS.
+
+**Build/triển khai/kiểm thử:**
+- Build solution: 0 warning/0 error; xUnit 65/65 (Identity 35, Document 29, Sign 1 test rỗng).
+- Build/recreate IdentityService, DocumentService, SignService và Frontend trên Docker local; backend/API chạy được. Rebuild/recreate Frontend lần cuối sau bổ sung phát hiện response thiếu trường dữ liệu.
+- 11 nhóm smoke SQL/API/UI pass: API khớp truy vấn PostgreSQL độc lập cho Admin và 4 role còn lại, gồm 33 document khi có fixture (vượt trang 20); dữ liệu riêng theo đúng creator/actor; cấp/thu hồi chứng thư cập nhật đúng số đếm.
+- Dashboard desktop 1366×768 và mobile 450×500; 5 role đúng chỉ số, role thường không gọi API quản trị, mô phỏng nguồn 503/response thiếu trường và làm mới phục hồi; không tràn ngang hoặc lỗi JavaScript. Ảnh desktop/mobile đã được xem lại.
+- Test dùng 22 document fixture, 4 user và 1 chứng thư mới; thay status/history chỉ trên GUID fixture để kiểm tra thống kê, không kiểm thử ký PDF trong lần này. Xóa đúng document/process fixture trong PostgreSQL, xóa user, thu hồi chứng thư và logout các phiên test sau khi hoàn tất; không tạo object MinIO/email.
+- Test case: `TC-DASHBOARD-STATS-048`, `TC-FE-DASHBOARD-STATS-049`; danh mục hiện 49 test case.
+- Kiểm tra cuối: 24 file Markdown, 28 liên kết tương đối hợp lệ, 49 mã test chi tiết khớp danh mục; Compose config và diff whitespace source/tài liệu pass. Identity healthy, Document/Sign/Frontend đang chạy.
+
+---
+
+## Công việc số 46 — 05/10/2026
+### Backend log/audit/thông báo và ba trang dữ liệu thật
+
+**Đã thực hiện:**
+- Thêm `ApiGateway/Monitoring`: native Npgsql 9.0.3, schema embedded resource, `EventStore`, middleware nhật ký và controller. GET `/api/admin/system-logs`, `/api/admin/activity` dành cho Admin, lọc service/level/from/to/trace/actor và phân trang; response no-store.
+- Nhật ký HTTP bốn downstream service qua Gateway + startup Gateway. Audit auth/quản trị/ký/upload/xóa từ Gateway; trigger PostgreSQL trên `DocumentProcesses` ghi hành động công văn thật, kể cả OCR callback gọi thẳng DocumentService. Không thu gom toàn bộ Serilog/stdout nội bộ, không backfill lịch sử cũ.
+- SQL initializer transaction tạo `MonitoringEvents`, `UserNotifications`, index/function/trigger, retry PostgreSQL 10 lần trước khi mở cổng. Compose thêm connection string PostgreSQL cho Gateway. Không tạo EF migration ở DocumentService.
+- `DocumentProcessRepository` đặt trace bằng `set_config` trong transaction trước insert process; request Gateway trả `X-Trace-Id`, trace audit khớp thực tế qua YARP. Process/audit/thông báo là một transaction; metadata Document vẫn lưu riêng theo luồng hiện tại.
+- Thông báo Assign cho người nhận; OCR/Reject/Signed cho người tạo; yêu cầu ký cho role Manager/Ban Giám hiệu đang hoạt động; Publish cho người tạo và người từng được phân công. API lấy user từ JWT; mark read/read-all chỉ user hiện tại, read idempotent. Alert chứng thư còn hiệu lực/hết hạn trong <=30 ngày tạo khi GET notifications, unique user+thumbprint.
+- Frontend thay placeholder tại ba trang bằng API thật; `EventJournal` dùng chung hai trang Admin, đổi ngày Việt Nam sang UTC. Notifications có lọc, link chi tiết, unread count, đánh dấu đọc, polling 30 giây; hủy timer/request khi rời trang, xử lý đổi lọc trong lúc request còn chạy.
+- Không lưu body/query/password/token/exception message trong bảng nhật ký. Path ngoài allowlist bị che; login username chỉ đọc trong bộ nhớ để xác định actor. Endpoint monitor/notification không tự log vòng lặp.
+
+**Build/triển khai/kiểm thử:**
+- Build solution 0 warning/0 error; xUnit 86/86: Gateway 21, Identity 35, Document 29, Sign 1 test rỗng. Runtime host 9.0.20 trong `%TEMP%/hau-dotnet9`.
+- Docker build/recreate `api-gateway document-service frontend`; rebuild Gateway/Frontend sau sửa audit upload/thao tác thất bại và bộ lọc đổi trong lúc request đang tải.
+- `tests/monitoring-notifications.spec.cjs`: 14 nhóm SQL/API/UI Pass trên image cuối. Kiểm tra 401/403, dữ liệu riêng/404 khi sửa thông báo người khác, pagination >20, read/read-all idempotent, loại thông báo workflow, chứng thư sắp hết hạn không lặp, năm nguồn log, bộ lọc và che dữ liệu nhạy cảm.
+- Recreate riêng Gateway bằng Compose: audit/notification ID và ReadAt giữ nguyên, initializer không nhân bản lịch sử. UI đăng nhập Admin, trace/service/pagination/lỗi nguồn; thông báo tự render mới theo polling, đổi lọc giữa request tải đúng dữ liệu mới; điều hướng không lỗi JavaScript.
+- Desktop 1366×768 và mobile 450×500 không tràn ngang; ảnh trong `tests/artifacts` đã được xem lại. Ký duyệt ở test là chuyển trạng thái metadata, không khẳng định có chữ ký PDF. OCR callback nội bộ được mô phỏng; PDF trắng riêng dùng kiểm tra audit upload, không đánh giá chất lượng OCR.
+- Bổ sung whitelist route thực tế `/api/ocr/process-upload`, kiểm tra audit ProcessOCR/Warning khi thiếu file; alert chứng thư Admin dẫn tới trang quản trị, Manager/Board dẫn tới trang chứng thư cá nhân đúng quyền. Rebuild/recreate riêng Gateway và chạy lại 21 test Gateway cùng 14 nhóm smoke trên image cuối.
+- Dọn đúng 3 document/process fixture (notices cascade), 5 user, 2 chứng thư, 1 object PDF, phiên test và event theo ID/trace test. Không gửi email, không xóa dữ liệu/log có sẵn.
+- Test case mới: `TC-GW-LOGS-050`, `TC-AUDIT-051`, `TC-NOTIFICATIONS-052`; danh mục 52 test case. Việc còn lại: Gmail reset bằng OTP thật, bộ scan thực tế và coverage sâu ký/workflow/OCR; mở rộng thu gom log nội bộ/push nền chưa triển khai.
+- Kiểm tra cuối: 24 file Markdown, 28 liên kết tương đối hợp lệ, 52 mã test chi tiết khớp danh mục, 17/17 page có CSS; Compose config và whitespace source/tài liệu Pass. Stack Docker đang chạy, Identity/PostgreSQL healthy; query xác nhận 0 user/document fixture monitoring còn lại.
+
+---
+
+## Công việc số 47 — 05/10/2026
+### Ghi nhận bàn giao kiểm thử thực tế cho người dùng
+
+- Theo yêu cầu người dùng: kiểm thử thực tế/nghiệm thu để người dùng tự thực hiện. Agent chỉ hỗ trợ khi được yêu cầu, không tự thử email/dữ liệu thực tế hoặc tự xác nhận Pass.
+- Các mục Gmail OTP/reset thật, OCR với PDF/scan của nhà trường, công văn/ký PDF theo vai trò và đối chiếu Dashboard/log/audit/thông báo được ghi **Chờ người dùng kiểm thử và xác nhận** tại mục 7.3 của `2_da_lam.md`.
+- Giữ kết quả kiểm thử tự động, Docker local và mô phỏng đã chạy theo phạm vi lịch sử; các kết quả này không thay cho nghiệm thu thực tế.
+- Cập nhật quy trình và ghi chú test case tương ứng; chưa có kết quả nghiệm thu mới. Chỉ sửa tài liệu, không thay code, chạy test nghiệp vụ hoặc thêm mã test case; danh mục vẫn 52 test case.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase
@@ -1539,6 +1659,6 @@ Trong quá trình viết tài liệu phát hiện:
 
 3. **Circular reference trong cây:** Luôn validate server-side trước khi cho phép update ParentId — không tin client
 
-4. **z-index:** Modal và Toast cần được quản lý z-index rõ ràng. Quy ước: Modal = 1000, Toast = 10000
+4. **z-index:** Modal và Toast cần được quản lý z-index rõ ràng. Quy ước hiện tại trong `Frontend/wwwroot/css/app.css`: Modal = 20000, Toast = 30000; cảnh báo viewport = 50000. Giá trị 1000/10000 trong buổi 6 là lịch sử trước khi chỉnh responsive.
 
 5. **Type mismatch giữa frontend DTO và backend DTO:** Frontend có thể dùng string (tên role) nhưng backend cần GUID — cần có lớp chuyển đổi ở service layer

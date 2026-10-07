@@ -5,13 +5,16 @@ namespace DocumentService.Core.Interfaces;
 
 public interface IDocumentService
 {
+    Task<DocumentStatisticsDto> GetStatisticsAsync(Guid userId);
     // CRUD
     Task<DocumentDto> CreateDocumentAsync(CreateDocumentDto dto, Guid userId);
+    Task<DocumentDto> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto, Guid userId);
     Task<DocumentDto> GetDocumentByIdAsync(Guid id);
     Task<PagedResult<DocumentDto>> GetAllDocumentsAsync(DocumentQueryParams query);
     Task DeleteDocumentAsync(Guid id);
 
     // File
+    Task<DocumentFileDto> GetFileAsync(Guid id);
     Task<DocumentDto> UploadFileAsync(Guid id, Stream fileStream, string fileName, string contentType, Guid userId);
 
     // OCR

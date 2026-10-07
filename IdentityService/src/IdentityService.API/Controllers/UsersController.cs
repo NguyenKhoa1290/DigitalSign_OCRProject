@@ -41,6 +41,28 @@ public class UsersController : ControllerBase
         return Ok(ApiResponse<PagedResult<UserDto>>.Ok(result, "Lấy danh sách người dùng thành công"));
     }
 
+    [HttpGet("stats")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetStatistics()
+    {
+        Response.Headers.CacheControl = "no-store";
+        var users = await _userService.GetAllUsersAsync(1, 1);
+        return Ok(ApiResponse<object>.Ok(new { TotalUsers = users.TotalCount }));
+    }
+
+    // Danh bạ tối thiểu để chọn người nhận công văn, không trả email hoặc thông tin quản trị.
+    [HttpGet("assignees")]
+    [Authorize(Roles = "Admin,Clerk,Manager,BoardOfDirectors")]
+    public async Task<IActionResult> GetAssignees([FromQuery] string? search = null)
+    {
+        var users = await _userService.GetAllUsersAsync(1, 20, search);
+        var assignees = users.Items.Where(user => user.IsActive).Select(user => new
+        {
+            user.Id, user.Username, user.FullName, user.DepartmentName
+        });
+        return Ok(ApiResponse<object>.Ok(assignees));
+    }
+
     /// <summary>
     /// Lấy thông tin người dùng theo ID.
     /// </summary>

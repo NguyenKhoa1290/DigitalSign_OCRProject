@@ -47,8 +47,16 @@ docker compose up -d
 | `/api/documents/**` | DocumentService | JWT |
 | `/api/signatures/**` | SignService | JWT |
 | `/api/ocr/**` | OCRService | JWT |
+| `/api/admin/system-logs`, `/api/admin/activity` | Gateway controllers | Admin |
+| `/api/notifications`, `/api/notifications/{id}/read`, `/api/notifications/read-all` | Gateway controllers | JWT, chỉ user hiện tại |
 
 ## Cấu hình quan trọng
+
+- `ConnectionStrings:DefaultConnection` (`ConnectionStrings__DefaultConnection` trong Docker) trỏ PostgreSQL dùng chung. Cần Identity/Document đã tạo bảng trước khi chạy Gateway; SQL initializer transaction tạo bảng/index/trigger log/audit/thông báo, retry 10 lần trước khi phục vụ. PostgreSQL volume giữ dữ liệu khi recreate container.
+- Nhật ký hệ thống lưu HTTP qua Gateway và startup; audit công văn từ trigger process, nghiệp vụ auth/quản trị/ký/upload/xóa từ Gateway. Không thu gom toàn bộ log nội bộ service và không backfill lịch sử.
+- Thông báo workflow theo người nhận/người tạo/role đang hoạt động. API lấy user từ JWT; đọc từng bản ghi hoặc tất cả chỉ ảnh hưởng user hiện tại. Cảnh báo chứng thư còn hiệu lực/hết hạn trong 30 ngày được tạo khi đọc danh sách; frontend polling 30 giây, chưa push.
+- Không lưu body/query/token/password; URL ngoài allowlist được che. Response `X-Trace-Id` liên kết HTTP với audit process theo W3C trace. API monitor/notification không tự tạo log vòng lặp, response no-store.
+- Kiểm thử local: `tests/monitoring-notifications.spec.cjs`; xUnit bảo vệ route/action nằm trong `ApiGateway/tests/ApiGateway.Tests`.
 
 - Local config trong `appsettings.json` trỏ đến `localhost:5048/5049/5050/5051`.
 - Docker Compose override các destination sang hostname nội bộ: `identity-service`, `document-service`, `sign-service`, `ocr-service`.

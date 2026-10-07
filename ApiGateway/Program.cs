@@ -5,6 +5,8 @@ using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using ApiGateway.Monitoring;
+using Npgsql;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Bootstrap Serilog
@@ -22,6 +24,16 @@ try
         lc.ReadFrom.Configuration(ctx.Configuration).WriteTo.Console());
 
     var config = builder.Configuration;
+    var monitoringConnection = new NpgsqlConnectionStringBuilder(config.GetConnectionString("DefaultConnection")
+        ?? "Host=localhost;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable") { Timeout = 3 };
+    builder.Services.AddSingleton(NpgsqlDataSource.Create(monitoringConnection.ConnectionString));
+    builder.Services.AddSingleton<EventStore>();
+    builder.Services.AddControllers();
+    builder.Services.AddHttpClient("notification-certificates",client =>
+    {
+        client.BaseAddress = new Uri(config["ReverseProxy:Clusters:sign-cluster:Destinations:sign-1:Address"] ?? "http://localhost:5050/");
+        client.Timeout = TimeSpan.FromSeconds(3);
+    });
 
     // ── JWT Authentication (validate only) ───────────────────────────────────
     var jwtKey     = config["JwtSettings:Key"]      ?? throw new InvalidOperationException("JwtSettings:Key missing");
@@ -170,6 +182,12 @@ try
 
     // ─────────────────────────────────────────────────────────────────────────
     var app = builder.Build();
+    for(var attempt=0;;attempt++)
+    {
+        try {await app.Services.GetRequiredService<EventStore>().InitializeAsync();break;}
+        catch(NpgsqlException) when(attempt<9) {await Task.Delay(1000);}
+    }
+    await app.Services.GetRequiredService<EventStore>().RecordAsync("Request","ApiGateway","Startup",null,null,"","",200,"startup:"+Guid.NewGuid(),0);
     // ─────────────────────────────────────────────────────────────────────────
 
     app.UseSerilogRequestLogging();
@@ -184,7 +202,9 @@ try
     app.UseIpRateLimiting();
     app.UseCors();
     app.UseAuthentication();
+    app.Use((context,next)=>RequestJournal.CaptureAsync(context,()=>next(context)));
     app.UseAuthorization();
+    app.MapControllers();
 
     // ── Health check endpoint ─────────────────────────────────────────────────
     app.MapHealthChecks("/health");

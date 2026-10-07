@@ -1,4 +1,5 @@
 using DocumentService.Core.Interfaces;
+using DocumentService.Core.Exceptions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Minio;
@@ -62,7 +63,20 @@ public class MinioStorageService : IFileStorageService
                 await stream.CopyToAsync(memoryStream, cancellationToken);
             });
 
-        await _minioClient.GetObjectAsync(getArgs);
+        try
+        {
+            await _minioClient.GetObjectAsync(getArgs);
+        }
+        catch (Minio.Exceptions.ObjectNotFoundException)
+        {
+            await memoryStream.DisposeAsync();
+            throw new DocumentNotFoundException("File PDF không còn trong kho lưu trữ.");
+        }
+        catch
+        {
+            await memoryStream.DisposeAsync();
+            throw;
+        }
 
         memoryStream.Position = 0;
 

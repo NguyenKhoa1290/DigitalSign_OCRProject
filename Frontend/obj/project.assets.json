@@ -492,13 +492,13 @@
           }
         }
       },
-      "Microsoft.NET.ILLink.Tasks/9.0.17": {
+      "Microsoft.NET.ILLink.Tasks/9.0.20": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.11": {
+      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.12": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.props": {},
@@ -997,13 +997,13 @@
           }
         }
       },
-      "Microsoft.NET.ILLink.Tasks/9.0.17": {
+      "Microsoft.NET.ILLink.Tasks/9.0.20": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.11": {
+      "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.12": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.Sdk.WebAssembly.Pack.props": {},
@@ -1871,10 +1871,10 @@
         "microsoft.jsinterop.webassembly.nuspec"
       ]
     },
-    "Microsoft.NET.ILLink.Tasks/9.0.17": {
-      "sha512": "P5qY/hIYMlo0+QRM0W3Gd/SRf20TX+z5W5NwpdzkOk0FtgcbSTNwNcYBRNDgfThFcLpcDFslz65RcGqWOq00/w==",
+    "Microsoft.NET.ILLink.Tasks/9.0.20": {
+      "sha512": "oPFydtjCgow3DXnL8z5gPbq3R1zGvBpcypgRhW172Hn8asJcI8oy7isudAnAAALIWyK+uRWCDP+/+om3s0PZHA==",
       "type": "package",
-      "path": "microsoft.net.illink.tasks/9.0.17",
+      "path": "microsoft.net.illink.tasks/9.0.20",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -1888,7 +1888,7 @@
         "build/Microsoft.NET.ILLink.Analyzers.props",
         "build/Microsoft.NET.ILLink.Tasks.props",
         "build/Microsoft.NET.ILLink.targets",
-        "microsoft.net.illink.tasks.9.0.17.nupkg.sha512",
+        "microsoft.net.illink.tasks.9.0.20.nupkg.sha512",
         "microsoft.net.illink.tasks.nuspec",
         "tools/net472/ILLink.Tasks.dll",
         "tools/net472/ILLink.Tasks.dll.config",
@@ -1922,10 +1922,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.11": {
-      "sha512": "vI5/681Ld3dnYch2wCH+8cDc3PXIgfaJhjCHTUmCtm2tu92T71iY3shZHM3BeLPDFv9G7Nq/gS5hrlghPG+MXg==",
+    "Microsoft.NET.Sdk.WebAssembly.Pack/10.0.12": {
+      "sha512": "MIeBVeWkbKdggl3kmmIUnx8ZNEgjD2m1gTN/0W+TDRn6zcL1WZdq5hXhGQ0wjuSlw/8tvwwCg79PemfkJ3+5JA==",
       "type": "package",
-      "path": "microsoft.net.sdk.webassembly.pack/10.0.11",
+      "path": "microsoft.net.sdk.webassembly.pack/10.0.12",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -1955,7 +1955,7 @@
         "build/Microsoft.NET.Sdk.WebAssembly.Pack.targets",
         "build/Wasm.web.config",
         "build/browser.runtimeconfig.template.json",
-        "microsoft.net.sdk.webassembly.pack.10.0.11.nupkg.sha512",
+        "microsoft.net.sdk.webassembly.pack.10.0.12.nupkg.sha512",
         "microsoft.net.sdk.webassembly.pack.nuspec",
         "tools/net10.0/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll",
         "tools/net10.0/Microsoft.NET.WebAssembly.Webcil.dll",
@@ -1971,37 +1971,29 @@
       "Microsoft.AspNetCore.Components.WebAssembly >= 9.0.17",
       "Microsoft.AspNetCore.Components.WebAssembly.Authentication >= 9.0.1",
       "Microsoft.AspNetCore.Components.WebAssembly.DevServer >= 9.0.17",
-      "Microsoft.NET.ILLink.Tasks >= 9.0.17",
-      "Microsoft.NET.Sdk.WebAssembly.Pack >= 10.0.11"
+      "Microsoft.NET.ILLink.Tasks >= 9.0.20",
+      "Microsoft.NET.Sdk.WebAssembly.Pack >= 10.0.12"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\NguyenKhoa\\.nuget\\packages\\": {},
-    "D:\\Software\\VisualStudio\\VisualStudioSharedcomponents_tools_SDKs\\NuGetPackages": {}
+    "C:\\Users\\Khoa\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "F:\\DigitalSign_OCRProject\\Frontend\\HauDocumentApp.csproj",
+      "projectUniqueName": "E:\\DigitalSign_OCRProject\\Frontend\\HauDocumentApp.csproj",
       "projectName": "HauDocumentApp",
-      "projectPath": "F:\\DigitalSign_OCRProject\\Frontend\\HauDocumentApp.csproj",
-      "packagesPath": "C:\\Users\\NguyenKhoa\\.nuget\\packages\\",
-      "outputPath": "F:\\DigitalSign_OCRProject\\Frontend\\obj\\",
+      "projectPath": "E:\\DigitalSign_OCRProject\\Frontend\\HauDocumentApp.csproj",
+      "packagesPath": "C:\\Users\\Khoa\\.nuget\\packages\\",
+      "outputPath": "E:\\DigitalSign_OCRProject\\Frontend\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "D:\\Software\\VisualStudio\\VisualStudioSharedcomponents_tools_SDKs\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\NguyenKhoa\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\Khoa\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -2021,7 +2013,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net9.0": {
@@ -2052,13 +2044,13 @@
           "Microsoft.NET.ILLink.Tasks": {
             "suppressParent": "All",
             "target": "Package",
-            "version": "[9.0.17, )",
+            "version": "[9.0.20, )",
             "autoReferenced": true
           },
           "Microsoft.NET.Sdk.WebAssembly.Pack": {
             "suppressParent": "All",
             "target": "Package",
-            "version": "[10.0.11, )",
+            "version": "[10.0.12, )",
             "autoReferenced": true
           }
         },
@@ -2075,12 +2067,20 @@
         "warn": true,
         "downloadDependencies": [
           {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[9.0.20, 9.0.20]"
+          },
+          {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[9.0.19, 9.0.19]"
+            "version": "[9.0.20, 9.0.20]"
           },
           {
             "name": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-            "version": "[9.0.19, 9.0.19]"
+            "version": "[9.0.20, 9.0.20]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[9.0.20, 9.0.20]"
           }
         ],
         "frameworkReferences": {
@@ -2088,7 +2088,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {

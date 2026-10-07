@@ -4,6 +4,8 @@ using DocumentService.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Net;
+using System.Text.Json;
 
 namespace DocumentService.API.Controllers;
 
@@ -17,15 +19,18 @@ public class DocumentsController : ControllerBase
     private readonly IDocumentService _documentService;
     private readonly ILogger<DocumentsController> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public DocumentsController(
         IDocumentService documentService,
         ILogger<DocumentsController> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHttpClientFactory httpClientFactory)
     {
         _documentService = documentService;
         _logger = logger;
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
     }
 
     // ── Lấy userId từ JWT claim ───────────────────────────────────────────────
@@ -110,6 +115,14 @@ public class DocumentsController : ControllerBase
         return Ok(ApiResponse<IEnumerable<DocumentTypeDto>>.Ok(result));
     }
 
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStatistics()
+    {
+        Response.Headers.CacheControl = "no-store";
+        var statistics = await _documentService.GetStatisticsAsync(GetCurrentUserId());
+        return Ok(ApiResponse<DocumentStatisticsDto>.Ok(statistics));
+    }
+
     /// <summary>
     /// GET /api/documents/{id} - Lấy chi tiết một văn bản (kèm processes)
     /// </summary>
@@ -120,6 +133,25 @@ public class DocumentsController : ControllerBase
     {
         var result = await _documentService.GetDocumentByIdAsync(id);
         return Ok(ApiResponse<DocumentDto>.Ok(result));
+    }
+
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin,Clerk,Specialist")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDocumentDto dto)
+    {
+        var result = await _documentService.UpdateDocumentAsync(id, dto, GetCurrentUserId());
+        return Ok(ApiResponse<DocumentDto>.Ok(result, "Đã cập nhật công văn."));
+    }
+
+    [HttpGet("{id:guid}/file")]
+    public async Task<IActionResult> GetFile(Guid id, [FromQuery] bool download = false)
+    {
+        var file = await _documentService.GetFileAsync(id);
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        return download
+            ? File(file.Content, "application/pdf", file.FileName, enableRangeProcessing: true)
+            : File(file.Content, "application/pdf", enableRangeProcessing: true);
     }
 
     /// <summary>
@@ -269,12 +301,39 @@ public class DocumentsController : ControllerBase
     /// POST /api/documents/{id}/assign - Phân công xử lý văn bản
     /// </summary>
     [HttpPost("{id:guid}/assign")]
+    [Authorize(Roles = "Admin,Clerk,Manager,BoardOfDirectors")]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> Assign(Guid id, [FromBody] WorkflowActionDto dto)
     {
-        if (dto.ToUserId is null)
+        if (dto.ToUserId is null || dto.ToUserId == Guid.Empty)
             return BadRequest(ApiResponse<object>.Fail("Vui lòng cung cấp ToUserId để phân công."));
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/users/{dto.ToUserId}");
+            request.Headers.TryAddWithoutValidation("Authorization", Request.Headers.Authorization.ToString());
+            using var response = await _httpClientFactory.CreateClient("identity-directory")
+                .SendAsync(request, HttpContext.RequestAborted);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return BadRequest(ApiResponse<object>.Fail("Người nhận không tồn tại."));
+            if (response.StatusCode == HttpStatusCode.Unauthorized) return Unauthorized();
+            if (!response.IsSuccessStatusCode)
+                return StatusCode(503, ApiResponse<object>.Fail("Chưa xác nhận được người nhận. Vui lòng thử lại."));
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            if (json.RootElement.ValueKind != JsonValueKind.Object
+                || !json.RootElement.TryGetProperty("data", out var user)
+                || user.ValueKind != JsonValueKind.Object
+                || !user.TryGetProperty("isActive", out var active))
+                return StatusCode(503, ApiResponse<object>.Fail("Phản hồi danh bạ người dùng không hợp lệ."));
+            if (active.ValueKind != JsonValueKind.True)
+                return BadRequest(ApiResponse<object>.Fail("Tài khoản người nhận không hoạt động."));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            _logger.LogWarning(ex, "Không kiểm tra được người nhận phân công {UserId}", dto.ToUserId);
+            return StatusCode(503, ApiResponse<object>.Fail("Chưa kết nối được danh bạ người dùng. Vui lòng thử lại."));
+        }
 
         var userId = GetCurrentUserId();
         var result = await _documentService.AssignAsync(id, userId, dto.ToUserId.Value, dto.Comment);

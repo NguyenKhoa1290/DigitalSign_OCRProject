@@ -4,6 +4,8 @@
 @inject AuthService AuthService
 @inject NavigationManager NavManager
 @inject IToastService Toast
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>@(_document?.Title ?? "Chi tiết Công văn") - HAU</PageTitle>
 
@@ -43,6 +45,18 @@ else
 
     <!-- Action Buttons by Role/Status -->
     <div class="document-actions">
+        @if (CanEdit)
+        {
+            <button class="btn btn-outline" @onclick="OpenEditModal" disabled="@_isActionLoading">Sửa thông tin</button>
+        }
+        @if (_role is "Admin" or "Clerk" or "Manager" or "BoardOfDirectors")
+        {
+            <button class="btn btn-outline" @onclick="OpenAssignModal" disabled="@_isActionLoading">Phân công xử lý</button>
+        }
+        @if (!string.IsNullOrWhiteSpace(_document.MinioPath))
+        {
+            <button class="btn btn-outline" @onclick="DownloadFile" disabled="@(_isActionLoading || _fileUrl == null)">Tải PDF</button>
+        }
         @if (_document.Status == "Draft" && (_role == "Clerk" || _role == "Specialist"))
         {
             <button class="btn btn-primary" @onclick='() => ShowActionModal("submit")'>
@@ -164,12 +178,12 @@ else
             </div>
 
             <!-- PDF Viewer -->
-            @if (!string.IsNullOrEmpty(_presignedUrl))
+            @if (!string.IsNullOrEmpty(_fileUrl))
             {
                 <div class="card">
                     <div class="card-header">
                         <span class="card-title">Xem File PDF</span>
-                        <a href="@_presignedUrl" target="_blank" class="btn btn-outline btn-sm">
+                        <a href="@_fileUrl" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
                             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
@@ -177,9 +191,13 @@ else
                         </a>
                     </div>
                     <div class="card-body pdf-card-body">
-                        <iframe class="pdf-frame" src="@_presignedUrl"></iframe>
+                        <iframe class="pdf-frame" src="@_fileUrl" title="Nội dung PDF công văn"></iframe>
                     </div>
                 </div>
+            }
+            else if (_fileError != null)
+            {
+                <div class="alert alert-warning" role="alert">@_fileError</div>
             }
 
             <!-- OCR Result -->
@@ -265,6 +283,73 @@ else
 }
 
 <!-- Action Modal -->
+@if (_showEditModal)
+{
+    <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Sửa thông tin công văn">
+            <div class="modal-header">
+                <span class="modal-title">Sửa thông tin công văn</span>
+                <button class="modal-close" @onclick="() => _showEditModal = false" disabled="@_isActionLoading" aria-label="Đóng">&times;</button>
+            </div>
+            <div class="modal-body">
+                @if (_formError != null) { <div class="alert alert-danger" role="alert">@_formError</div> }
+                <div class="form-group">
+                    <label class="form-label" for="edit-title">Tiêu đề</label>
+                    <input id="edit-title" class="form-control" maxlength="500" @bind="_editModel.Title" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="edit-number">Số hiệu</label>
+                    <input id="edit-number" class="form-control" maxlength="50" @bind="_editModel.DocumentNumber" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="edit-type">Loại văn bản</label>
+                    <CustomSelect Id="edit-type" AriaLabel="Loại văn bản" Options="EditTypeOptions" @bind-Value="_editTypeId" MaxOptionsHeight="160" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="edit-date">Ngày ban hành</label>
+                    <InputDate id="edit-date" class="form-control" @bind-Value="_editModel.IssuedDate" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="() => _showEditModal = false" disabled="@_isActionLoading">Hủy</button>
+                <button class="btn btn-primary" @onclick="SaveEdit" disabled="@_isActionLoading">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+}
+@if (_showAssignModal)
+{
+    <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Phân công xử lý">
+            <div class="modal-header">
+                <span class="modal-title">Phân công xử lý</span>
+                <button class="modal-close" @onclick="() => _showAssignModal = false" disabled="@_isActionLoading" aria-label="Đóng">&times;</button>
+            </div>
+            <div class="modal-body">
+                @if (_formError != null) { <div class="alert alert-danger" role="alert">@_formError</div> }
+                <div class="form-group">
+                    <label class="form-label" for="assignee-search">Tìm người nhận</label>
+                    <div class="assignee-search-row">
+                        <input id="assignee-search" class="form-control" placeholder="Họ tên hoặc tài khoản" @bind="_assigneeSearch" @bind:event="oninput" @bind:after="ClearAssignee" />
+                        <button class="btn btn-outline" @onclick="SearchAssignees" disabled="@_isSearching">Tìm</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="assignee-select">Người nhận</label>
+                    <CustomSelect Id="assignee-select" AriaLabel="Người nhận" Options="AssigneeOptions" @bind-Value="_assigneeId" MaxOptionsHeight="160" Disabled="@_isSearching" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="assign-comment">Ghi chú</label>
+                    <textarea id="assign-comment" class="form-control" rows="3" @bind="_assignComment"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="() => _showAssignModal = false" disabled="@_isActionLoading">Hủy</button>
+                <button class="btn btn-primary" @onclick="SaveAssignment" disabled="@(_isActionLoading || _isSearching || string.IsNullOrEmpty(_assigneeId))">Xác nhận phân công</button>
+            </div>
+        </div>
+    </div>
+}
 @if (_showActionModal)
 {
     <div class="modal-overlay" @onclick="CloseActionModal">
@@ -304,13 +389,25 @@ else
     private bool _isLoading = true;
     private bool _isActionLoading;
     private string? _role;
-    private string? _presignedUrl;
+    private string? _fileUrl;
+    private string? _fileError;
+    private bool _disposed;
+    private bool _showEditModal, _showAssignModal, _isSearching;
+    private string? _formError;
+    private UpdateDocumentDto _editModel = new();
+    private string _editTypeId = "", _assigneeSearch = "", _assigneeId = "", _assignComment = "";
+    private List<DocumentTypeDto> _documentTypes = new();
+    private List<AssigneeDto> _assignees = new();
+    private bool CanEdit => _document?.Status is "Draft" or "Rejected" && _role is "Admin" or "Clerk" or "Specialist";
+    private IReadOnlyList<SelectOption> EditTypeOptions => _documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.Name)).ToList();
+    private IReadOnlyList<SelectOption> AssigneeOptions => new[] { new SelectOption("", "-- Chọn người nhận --") }
+        .Concat(_assignees.Select(user => new SelectOption(user.Id.ToString(), $"{user.FullName} ({user.Username}) — {user.DepartmentName}"))).ToList();
 
     private bool _showActionModal;
     private string _currentAction = "";
     private string _actionComment = "";
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         _role = await AuthService.GetRoleAsync();
         await LoadDocument();
@@ -320,12 +417,104 @@ else
     {
         _isLoading = true;
         _document = await DocumentService.GetDocumentAsync(Id);
-        if (_document?.FileUrl != null)
+        if (_fileUrl != null) await JS.InvokeVoidAsync("documentFiles.releaseUrl", _fileUrl);
+        _fileUrl = null;
+        _fileError = null;
+        if (!string.IsNullOrWhiteSpace(_document?.MinioPath))
         {
-            try { _presignedUrl = await DocumentService.GetPresignedUrlAsync(Id); }
-            catch { _presignedUrl = _document.FileUrl; }
+            try
+            {
+                var bytes = await DocumentService.GetFileAsync(Id);
+                if (bytes == null) _fileError = "Không tải được PDF. Vui lòng tải lại trang hoặc liên hệ quản trị viên.";
+                else if (!_disposed) _fileUrl = await JS.InvokeAsync<string>("documentFiles.createUrl", bytes);
+            }
+            catch { _fileError = "Không tải được PDF. Vui lòng thử lại."; }
         }
         _isLoading = false;
+    }
+
+    private async Task DownloadFile()
+    {
+        if (_fileUrl != null) await JS.InvokeVoidAsync("documentFiles.download", _fileUrl, $"cong-van-{Id}.pdf");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        if (_fileUrl != null) await JS.InvokeVoidAsync("documentFiles.releaseUrl", _fileUrl);
+    }
+
+    private async Task OpenEditModal()
+    {
+        if (_document == null) return;
+        _formError = null;
+        _documentTypes = await DocumentService.GetDocumentTypesAsync() ?? new();
+        _editModel = new UpdateDocumentDto { Title = _document.Title, DocumentNumber = _document.DocNumber, DocumentTypeId = _document.DocTypeId, IssuedDate = _document.IssuedDate };
+        _editTypeId = _document.DocTypeId?.ToString() ?? "";
+        _showEditModal = true;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (string.IsNullOrWhiteSpace(_editModel.Title) || !Guid.TryParse(_editTypeId, out var typeId))
+        { _formError = "Vui lòng nhập tiêu đề và chọn loại văn bản."; return; }
+        _isActionLoading = true;
+        try
+        {
+            _editModel.DocumentTypeId = typeId;
+            var updated = await DocumentService.UpdateDocumentAsync(Id, _editModel);
+            if (updated == null) { _formError = "Không lưu được công văn. Chỉ có thể sửa khi Nháp hoặc Bị từ chối."; return; }
+            _showEditModal = false;
+            Toast.ShowSuccess("Đã cập nhật công văn.");
+            await LoadDocument();
+        }
+        catch { _formError = "Không lưu được công văn. Vui lòng thử lại."; }
+        finally { _isActionLoading = false; }
+    }
+
+    private async Task OpenAssignModal()
+    {
+        _formError = null;
+        _assigneeSearch = _assigneeId = _assignComment = "";
+        _showAssignModal = true;
+        await SearchAssignees();
+    }
+
+    private void ClearAssignee() { _assigneeId = ""; _assignees.Clear(); }
+
+    private async Task SearchAssignees()
+    {
+        _isSearching = true;
+        _formError = null;
+        _assigneeId = "";
+        var search = _assigneeSearch;
+        try
+        {
+            var result = await DocumentService.GetAssigneesAsync(search);
+            if (search != _assigneeSearch) return;
+            _assignees = result ?? new();
+            if (result == null) _formError = "Không tải được danh sách người nhận.";
+            else if (result.Count == 0) _formError = "Không tìm thấy người nhận. Hãy đổi từ khóa tìm kiếm.";
+        }
+        catch { _formError = "Không tải được danh sách người nhận."; }
+        finally { _isSearching = false; }
+    }
+
+    private async Task SaveAssignment()
+    {
+        if (!Guid.TryParse(_assigneeId, out var userId) || !_assignees.Any(user => user.Id == userId))
+        { _formError = "Vui lòng chọn người nhận trong danh sách."; return; }
+        _isActionLoading = true;
+        try
+        {
+            if (!await DocumentService.AssignDocumentAsync(Id, userId, _assignComment))
+            { _formError = "Phân công thất bại. Vui lòng thử lại."; return; }
+            _showAssignModal = false;
+            Toast.ShowSuccess("Đã phân công xử lý.");
+            await LoadDocument();
+        }
+        catch { _formError = "Phân công thất bại. Vui lòng thử lại."; }
+        finally { _isActionLoading = false; }
     }
 
     private void ShowActionModal(string action)
@@ -420,6 +609,7 @@ else
         "Reject" => "Từ chối",
         "Publish" => "Ban hành",
         "Assign" => "Phân công",
+        "Update" => "Cập nhật thông tin",
         "OCR" => "Chạy OCR",
         "Upload" => "Tải lên file",
         _ => action

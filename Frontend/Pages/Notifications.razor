@@ -1,28 +1,101 @@
 @page "/notifications"
 @attribute [Authorize]
+@inject MonitoringService MonitoringService
+@implements IAsyncDisposable
 
 <PageTitle>Trung tâm thông báo - HAU Công văn</PageTitle>
-
 <div class="page-header notification-header">
-    <div>
-        <h1 class="page-title">Trung tâm thông báo</h1>
-        <p class="page-subtitle">Nơi tập trung thông báo công văn, OCR, ký số và chứng thư của bạn.</p>
-    </div>
+    <div><h1 class="page-title">Trung tâm thông báo</h1><p class="page-subtitle">Thông báo của bạn · Tự cập nhật mỗi 30 giây khi mở trang.</p></div>
     <a href="/" class="btn btn-outline">Quay lại Dashboard</a>
 </div>
+<div class="card notification-controls"><div class="card-body">
+    <div class="notification-toolbar">
+        <div><label class="form-label" for="notification-kind">Loại thông báo</label><CustomSelect Id="notification-kind" Options="KindOptions" @bind-Value="_kind" AfterValueChanged="ApplyFilters" /></div>
+        <label class="notification-unread-filter"><input id="notification-unread" type="checkbox" @bind="_unreadOnly" @bind:after="ApplyFilters" /> Chỉ chưa đọc</label>
+    </div>
+    <div class="notification-buttons">
+        <button class="btn btn-outline" @onclick="Refresh" disabled="@(_loading || _marking)">Làm mới thông báo</button>
+        <button class="btn btn-primary" @onclick="MarkAll" disabled="@(_loading || _marking || _data?.UnreadCount is null or 0)">Đánh dấu tất cả đã đọc</button>
+    </div>
+</div></div>
+@if (_error != null) { <div class="alert alert-warning" role="alert">@_error</div> }
+@if (_loading) { <LoadingSpinner Message="Đang tải thông báo..." /> }
+else if (_data != null)
+{
+    <p class="notification-summary">@_data.UnreadCount chưa đọc · @_data.TotalCount thông báo phù hợp · Trang @_page</p>
+    @if (_data.Items.Count == 0) { <div class="notification-empty"><h2>Không có thông báo phù hợp</h2><p>Thông báo mới sẽ xuất hiện khi có công văn hoặc chứng thư cần theo dõi.</p></div> }
+    @foreach (var item in _data.Items)
+    {
+        <article class="card notification-entry @(item.ReadAt == null ? "notification-new" : "")" data-notification-id="@item.Id">
+            <div class="card-body">
+                <div class="notification-entry-top"><strong>@KindLabel(item.Kind)</strong><span class="badge">@(item.ReadAt == null ? "Chưa đọc" : "Đã đọc")</span></div>
+                <p>@item.Message</p><p class="notification-time">@item.Timestamp.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss") (Việt Nam)</p>
+                <div class="notification-buttons">
+                    <a href="@item.TargetUrl" class="btn btn-outline btn-sm">Xem chi tiết</a>
+                    @if (item.ReadAt == null) { <button class="btn btn-primary btn-sm" @onclick="() => MarkRead(item.Id)" disabled="@_marking">Đánh dấu đã đọc</button> }
+                </div>
+            </div>
+        </article>
+    }
+    <div class="notification-pagination">
+        <button class="btn btn-outline" @onclick="Previous" disabled="@(_page <= 1 || _marking)">Trang trước</button>
+        <button class="btn btn-outline" @onclick="Next" disabled="@((long)_page * _data.PageSize >= _data.TotalCount || _marking)">Trang sau</button>
+    </div>
+}
 
-<div class="notification-empty">
-    <div class="notification-icon">
-        <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-    </div>
-    <h2>Luồng thông báo đang được chuẩn bị</h2>
-    <p>Route và giao diện nền đã sẵn sàng. Bước tiếp theo sẽ bổ sung lưu thông báo, trạng thái đã đọc, phân loại và cập nhật thời gian thực.</p>
-    <div class="notification-types">
-        <span>Công văn được giao</span>
-        <span>OCR hoàn tất</span>
-        <span>Yêu cầu ký</span>
-        <span>Chứng thư sắp hết hạn</span>
-    </div>
-</div>
+@code {
+    private JournalPage<NotificationDto>? _data;
+    private string _kind="";
+    private bool _unreadOnly,_loading,_marking,_fetching,_reloadRequested;
+    private int _page=1;
+    private string? _error;
+    private readonly CancellationTokenSource _pollCancellation=new();
+    private Task? _poll;
+    private static readonly IReadOnlyList<SelectOption> KindOptions=new[] {new SelectOption("","Tất cả thông báo")}
+        .Concat(new[]{"Assignment","OcrCompleted","ReviewRequested","Rejected","Signed","Published","CertificateExpiring"}.Select(k=>new SelectOption(k,KindLabel(k)))).ToList();
+    protected override async Task OnInitializedAsync() {await Load();_poll=Poll();}
+    private async Task Poll()
+    {
+        using var timer=new PeriodicTimer(TimeSpan.FromSeconds(30));
+        try {while(await timer.WaitForNextTickAsync(_pollCancellation.Token)) if(!_marking) await InvokeAsync(async()=>{await Load(false);if(!_pollCancellation.IsCancellationRequested)StateHasChanged();});}
+        catch(OperationCanceledException) { }
+    }
+    private async Task Load(bool showLoading=true)
+    {
+        if(_fetching) {_reloadRequested=true;return;}
+        _fetching=true;_loading=showLoading;_error=null;
+        try
+        {
+            var result=await MonitoringService.GetNotificationsAsync(_page,_unreadOnly,_kind,_pollCancellation.Token);
+            if(result==null)_error="Không tải được thông báo. Hãy thử làm mới.";
+            else if(!_reloadRequested) _data=result;
+        }
+        catch {_error="Không kết nối được nguồn thông báo. Hãy thử lại.";}
+        finally {_fetching=_loading=false;}
+        if(_reloadRequested && !_pollCancellation.IsCancellationRequested) {_reloadRequested=false;await Load(showLoading);}
+    }
+    private Task Refresh()=>Load();
+    private Task ApplyFilters() {_page=1;return Load();}
+    private Task Previous() {_page--;return Load();}
+    private Task Next() {_page++;return Load();}
+    private async Task MarkRead(Guid id)
+    {
+        _marking=true;
+        try {if(!await MonitoringService.MarkReadAsync(id)) {_error="Không đánh dấu được thông báo. Hãy thử lại.";return;} await Load();}
+        catch {_error="Không cập nhật được thông báo. Hãy thử lại.";}
+        finally {_marking=false;}
+    }
+    private async Task MarkAll()
+    {
+        _marking=true;
+        try {if(!await MonitoringService.MarkAllReadAsync()) {_error="Không cập nhật được trạng thái đã đọc.";return;} await Load();}
+        catch {_error="Không cập nhật được thông báo. Hãy thử lại.";}
+        finally {_marking=false;}
+    }
+    public async ValueTask DisposeAsync() {_pollCancellation.Cancel();if(_poll!=null)await _poll;_pollCancellation.Dispose();}
+    private static string KindLabel(string kind)=>kind switch
+    {
+        "Assignment"=>"Công văn được giao", "OcrCompleted"=>"OCR hoàn tất", "ReviewRequested"=>"Yêu cầu ký",
+        "Rejected"=>"Công văn bị từ chối", "Signed"=>"Công văn đã ký", "Published"=>"Công văn phát hành", "CertificateExpiring"=>"Chứng thư sắp hết hạn", _=>kind
+    };
+}

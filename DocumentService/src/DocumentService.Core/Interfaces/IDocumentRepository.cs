@@ -12,4 +12,5 @@ public interface IDocumentRepository
     Task<Document> UpdateAsync(Document document);
     Task<bool> DeleteAsync(Guid id);
     Task<bool> ExistsAsync(Guid id);
+    Task<DocumentStatisticsDto> GetStatisticsAsync(Guid userId, DateTime todayStartUtc, DateTime tomorrowStartUtc);
 }

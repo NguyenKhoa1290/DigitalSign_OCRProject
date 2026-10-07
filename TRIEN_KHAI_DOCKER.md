@@ -100,6 +100,7 @@ Lưu ý:
 
 - `JWT_SECRET_KEY` phải giống nhau cho IdentityService, ApiGateway, DocumentService và SignService.
 - `OCR_SERVICE_TOKEN` phải giống nhau giữa DocumentService và OCRService.
+- DocumentService dùng `IdentityService__BaseUrl=http://identity-service:8080/` trong Compose để xác nhận người nhận phân công. Khi chạy ngoài Docker, default là `http://localhost:5048/`.
 - Mặc định Docker dev dùng Mailpit để nhận email forgot/reset password tại `http://localhost:8025`, không gửi email ra ngoài.
 - Không commit file `.env` thật vào Git. Repo đã có `.gitignore` và `.dockerignore` để bỏ qua `.env`.
 
@@ -177,10 +178,13 @@ Invoke-WebRequest http://localhost:8025/ -UseBasicParsing
 Kết quả mong muốn:
 
 - Gateway health trả `Healthy`.
+- Gateway hiện cần PostgreSQL và bảng Identity/Document; `ConnectionStrings__DefaultConnection` đã được cấu hình trong Compose. Initializer SQL tạo log/audit/thông báo trong transaction, retry tối đa 10 lần trước khi mở cổng. Cần chờ health sau recreate, tránh gửi login trong lúc startup.
 - Identity health trả `Healthy`.
 - OCR health trả JSON có `status: ok`.
 - Frontend trả HTML.
 - Mailpit trả HTML.
+
+Thay đổi log/audit/thông báo: build/recreate `api-gateway document-service frontend`, rồi chạy `tests/monitoring-notifications.spec.cjs` trên Docker local (Node 20+, Playwright/Chromium, Docker CLI). GET `/api/admin/system-logs` và `/api/admin/activity` chỉ Admin; `/api/notifications` lấy user từ JWT. Dữ liệu/read state nằm trong PostgreSQL volume, không backfill lịch sử; nhật ký là HTTP qua Gateway và startup, chưa gom toàn bộ log nội bộ. Trang thông báo polling 30 giây, cảnh báo chứng thư tạo khi đọc API; chưa push/worker nền.
 
 Kiểm tra login qua Gateway:
 

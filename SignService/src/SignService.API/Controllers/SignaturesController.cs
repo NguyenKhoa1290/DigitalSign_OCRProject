@@ -12,6 +12,19 @@ namespace SignService.API.Controllers;
 [Authorize]
 public class SignaturesController : ControllerBase
 {
+    [HttpGet("certificates/stats")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetCertificateStatistics()
+    {
+        Response.Headers.CacheControl = "no-store";
+        var certificates = await _signService.GetCertificatesAsync();
+        var now = DateTime.UtcNow;
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            ActiveCertificates = certificates.Count(c => c.NotBefore <= now && c.NotAfter > now)
+        }));
+    }
+
     private readonly ISignService _signService;
     private readonly ILogger<SignaturesController> _logger;
 

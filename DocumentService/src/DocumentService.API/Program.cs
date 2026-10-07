@@ -30,6 +30,11 @@ try
 
     // ── Infrastructure (DbContext, MinIO, repositories, services) ─────────────
     builder.Services.AddInfrastructure(configuration);
+    builder.Services.AddHttpClient("identity-directory", client =>
+    {
+        client.BaseAddress = new Uri(configuration["IdentityService:BaseUrl"] ?? "http://localhost:5048/");
+        client.Timeout = TimeSpan.FromSeconds(5);
+    });
 
     // ── JWT Authentication (validate only, do not issue) ─────────────────────
     var jwtKey = configuration["JwtSettings:Key"]
@@ -175,6 +180,7 @@ try
                     DocumentNotFoundException => (404, ex.Message),
                     InvalidWorkflowTransitionException => (422, ex.Message),
                     UnauthorizedDocumentAccessException => (403, ex.Message),
+                    DocumentServiceException => (400, ex.Message),
                     _ => (500, "Đã xảy ra lỗi nội bộ. Vui lòng thử lại sau.")
                 };
 

@@ -112,4 +112,34 @@ public class DocumentRepository : IDocumentRepository
     {
         return await _context.Documents.AnyAsync(d => d.Id == id);
     }
+
+    public async Task<DocumentStatisticsDto> GetStatisticsAsync(Guid userId, DateTime todayStartUtc, DateTime tomorrowStartUtc)
+    {
+        // Creation is the earliest Submit process, not the most recent submission or edit.
+        var documents = _context.Documents.AsNoTracking().Select(d => new
+        {
+            d.Status, d.MinioPath, d.OcrDataRaw,
+            CreatedAt = d.Processes.Where(p => p.Action == DocumentAction.Submit)
+                .Select(p => (DateTime?)p.Timestamp).Min(),
+            CreatedBy = d.Processes.Where(p => p.Action == DocumentAction.Submit)
+                .OrderBy(p => p.Timestamp).ThenBy(p => p.Id).Select(p => (Guid?)p.FromUserId).FirstOrDefault(),
+            AssignedByMe = d.Processes.Any(p => p.Action == DocumentAction.Assign && p.FromUserId == userId)
+        });
+        return await documents.GroupBy(d => 1).Select(group => new DocumentStatisticsDto
+        {
+            TotalDocuments = group.Count(),
+            TodayDocuments = group.Count(d => d.CreatedAt >= todayStartUtc && d.CreatedAt < tomorrowStartUtc),
+            PendingDocuments = group.Count(d => d.Status == DocumentStatus.PendingDeptReview || d.Status == DocumentStatus.DeptSigned
+                || d.Status == DocumentStatus.PendingDirectorSign || d.Status == DocumentStatus.DirectorSigned),
+            PublishedDocuments = group.Count(d => d.Status == DocumentStatus.Published),
+            PendingOcrDocuments = group.Count(d => d.MinioPath.Trim() != "" && d.OcrDataRaw == null),
+            MyDraftDocuments = group.Count(d => d.Status == DocumentStatus.Draft && d.CreatedBy == userId),
+            MyPendingDocuments = group.Count(d => d.CreatedBy == userId && (d.Status == DocumentStatus.PendingDeptReview
+                || d.Status == DocumentStatus.DeptSigned || d.Status == DocumentStatus.PendingDirectorSign)),
+            PendingDeptDocuments = group.Count(d => d.Status == DocumentStatus.PendingDeptReview),
+            PendingDirectorDocuments = group.Count(d => d.Status == DocumentStatus.PendingDirectorSign),
+            DirectorSignedDocuments = group.Count(d => d.Status == DocumentStatus.DirectorSigned || d.Status == DocumentStatus.Published),
+            AssignedDocuments = group.Count(d => d.AssignedByMe)
+        }).SingleOrDefaultAsync() ?? new DocumentStatisticsDto();
+    }
 }

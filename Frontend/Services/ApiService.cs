@@ -61,10 +61,10 @@ public class ApiService
         }
     }
 
-    public async Task<T?> GetAsync<T>(string url)
+    public async Task<T?> GetAsync<T>(string url, CancellationToken cancellationToken = default)
     {
         var client = await GetClientAsync();
-        var resp = await client.GetAsync(url);
+        using var resp = await client.GetAsync(url, cancellationToken);
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         { _navManager.NavigateTo("/login"); return default; }
         if (!resp.IsSuccessStatusCode) return default;
@@ -141,5 +141,21 @@ public class ApiService
     {
         var client = await GetClientAsync();
         return await client.PostAsync(url, content);
+    }
+
+    public async Task<T?> PostFormAsync<T>(string url, MultipartFormDataContent content)
+    {
+        using var response = await PostFormAsync(url, content);
+        if (!response.IsSuccessStatusCode) return default;
+        return SmartDeserialize<T>(await response.Content.ReadAsStringAsync());
+    }
+
+    public async Task<byte[]?> GetBytesAsync(string url)
+    {
+        var client = await GetClientAsync();
+        using var response = await client.GetAsync(url);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        { _navManager.NavigateTo("/login"); return null; }
+        return response.IsSuccessStatusCode ? await response.Content.ReadAsByteArrayAsync() : null;
     }
 }

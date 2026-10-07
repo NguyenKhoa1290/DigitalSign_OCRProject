@@ -22,10 +22,18 @@ public class DocumentService
         => await _api.GetAsync<DocumentDto>($"api/documents/{id}");
 
     public async Task<DocumentDto?> CreateDocumentAsync(CreateDocumentDto dto)
-        => await _api.PostAsync<DocumentDto>("api/documents", dto);
+        => await _api.PostAsync<DocumentDto>("api/documents", new
+        {
+            dto.Title, DocNumber = dto.DocumentNumber, DocTypeId = dto.DocumentTypeId,
+            IssuedDate = dto.IssuedDate.HasValue ? DateOnly.FromDateTime(dto.IssuedDate.Value) : (DateOnly?)null
+        });
 
     public async Task<DocumentDto?> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto)
-        => await _api.PutAsync<DocumentDto>($"api/documents/{id}", dto);
+        => await _api.PutAsync<DocumentDto>($"api/documents/{id}", new
+        {
+            dto.Title, DocNumber = dto.DocumentNumber, DocTypeId = dto.DocumentTypeId,
+            IssuedDate = dto.IssuedDate.HasValue ? DateOnly.FromDateTime(dto.IssuedDate.Value) : (DateOnly?)null
+        });
 
     public async Task<bool> SubmitDocumentAsync(Guid id, string? comment = null)
     { try { await _api.PostAsync<object>($"api/documents/{id}/submit", new { comment }); return true; } catch { return false; } }
@@ -46,7 +54,7 @@ public class DocumentService
     { try { await _api.PostAsync<object>($"api/documents/{id}/publish", null); return true; } catch { return false; } }
 
     public async Task<bool> AssignDocumentAsync(Guid id, Guid assignedToId, string? comment = null)
-    { try { await _api.PostAsync<object>($"api/documents/{id}/assign", new { assignedToId, comment }); return true; } catch { return false; } }
+    { try { return await _api.PostAsync<DocumentDto>($"api/documents/{id}/assign", new { toUserId = assignedToId, comment }) is not null; } catch { return false; } }
 
     public async Task<bool> RunOcrAsync(Guid id)
     {
@@ -68,21 +76,16 @@ public class DocumentService
     public async Task<List<DocumentTypeDto>?> GetDocumentTypesAsync()
         => await _api.GetAsync<List<DocumentTypeDto>>("api/documents/types");
 
-    // Không có endpoint presigned-url trong backend — lấy file qua proxy Document Service
-    // Tạm thời trả về null, bảo UI download trực tiếp qua api/documents/{id}
-    public Task<string?> GetPresignedUrlAsync(Guid id)
-        => Task.FromResult<string?>(null);
+    public Task<byte[]?> GetFileAsync(Guid id)
+        => _api.GetBytesAsync($"api/documents/{id}/file");
+
+    public Task<List<AssigneeDto>?> GetAssigneesAsync(string search)
+        => _api.GetAsync<List<AssigneeDto>>($"api/users/assignees?search={Uri.EscapeDataString(search)}");
 
     public async Task<DocumentDto?> UploadFileAsync(Guid id, System.IO.Stream fileStream, string fileName)
     {
         var content = new MultipartFormDataContent();
         content.Add(new StreamContent(fileStream), "file", fileName);
-        var resp = await _api.PostFormAsync($"api/documents/{id}/upload", content);
-        if (resp.IsSuccessStatusCode)
-            return System.Text.Json.JsonSerializer.Deserialize<DocumentDto>(await resp.Content.ReadAsStringAsync(),
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        return null;
+        return await _api.PostFormAsync<DocumentDto>($"api/documents/{id}/upload", content);
     }
 }
-
-public class PresignedUrlResponse { public string Url { get; set; } = string.Empty; }

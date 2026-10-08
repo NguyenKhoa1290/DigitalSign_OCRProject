@@ -4,7 +4,7 @@ Workflow nằm tại `.github/workflows/ci-cd.yml` và có ba giai đoạn:
 
 1. Pull request và push vào `main`: restore, chạy bốn bộ test .NET và kiểm tra Docker Compose.
 2. Sau khi kiểm tra thành công: build sáu Docker image. Với push vào `main`, image được đẩy lên GitHub Container Registry (GHCR) với hai tag: `sha-<commit>` và `latest`.
-3. Chỉ với push vào `main`: GitHub Actions SSH vào VPS, pull đúng tag `sha-<commit>`, chạy Docker Compose với `--no-build` và chờ health endpoint của frontend.
+3. Khi VPS đã sẵn sàng: vào **Actions > CI/CD > Run workflow** và bật `deploy_to_vps`. GitHub Actions SSH vào VPS, pull đúng tag `sha-<commit>`, chạy Docker Compose với `--no-build` và chờ health endpoint của frontend.
 
 VPS không build source nên phù hợp hơn với cấu hình RAM thấp. Pipeline không tự đưa secrets ứng dụng vào GitHub: `.env` và `.env.tunnel` chỉ tồn tại trên VPS.
 
@@ -65,7 +65,7 @@ Thêm các environment secrets sau:
 
 ## 4. Luồng chạy và rollback
 
-Khi pull request mở vào `main`, chỉ CI chạy; không push image và không SSH. Khi merge/push vào `main`, CI xong mới build/push image và deploy.
+Khi pull request mở vào `main`, chỉ CI chạy; không push image và không SSH. Khi merge/push vào `main`, CI xong sẽ build/push image lên GHCR nhưng không deploy VPS. Khi VPS đã cấu hình xong, chạy thủ công workflow và bật `deploy_to_vps` để deploy đúng image của commit được chọn.
 
 Mỗi bản deploy dùng tag theo commit, ví dụ `sha-abc123...`, không dùng riêng `latest`. Nếu cần rollback, chạy trên VPS với tag cũ:
 

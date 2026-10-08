@@ -1717,6 +1717,16 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 53 — 08/10/2026
+### Tạm hoãn CD VPS, giữ CI và publish Docker image
+
+- Theo trạng thái hiện tại chưa có VPS deploy, workflow không còn tự chạy job SSH sau mỗi push vào `main`.
+- Push `main` vẫn chạy CI, kiểm tra Compose và publish image lên GHCR theo tag commit để sẵn sàng triển khai về sau.
+- Job deploy chỉ chạy khi người dùng vào **Actions > CI/CD > Run workflow** và bật input `deploy_to_vps`; khi VPS đã sẵn sàng có thể dùng lại quy trình này mà không phải sửa source hoặc build trên VPS.
+- Cập nhật hướng dẫn CI/CD theo cơ chế deploy thủ công có kiểm soát. Chưa tạo, dùng hoặc yêu cầu secrets VPS ở giai đoạn này.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

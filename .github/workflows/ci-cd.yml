@@ -6,6 +6,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_to_vps:
+        description: Deploy an existing commit image to the configured VPS
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -115,7 +121,7 @@ jobs:
   deploy:
     name: Deploy to VPS
     needs: build-images
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_to_vps
     runs-on: ubuntu-latest
     environment:
       name: production

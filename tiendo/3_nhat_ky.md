@@ -1707,6 +1707,16 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 52 — 08/10/2026
+### Sửa kiểm tra Docker Compose trên GitHub Actions
+
+- Kiểm tra run CI/CD đầu tiên trên GitHub: bốn bộ test .NET đã Pass; job dừng ở bước kiểm tra Docker Compose.
+- Nguyên nhân: `docker-compose.tunnel.yml` khai báo `env_file: .env.tunnel`, trong khi file token này cố ý bị Git bỏ qua và không tồn tại trên GitHub runner.
+- Workflow tạo `.env.tunnel` tạm thời với `TUNNEL_TOKEN=ci-validation-only` ngay trước lệnh `docker compose ... config --quiet`. Token thật không xuất hiện trong source, logs hay GitHub Actions.
+- Các image build và deploy chưa bắt đầu ở run lỗi vì chúng phụ thuộc job kiểm tra Compose.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

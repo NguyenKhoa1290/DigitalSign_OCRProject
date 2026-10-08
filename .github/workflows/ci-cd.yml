@@ -43,7 +43,9 @@ jobs:
           dotnet test ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj --no-restore --configuration Release
 
       - name: Validate Docker Compose files
-        run: docker compose -f docker-compose.yml -f docker-compose.tunnel.yml config --quiet
+        run: |
+          printf 'TUNNEL_TOKEN=ci-validation-only\n' > .env.tunnel
+          docker compose -f docker-compose.yml -f docker-compose.tunnel.yml config --quiet
 
   build-images:
     name: Build ${{ matrix.service }} image

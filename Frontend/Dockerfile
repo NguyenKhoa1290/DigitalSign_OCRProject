@@ -17,5 +17,7 @@ RUN dotnet publish Frontend/HauDocumentApp.csproj -c Release -o /app/publish --n
 FROM nginx:1.27-alpine AS runtime
 COPY Frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
+COPY Frontend/docker-entrypoint.d/40-api-base-url.sh /docker-entrypoint.d/40-api-base-url.sh
+RUN chmod +x /docker-entrypoint.d/40-api-base-url.sh
 
-EXPOSE 80
+EXPOSE 80 3000

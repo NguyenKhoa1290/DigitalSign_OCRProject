@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 using Blazored.LocalStorage;
 using HauDocumentApp.Auth;
 using HauDocumentApp.Models;
@@ -12,7 +13,9 @@ public class AuthService
     private readonly ILocalStorageService     _localStorage;
     private readonly CustomAuthStateProvider  _authStateProvider;
     private const string TokenKey             = "auth_token";
+    private const string RefreshTokenKey      = "refresh_token";
     private const string MustChangeKey        = "must_change_password";
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
     public AuthService(
         HttpClient              httpClient,
@@ -43,7 +46,7 @@ public class AuthService
             if (login == null || string.IsNullOrEmpty(login.AccessToken))
                 return (false, false, "Phản hồi không hợp lệ từ server");
 
-            await _localStorage.SetItemAsStringAsync(TokenKey, login.AccessToken);
+            await StoreTokensAsync(login);
             _authStateProvider.NotifyUserAuthenticated(login.AccessToken);
 
             if (login.MustChangePassword)
@@ -65,7 +68,7 @@ public class AuthService
     {
         try
         {
-            var token = await GetTokenAsync();
+            var token = await GetValidAccessTokenAsync();
             var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/send-email-verification");
             request.Headers.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -90,7 +93,7 @@ public class AuthService
     {
         try
         {
-            var token    = await GetTokenAsync();
+            var token    = await GetValidAccessTokenAsync();
             var request  = new HttpRequestMessage(HttpMethod.Post, "api/auth/change-password");
             request.Headers.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -152,13 +155,100 @@ public class AuthService
 
     public async Task LogoutAsync()
     {
-        await _localStorage.RemoveItemAsync(TokenKey);
-        await _localStorage.RemoveItemAsync(MustChangeKey);
+        try
+        {
+            var token = await GetValidAccessTokenAsync();
+            if (!string.IsNullOrEmpty(token))
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/logout");
+                request.Headers.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                await _httpClient.SendAsync(request);
+            }
+        }
+        catch
+        {
+            // Vẫn xóa phiên cục bộ nếu máy chủ tạm thời không thể truy cập.
+        }
+
+        await ClearSessionAsync();
         _authStateProvider.NotifyUserLoggedOut();
+    }
+
+    private async Task ClearSessionAsync()
+    {
+        await _localStorage.RemoveItemAsync(TokenKey);
+        await _localStorage.RemoveItemAsync(RefreshTokenKey);
+        await _localStorage.RemoveItemAsync(MustChangeKey);
     }
 
     public async Task<string?> GetTokenAsync()
         => await _localStorage.GetItemAsStringAsync(TokenKey);
+
+    public async Task<string?> GetValidAccessTokenAsync()
+    {
+        var accessToken = await GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(accessToken)) return null;
+
+        if (HasMinimumValidity(accessToken, TimeSpan.FromMinutes(1)))
+            return accessToken;
+
+        return await RefreshAccessTokenAsync(accessToken);
+    }
+
+    public async Task<string?> RefreshAccessTokenAsync(string? failedAccessToken = null)
+    {
+        await _refreshLock.WaitAsync();
+        try
+        {
+            var currentAccessToken = await _localStorage.GetItemAsStringAsync(TokenKey);
+            var refreshToken = await _localStorage.GetItemAsStringAsync(RefreshTokenKey);
+
+            if (string.IsNullOrWhiteSpace(currentAccessToken) || string.IsNullOrWhiteSpace(refreshToken))
+                return null;
+
+            // Một request khác đã làm mới và xoay token trong khi request hiện tại chờ khóa.
+            if (!string.IsNullOrEmpty(failedAccessToken) &&
+                !string.Equals(currentAccessToken, failedAccessToken, StringComparison.Ordinal))
+                return currentAccessToken;
+
+            using var response = await _httpClient.PostAsJsonAsync("api/auth/refresh-token", new
+            {
+                AccessToken = currentAccessToken,
+                RefreshToken = refreshToken
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode is System.Net.HttpStatusCode.BadRequest
+                    or System.Net.HttpStatusCode.Unauthorized
+                    or System.Net.HttpStatusCode.Forbidden)
+                {
+                    await ClearSessionAsync();
+                    _authStateProvider.NotifyUserLoggedOut();
+                }
+
+                return null;
+            }
+
+            var login = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            if (login == null || string.IsNullOrWhiteSpace(login.AccessToken) ||
+                string.IsNullOrWhiteSpace(login.RefreshToken))
+                return null;
+
+            await StoreTokensAsync(login);
+            _authStateProvider.NotifyUserAuthenticated(login.AccessToken);
+            return login.AccessToken;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
 
     public async Task<bool> IsAuthenticatedAsync()
     {
@@ -209,5 +299,32 @@ public class AuthService
         }
         catch { }
         return "Có lỗi xảy ra. Vui lòng thử lại.";
+    }
+
+    private async Task StoreTokensAsync(LoginResponse login)
+    {
+        await _localStorage.SetItemAsStringAsync(TokenKey, login.AccessToken);
+        await _localStorage.SetItemAsStringAsync(RefreshTokenKey, login.RefreshToken);
+    }
+
+    private static bool HasMinimumValidity(string token, TimeSpan minimumValidity)
+    {
+        try
+        {
+            var parts = token.Split('.');
+            if (parts.Length != 3) return false;
+
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            payload = payload.PadRight(payload.Length + ((4 - payload.Length % 4) % 4), '=');
+            using var document = JsonDocument.Parse(Convert.FromBase64String(payload));
+            if (!document.RootElement.TryGetProperty("exp", out var exp) || !exp.TryGetInt64(out var seconds))
+                return false;
+
+            return DateTimeOffset.FromUnixTimeSeconds(seconds) > DateTimeOffset.UtcNow.Add(minimumValidity);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

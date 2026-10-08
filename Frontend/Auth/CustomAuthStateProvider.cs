@@ -10,6 +10,7 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
     private readonly ILocalStorageService _localStorage;
     private readonly AuthenticationState _anonymous = new(new ClaimsPrincipal(new ClaimsIdentity()));
     private const string TokenKey = "auth_token";
+    private const string RefreshTokenKey = "refresh_token";
 
     public CustomAuthStateProvider(ILocalStorageService localStorage)
     {
@@ -34,8 +35,12 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
                 var expiry = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
                 if (expiry < DateTime.UtcNow)
                 {
-                    await _localStorage.RemoveItemAsync(TokenKey);
-                    return _anonymous;
+                    var refreshToken = await _localStorage.GetItemAsStringAsync(RefreshTokenKey);
+                    if (string.IsNullOrWhiteSpace(refreshToken))
+                    {
+                        await _localStorage.RemoveItemAsync(TokenKey);
+                        return _anonymous;
+                    }
                 }
             }
 

@@ -330,6 +330,7 @@ Theo yêu cầu ngày 05/10/2026, kiểm thử thực tế/nghiệm thu do ngư�
 - [ ] OCR: dùng PDF/scan thực tế của nhà trường, đối chiếu số hiệu, ngày, tiêu đề và nội dung nhận diện.
 - [ ] Công văn/ký số: tự thao tác tạo, upload, sửa, phân công, trình duyệt, ký PDF, xác minh chữ ký và phát hành theo các vai trò trên dữ liệu thực tế.
 - [ ] Dashboard/log/audit/thông báo: đối chiếu số liệu, lịch sử và người nhận với thao tác thực tế; kiểm tra đọc/chưa đọc và liên kết chi tiết.
+- [ ] Phiên đăng nhập dài hạn: đăng nhập lại một lần để trình duyệt nhận refresh token mới, sau đó xác nhận hệ thống tự làm mới access token mà không yêu cầu đăng nhập lại. Cấu hình hiện tại: access token 60 phút, refresh token xoay vòng 180 ngày.
 
 **Kiểm thử tự động còn có thể bổ sung:** coverage sâu workflow/ký/OCR. Hiện xUnit 86/86: Identity 35, Document 29, Gateway 21, Sign 1 test rỗng. Script API/UI: `tests/document-edit-file-assignment.spec.cjs`, `tests/dashboard-statistics.spec.cjs`, `tests/monitoring-notifications.spec.cjs`. Đây là công việc kỹ thuật riêng với nghiệm thu của người dùng.
 
@@ -345,3 +346,9 @@ Theo yêu cầu ngày 05/10/2026, kiểm thử thực tế/nghiệm thu do ngư�
 - Docker Compose có Mailpit cho SMTP local: SMTP `1025`, Web UI/API `8025`.
 - `.gitignore` và `.dockerignore` đã bỏ qua `.env`/`.env.*`, nhưng vẫn cho phép commit `.env.example`.
 - `OCRService/.env.example` chỉ dùng khi chạy OCRService độc lập ngoài Docker Compose root.
+- Có overlay `docker-compose.tunnel.yml` để chạy Cloudflare Tunnel cùng stack; token đọc từ `.env.tunnel`, không commit vào Git.
+- Frontend có thể nhận `PUBLIC_API_BASE_URL` khi container khởi động; cấu hình tunnel hiện dùng cùng origin `https://hauquanlycongvan.com/`, Nginx proxy `/api/**` đến Gateway.
+- Hướng dẫn hostname, khởi chạy và chuyển máy nằm trong `TRIEN_KHAI_CLOUDFLARE_TUNNEL.md`.
+- Compose bind port host vào `127.0.0.1`; Frontend/Gateway được tunnel truy cập bằng hostname nội bộ Docker.
+- Tunnel token được lưu riêng trong `.env.tunnel` bị Git bỏ qua. Connector đã kết nối Cloudflare; domain gốc, health và cấu hình runtime trả HTTP 200, còn API có bảo vệ trả HTTP 401 khi chưa đăng nhập. Đây là xác minh hạ tầng; nghiệm thu nghiệp vụ vẫn do người dùng thực hiện.
+- Frontend hỗ trợ viewport rộng từ 300px; bản public đã nhận stylesheet mới. Kiểm tra hiển thị trên điện thoại thật vẫn chờ người dùng xác nhận.

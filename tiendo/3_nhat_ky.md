@@ -1651,6 +1651,50 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 48 — 08/10/2026
+### Đóng gói Cloudflare Tunnel bằng Docker
+
+- Thêm `docker-compose.tunnel.yml` chạy `cloudflare/cloudflared` bằng `TUNNEL_TOKEN` lấy từ `.env.tunnel`; token không nằm trong source hoặc image.
+- Frontend đọc `ApiBaseUrl` từ `appsettings.json`; container Nginx sinh cấu hình từ `PUBLIC_API_BASE_URL` khi khởi động. Có thể chuyển image sang máy khác và đổi API domain mà không build lại.
+- Tunnel hiện có dùng `hauquanlycongvan.com → http://localhost:3000`; cloudflared dùng chung network namespace với Frontend. Nginx phục vụ giao diện và proxy `/api/**` đến Gateway; Gateway tiếp tục định tuyến Document/Sign/Identity/OCR theo path hiện có.
+- Các port host trong Compose cơ sở bind vào `127.0.0.1`; cloudflared truy cập service qua mạng Docker, không cần mở cổng inbound trên VPS.
+- Thêm `TRIEN_KHAI_CLOUDFLARE_TUNNEL.md`, biến mẫu trong `.env.example` và quy tắc LF cho script shell.
+- Xác minh kỹ thuật: Compose merge/config hợp lệ; image Frontend build thành công; Frontend và connector đang chạy. Connector đăng ký 4 kết nối QUIC với Cloudflare. `https://hauquanlycongvan.com`, `/health` và `/appsettings.json` trả HTTP 200; một API yêu cầu đăng nhập trả HTTP 401 đúng kỳ vọng, xác nhận `/api/**` đã đi qua Nginx đến Gateway.
+- Đây là kiểm tra hạ tầng và định tuyến. Kiểm thử nghiệp vụ/thực tế vẫn chờ người dùng thực hiện theo mục 7.3.
+- API/R2 credentials từng xuất hiện trong ảnh không được ghi vào source hoặc `.env`; cần thu hồi và tạo lại. Chúng không thay thế Tunnel token.
+
+---
+
+## Công việc số 49 — 08/10/2026
+### Hỗ trợ giao diện điện thoại rộng 300px
+
+- Bỏ chặn giao diện ở viewport dưới 450px; ứng dụng hiện hỗ trợ từ 300px và chỉ hiển thị cảnh báo khi chiều rộng dưới 300px hoặc chiều cao dưới 500px.
+- Bổ sung bố cục riêng cho khoảng 300–360px: giảm khoảng đệm, xếp dọc nút thao tác/modal/phân trang, co thanh điều hướng dưới, cho tab cuộn ngang và xử lý ngắt dòng nội dung dài.
+- Thanh taskbar mobile chia đều các mục theo chiều rộng thực tế của màn hình; icon, chữ và avatar dùng kích thước co giãn, không còn tổng chiều rộng cố định làm avatar tràn khỏi khung ở tài khoản Admin.
+- Trang quản lý người dùng thay hai nút Sửa/Xóa lặp lại bằng nút ba chấm và menu hành động trên desktop. Ở mobile, cột thao tác được ẩn; nhấn giữ hàng 550ms mở bảng Sửa/Xóa phía trên taskbar, còn thao tác cuộn sẽ hủy nhấn giữ.
+- Trang Chứng thư số áp dụng cùng cơ chế: desktop dùng menu ba chấm, mobile ẩn cột thao tác và nhấn giữ chứng thư còn hiệu lực để mở hành động Thu hồi.
+- Thử nghiệm UI danh sách dạng thẻ ở viewport <=768px cho Người dùng và Chứng thư số: bỏ cuộn ngang, ưu tiên tên/trạng thái và chia thông tin phụ thành lưới tự xuống cột ở 300–420px; desktop tiếp tục dùng bảng.
+- Frontend lưu refresh token, tự làm mới access token trước khi hết hạn và thử lại một lần khi API trả 401; khóa đồng bộ ngăn nhiều request đồng thời xoay cùng refresh token. Đăng xuất gọi backend để thu hồi phiên rồi xóa cả hai token cục bộ.
+- Thời hạn refresh token mặc định tăng từ 7 lên 180 ngày; access token vẫn 60 phút. Phiên cũ cần đăng nhập lại một lần để trình duyệt nhận refresh token và thời hạn mới.
+- Tăng phiên bản URL CSS để trình duyệt không giữ stylesheet cũ. Build Frontend và IdentityService đều 0 warning/0 error; Compose merge/config hợp lệ; rebuild/recreate Frontend, IdentityService và cloudflared thành công.
+- Kiểm tra kỹ thuật trên domain: `/health` trả HTTP 200 `Healthy`; IdentityService healthy và biến môi trường thực tế `JwtSettings__RefreshTokenExpiryDays=180`. HTML và stylesheet mới trả HTTP 200, có media query 300px và không còn luật chặn 449px; connector đăng ký đủ 4 kết nối QUIC.
+- Chưa chạy nghiệm thu đăng nhập kéo dài bằng tài khoản thật. Mục này chờ người dùng đăng nhập lại một lần rồi xác nhận cơ chế tự làm mới sau khi access token hết hạn.
+- Chưa đánh dấu nghiệm thu giao diện trên điện thoại thật; chờ người dùng kiểm tra và xác nhận theo yêu cầu bàn giao test thực tế.
+
+---
+
+## Công việc số 50 — 08/10/2026
+### Sửa lớp hiển thị bộ lọc nhật ký và thông báo trên desktop
+
+- Xác định menu `CustomSelect` bị cắt tại mép `.card` vì quy tắc dùng chung `overflow: hidden`; tăng `z-index` riêng cho menu không thể vượt qua vùng cắt này.
+- Cho card bộ lọc của `EventJournal` và Trung tâm thông báo dùng `overflow: visible`, đồng thời tạo stacking context phía trên phần nội dung kế tiếp.
+- Khi một `CustomSelect` mở, component gắn lớp `custom-select-open` và nâng lớp của chính container để danh sách lựa chọn hiển thị trên các control cùng hàng hoặc hàng sau.
+- Sửa đồng thời ba trang: Hoạt động ứng dụng, Nhật ký hệ thống và Trung tâm thông báo. Tăng cache key scoped CSS lên `20261008-6`.
+- Build Frontend 0 warning/0 error; rebuild/recreate Frontend và cloudflared thành công. Bản public trả stylesheet mới chứa đủ các quy tắc sửa lỗi; `/health` trả HTTP 200 `Healthy`.
+- Kiểm tra trực quan bằng tài khoản thật trên máy tính vẫn chờ người dùng xác nhận theo quy ước nghiệm thu.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

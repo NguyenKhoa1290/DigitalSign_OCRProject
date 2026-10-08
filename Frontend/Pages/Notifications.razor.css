@@ -2,7 +2,12 @@
     align-items: center;
 }
 
-.notification-controls { margin-bottom: 18px; }
+.notification-controls {
+    position: relative;
+    z-index: 10;
+    margin-bottom: 18px;
+    overflow: visible;
+}
 .notification-toolbar { display: grid; grid-template-columns: minmax(0,1fr) 1fr; gap: 18px; align-items: center; }
 .notification-unread-filter { display: flex; align-items: center; gap: 8px; }
 .notification-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }

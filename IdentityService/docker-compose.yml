@@ -42,6 +42,7 @@ services:
       - JwtSettings__Issuer=IdentityService
       - JwtSettings__Audience=HAU-MicroservicesClients
       - JwtSettings__ExpiryMinutes=60
+      - JwtSettings__RefreshTokenExpiryDays=180
     depends_on:
       postgres:
         condition: service_healthy

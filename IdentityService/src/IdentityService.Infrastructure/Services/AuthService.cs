@@ -44,7 +44,7 @@ public class AuthService : IAuthService
         _emailService = emailService;
         _refreshTokenExpiryDays = int.TryParse(configuration["JwtSettings:RefreshTokenExpiryDays"], out var refreshTokenExpiryDays)
             ? refreshTokenExpiryDays
-            : 7;
+            : 180;
     }
 
     // ── Login ─────────────────────────────────────────────────────────────────

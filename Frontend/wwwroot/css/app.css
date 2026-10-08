@@ -1132,15 +1132,19 @@ body {
     }
     .sidebar {
         position: fixed;
-        inset: auto 10px var(--mobile-taskbar-bottom);
-        justify-self: center;
-        width: auto;
+        right: auto;
+        bottom: var(--mobile-taskbar-bottom);
+        left: 50%;
+        width: calc(100vw - 20px);
+        max-width: 560px;
         min-width: 0;
         height: var(--mobile-taskbar-height);
         margin: 0;
+        padding: 4px;
         flex-direction: row;
         align-items: center;
-        overflow-x: auto;
+        transform: translateX(-50%);
+        overflow-x: hidden;
         overflow-y: hidden;
         border-radius: 10px;
         box-shadow: 0 18px 50px rgba(5, 38, 64, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.16);
@@ -1148,23 +1152,47 @@ body {
     .sidebar-logo,
     .sidebar-section-title,
     .user-info { display: none; }
-    .sidebar-section { display: flex; flex: 0 0 auto; padding: 6px 2px; }
+    .sidebar-section { display: contents; }
     .nav-item {
-        width: 62px;
-        height: 54px;
+        width: auto;
+        min-width: 0;
+        height: 56px;
+        flex: 1 1 0;
         flex-direction: column;
         justify-content: center;
         gap: 3px;
-        padding: 5px;
-        margin: 0 2px;
-        font-size: 9px;
+        padding: 4px clamp(1px, 1.2vw, 6px);
+        margin: 0;
+        font-size: clamp(7px, 2.2vw, 9px);
         line-height: 1.1;
         text-align: center;
         white-space: normal;
+        overflow-wrap: anywhere;
     }
-    .nav-icon { width: 19px; height: 19px; }
-    .sidebar-footer { flex: 0 0 auto; margin: 0; padding: 6px 8px 6px 2px; border: 0; }
-    .user-card { justify-content: center; padding: 4px; background: transparent; border-color: transparent; }
+    .nav-icon {
+        width: clamp(16px, 5vw, 19px);
+        height: clamp(16px, 5vw, 19px);
+    }
+    .sidebar-footer {
+        width: clamp(40px, 12vw, 52px);
+        flex: 0 1 clamp(40px, 12vw, 52px);
+        margin: 0;
+        padding: 2px;
+        border: 0;
+    }
+    .user-card {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+        padding: 2px;
+        background: transparent;
+        border-color: transparent;
+    }
+    .sidebar-footer .user-avatar {
+        width: clamp(34px, 10vw, 40px);
+        height: clamp(34px, 10vw, 40px);
+        font-size: clamp(12px, 3.5vw, 14px);
+    }
     .sidebar-footer .user-avatar { display: flex; }
     .stat-grid { grid-template-columns: 1fr; }
     .login-page { padding: 20px 14px; }
@@ -1207,12 +1235,144 @@ body {
     }
 }
 
-/* Chặn thao tác khi viewport hẹp hơn mức giao diện tối thiểu. */
+/* Hỗ trợ điện thoại rất hẹp, từ 300px. */
 .viewport-too-small {
     display: none;
 }
 
-@media (max-width: 449px), (max-height: 499px) {
+@media (max-width: 360px) {
+    .page-container {
+        padding: 14px 10px calc(22px + var(--mobile-taskbar-height) + var(--mobile-taskbar-bottom));
+    }
+
+    .page-header {
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .page-title {
+        font-size: 20px;
+        overflow-wrap: anywhere;
+    }
+
+    .page-subtitle,
+    .card-title,
+    .alert,
+    .detail-value,
+    .sig-info {
+        overflow-wrap: anywhere;
+    }
+
+    .page-actions {
+        width: 100%;
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .page-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .card-header,
+    .card-body {
+        padding: 14px 12px;
+    }
+
+    .stat-grid,
+    .dashboard-page .stat-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .stat-card,
+    .dashboard-page .stat-card {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .search-box {
+        min-width: 0;
+    }
+
+    .pagination {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 8px;
+    }
+
+    .pagination-info {
+        text-align: center;
+    }
+
+    .pagination-controls {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .modal-footer {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .login-page {
+        align-items: flex-start;
+        padding: 10px;
+        overflow-y: auto;
+    }
+
+    .login-card {
+        max-height: none;
+        padding: 22px 14px;
+        border-radius: 16px;
+    }
+
+    .login-logo {
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .login-logo-icon {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+    }
+
+    .login-logo-text {
+        min-width: 0;
+    }
+
+    .login-logo-text h1 {
+        font-size: 16px;
+        overflow-wrap: anywhere;
+    }
+
+    .tabs {
+        overflow-x: auto;
+    }
+
+    .tab-btn {
+        flex: 0 0 auto;
+        padding-inline: 12px;
+    }
+
+    .nav-item {
+        padding-inline: 1px;
+    }
+
+    .account-menu-popover {
+        right: 6px;
+        width: calc(100vw - 12px);
+    }
+}
+
+/* Chỉ chặn thao tác khi thấp hơn kích thước tối thiểu đã công bố. */
+@media (max-width: 299px), (max-height: 499px) {
     body {
         overflow: hidden;
     }

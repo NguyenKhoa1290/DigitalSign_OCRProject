@@ -1,0 +1,17 @@
+services:
+  frontend:
+    environment:
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-https://hauquanlycongvan.com/}
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    network_mode: service:frontend
+    env_file:
+      - .env.tunnel
+    depends_on:
+      frontend:
+        condition: service_started
+      api-gateway:
+        condition: service_started
+    restart: unless-stopped

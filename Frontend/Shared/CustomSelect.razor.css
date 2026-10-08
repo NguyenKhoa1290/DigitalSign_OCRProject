@@ -3,6 +3,10 @@
     width: 100%;
 }
 
+.custom-select-open {
+    z-index: 40;
+}
+
 .custom-select-trigger {
     display: flex;
     align-items: center;

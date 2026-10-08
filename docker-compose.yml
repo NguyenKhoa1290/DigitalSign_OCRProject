@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-1111}"
       POSTGRES_DB: ${POSTGRES_DB:-DigitalSign_OCR}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - hau_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,8 +25,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - hau_minio_data:/data
     restart: unless-stopped
@@ -64,7 +64,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     ports:
-      - "9092:29092"
+      - "127.0.0.1:9092:29092"
     volumes:
       - hau_kafka_data:/tmp/kraft-combined-logs
     restart: unless-stopped
@@ -73,8 +73,8 @@ services:
     image: axllent/mailpit:latest
     container_name: hau_mailpit
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
     restart: unless-stopped
 
   identity-service:
@@ -91,7 +91,7 @@ services:
       JwtSettings__Issuer: ${JWT_ISSUER:-IdentityService}
       JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
       JwtSettings__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
-      JwtSettings__RefreshTokenExpiryDays: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:-7}
+      JwtSettings__RefreshTokenExpiryDays: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:-180}
       EmailSettings__SmtpHost: ${EMAIL_SMTP_HOST:-mailpit}
       EmailSettings__SmtpPort: ${EMAIL_SMTP_PORT:-1025}
       EmailSettings__SecureSocketOptions: ${EMAIL_SECURE_SOCKET_OPTIONS:-None}
@@ -106,7 +106,7 @@ services:
       mailpit:
         condition: service_started
     ports:
-      - "5048:8080"
+      - "127.0.0.1:5048:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -149,7 +149,7 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "5049:8080"
+      - "127.0.0.1:5049:8080"
     restart: unless-stopped
 
   sign-service:
@@ -179,7 +179,7 @@ services:
       minio-init:
         condition: service_completed_successfully
     ports:
-      - "5050:8080"
+      - "127.0.0.1:5050:8080"
     volumes:
       - hau_sign_certs:/app/certs
     restart: unless-stopped
@@ -213,7 +213,7 @@ services:
       document-service:
         condition: service_started
     ports:
-      - "5051:5051"
+      - "127.0.0.1:5051:5051"
     restart: unless-stopped
 
   api-gateway:
@@ -246,7 +246,7 @@ services:
       ocr-service:
         condition: service_started
     ports:
-      - "5000:8080"
+      - "127.0.0.1:5000:8080"
     restart: unless-stopped
 
   frontend:
@@ -259,7 +259,7 @@ services:
       api-gateway:
         condition: service_started
     ports:
-      - "5227:80"
+      - "127.0.0.1:5227:80"
     restart: unless-stopped
 
 volumes:

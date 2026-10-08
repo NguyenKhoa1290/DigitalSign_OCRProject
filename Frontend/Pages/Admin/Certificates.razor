@@ -40,7 +40,7 @@ else if (_certificates == null || !_certificates.Any())
 }
 else
 {
-    <div class="table-wrapper">
+    <div class="table-wrapper certificate-desktop-list">
         <table class="table">
             <thead>
                 <tr>
@@ -50,13 +50,18 @@ else
                     <th>Hiệu lực từ</th>
                     <th>Hết hạn</th>
                     <th>Trạng thái</th>
-                    <th class="actions-heading">Thao tác</th>
+                    <th class="actions-heading certificate-actions-column">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var cert in _certificates)
                 {
-                    <tr>
+                    <tr class="certificate-row"
+                        @ontouchstart="() => BeginLongPress(cert)"
+                        @ontouchend="CancelLongPress"
+                        @ontouchcancel="CancelLongPress"
+                        @ontouchmove="CancelLongPress"
+                        @oncontextmenu:preventDefault>
                         <td>
                             <div class="certificate-owner">@cert.FullName</div>
                             <div class="certificate-username">@cert.Username</div>
@@ -81,11 +86,21 @@ else
                             @if (!cert.IsValid || cert.NotAfter < DateTime.UtcNow) { <span class="badge badge-orange">Hết hạn</span> }
                             else { <span class="badge badge-green">Đang hoạt động</span> }
                         </td>
-                        <td>
+                        <td class="certificate-actions-column">
                             <div class="certificate-actions">
                                 @if (cert.IsValid)
                                 {
-                                    <button class="btn btn-danger btn-sm" @onclick="() => ShowRevokeConfirm(cert)">Thu hồi</button>
+                                    <button type="button" class="certificate-action-trigger"
+                                            aria-label="Mở thao tác cho chứng thư của @cert.FullName"
+                                            aria-haspopup="menu"
+                                            aria-expanded="@(_actionCertificate?.UserId == cert.UserId)"
+                                            @onclick="(args) => ShowActionMenu(cert, args)">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <circle cx="5" cy="12" r="1.8" />
+                                            <circle cx="12" cy="12" r="1.8" />
+                                            <circle cx="19" cy="12" r="1.8" />
+                                        </svg>
+                                    </button>
                                 }
                             </div>
                         </td>
@@ -93,6 +108,70 @@ else
                 }
             </tbody>
         </table>
+    </div>
+
+    <div class="certificate-mobile-list">
+        <p class="mobile-list-hint">Nhấn giữ chứng thư còn hiệu lực để mở thao tác.</p>
+        @foreach (var cert in _certificates)
+        {
+            var mobileIsExpired = cert.NotAfter < DateTime.UtcNow;
+            var mobileIsExpiring = !mobileIsExpired && cert.NotAfter < DateTime.UtcNow.AddDays(30);
+            <article class="certificate-mobile-card @(!cert.IsValid || mobileIsExpired ? "certificate-mobile-card-inactive" : "")"
+                     @key="cert.Thumbprint"
+                     @ontouchstart="() => BeginLongPress(cert)"
+                     @ontouchend="CancelLongPress"
+                     @ontouchcancel="CancelLongPress"
+                     @ontouchmove="CancelLongPress"
+                     @oncontextmenu:preventDefault>
+                <div class="certificate-mobile-header">
+                    <div class="certificate-mobile-avatar">
+                        @(cert.FullName.Length > 0 ? cert.FullName[0].ToString().ToUpper() : "U")
+                    </div>
+                    <div class="certificate-mobile-identity">
+                        <div class="certificate-owner">@cert.FullName</div>
+                        <div class="certificate-username">@cert.Username</div>
+                    </div>
+                    @if (!cert.IsValid || mobileIsExpired)
+                    { <span class="badge badge-orange">Hết hạn</span> }
+                    else
+                    { <span class="badge badge-green">Đang hoạt động</span> }
+                </div>
+                <dl class="certificate-mobile-details">
+                    <div>
+                        <dt>Loại</dt>
+                        <dd>@(cert.CertificateType == "Organization" ? "Pháp nhân" : "Cá nhân")</dd>
+                    </div>
+                    <div>
+                        <dt>Hiệu lực từ</dt>
+                        <dd>@cert.NotBefore.ToLocalTime().ToString("dd/MM/yyyy")</dd>
+                    </div>
+                    <div>
+                        <dt>Hết hạn</dt>
+                        <dd class="@(mobileIsExpired ? "certificate-date-expired" : mobileIsExpiring ? "certificate-date-expiring" : "")">
+                            @cert.NotAfter.ToLocalTime().ToString("dd/MM/yyyy")
+                        </dd>
+                    </div>
+                </dl>
+            </article>
+        }
+    </div>
+}
+
+@if (_actionCertificate != null)
+{
+    <button type="button" class="certificate-action-backdrop" aria-label="Đóng menu thao tác"
+            @onclick="CloseActionMenu"></button>
+    <div class="certificate-action-menu @(_actionMenuFromTouch ? "from-long-press" : "")"
+         style="--action-x:@($"{_actionMenuX:0}px"); --action-y:@($"{_actionMenuY:0}px");"
+         role="menu" aria-label="Thao tác với chứng thư của @_actionCertificate.FullName">
+        <div class="certificate-action-name">@_actionCertificate.FullName</div>
+        <button type="button" class="certificate-action-item certificate-action-revoke"
+                role="menuitem" @onclick="RevokeActionCertificate">
+            <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636 5.636 18.364M5.636 5.636l12.728 12.728" />
+            </svg>
+            Thu hồi
+        </button>
     </div>
 }
 
@@ -305,6 +384,11 @@ else
 
     private bool _showRevokeConfirm;
     private CertificateDto? _revokingCert;
+    private CertificateDto? _actionCertificate;
+    private bool _actionMenuFromTouch;
+    private double _actionMenuX;
+    private double _actionMenuY;
+    private System.Threading.CancellationTokenSource? _longPressCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -365,6 +449,7 @@ else
 
     private async Task LoadCertificates()
     {
+        CloseActionMenu();
         _isLoading = true;
         try { _certificates = await AdminService.GetCertificatesAsync(); }
         catch { Toast.ShowError("Lỗi tải danh sách chứng thư."); }
@@ -373,6 +458,7 @@ else
 
     private void ShowIssueModal()
     {
+        CloseActionMenu();
         _issueUserSearch = "";
         _issueSchoolId = "";
         _issueUnitId = "";
@@ -535,6 +621,57 @@ else
     }
 
     private void ShowRevokeConfirm(CertificateDto cert) { _revokingCert = cert; _showRevokeConfirm = true; }
+
+    private void ShowActionMenu(CertificateDto cert, Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        if (!cert.IsValid) return;
+        CancelLongPress();
+        _actionCertificate = cert;
+        _actionMenuFromTouch = false;
+        _actionMenuX = args.ClientX;
+        _actionMenuY = args.ClientY;
+    }
+
+    private void BeginLongPress(CertificateDto cert)
+    {
+        if (!cert.IsValid) return;
+        CancelLongPress();
+        _longPressCts = new();
+        _ = OpenActionMenuAfterHoldAsync(cert, _longPressCts.Token);
+    }
+
+    private async Task OpenActionMenuAfterHoldAsync(CertificateDto cert, System.Threading.CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(550, token);
+            _actionCertificate = cert;
+            _actionMenuFromTouch = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void CancelLongPress()
+    {
+        _longPressCts?.Cancel();
+        _longPressCts?.Dispose();
+        _longPressCts = null;
+    }
+
+    private void CloseActionMenu()
+    {
+        CancelLongPress();
+        _actionCertificate = null;
+        _actionMenuFromTouch = false;
+    }
+
+    private void RevokeActionCertificate()
+    {
+        var certificate = _actionCertificate;
+        CloseActionMenu();
+        if (certificate != null) ShowRevokeConfirm(certificate);
+    }
 
     private async Task RevokeCertificate()
     {

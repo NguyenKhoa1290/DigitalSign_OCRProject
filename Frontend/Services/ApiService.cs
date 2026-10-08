@@ -1,9 +1,8 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Blazored.LocalStorage;
-using HauDocumentApp.Models;
 using Microsoft.AspNetCore.Components;
 
 namespace HauDocumentApp.Services;
@@ -11,48 +10,28 @@ namespace HauDocumentApp.Services;
 public class ApiService
 {
     private readonly HttpClient _httpClient;
-    private readonly ILocalStorageService _localStorage;
+    private readonly AuthService _authService;
     private readonly NavigationManager _navManager;
-    private const string TokenKey = "auth_token";
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public ApiService(
-        HttpClient httpClient,
-        ILocalStorageService localStorage,
-        NavigationManager navManager)
+    public ApiService(HttpClient httpClient, AuthService authService, NavigationManager navManager)
     {
         _httpClient = httpClient;
-        _localStorage = localStorage;
+        _authService = authService;
         _navManager = navManager;
     }
 
-    private async Task<HttpClient> GetClientAsync()
-    {
-        var client = _httpClient;
-        var token = await _localStorage.GetItemAsStringAsync(TokenKey);
-        if (!string.IsNullOrEmpty(token))
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    /// <summary>
-    /// Tự động unwrap ApiResponse&lt;T&gt; nếu backend có bọc wrapper.
-    /// Nếu JSON là object có field "data" và "success" → lấy .data
-    /// Nếu JSON là trực tiếp T (array hoặc object khác) → deserialize thẳng
-    /// </summary>
     private static T? SmartDeserialize<T>(string json)
     {
         try
         {
             var node = JsonNode.Parse(json);
-            // Nếu là object có field "success" → đây là ApiResponse<T>
             if (node is JsonObject obj && obj.ContainsKey("success"))
             {
                 var dataNode = obj["data"];
-                if (dataNode == null) return default;
-                return dataNode.Deserialize<T>(JsonOpts);
+                return dataNode == null ? default : dataNode.Deserialize<T>(JsonOpts);
             }
-            // Không phải wrapper → deserialize trực tiếp
+
             return JsonSerializer.Deserialize<T>(json, JsonOpts);
         }
         catch
@@ -63,84 +42,68 @@ public class ApiService
 
     public async Task<T?> GetAsync<T>(string url, CancellationToken cancellationToken = default)
     {
-        var client = await GetClientAsync();
-        using var resp = await client.GetAsync(url, cancellationToken);
-        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        { _navManager.NavigateTo("/login"); return default; }
-        if (!resp.IsSuccessStatusCode) return default;
-        var json = await resp.Content.ReadAsStringAsync();
-        return SmartDeserialize<T>(json);
+        using var response = await SendWithRefreshAsync(HttpMethod.Get, url, cancellationToken: cancellationToken);
+        if (!response.IsSuccessStatusCode) return default;
+        return SmartDeserialize<T>(await response.Content.ReadAsStringAsync(cancellationToken));
     }
 
     public async Task<T?> PostAsync<T>(string url, object? body = null)
     {
-        var client = await GetClientAsync();
-        var content = body != null
-            ? new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
-            : null;
-        var resp = await client.PostAsync(url, content);
-        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        { _navManager.NavigateTo("/login"); return default; }
-        if (!resp.IsSuccessStatusCode) return default;
-        var json = await resp.Content.ReadAsStringAsync();
-        return SmartDeserialize<T>(json);
+        var json = body == null ? null : JsonSerializer.Serialize(body);
+        using var response = await SendWithRefreshAsync(
+            HttpMethod.Post,
+            url,
+            json == null ? null : () => JsonContent(json));
+        if (!response.IsSuccessStatusCode) return default;
+        return SmartDeserialize<T>(await response.Content.ReadAsStringAsync());
     }
 
     public async Task<T?> PutAsync<T>(string url, object? body = null)
     {
-        var client = await GetClientAsync();
-        var content = body != null
-            ? new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
-            : null;
-        var resp = await client.PutAsync(url, content);
-        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        { _navManager.NavigateTo("/login"); return default; }
-        if (!resp.IsSuccessStatusCode) return default;
-        var json = await resp.Content.ReadAsStringAsync();
-        return SmartDeserialize<T>(json);
+        var json = body == null ? null : JsonSerializer.Serialize(body);
+        using var response = await SendWithRefreshAsync(
+            HttpMethod.Put,
+            url,
+            json == null ? null : () => JsonContent(json));
+        if (!response.IsSuccessStatusCode) return default;
+        return SmartDeserialize<T>(await response.Content.ReadAsStringAsync());
     }
 
     public async Task<T?> PatchAsync<T>(string url, object? body = null)
     {
-        var client = await GetClientAsync();
-        var content = body != null
-            ? new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
-            : null;
-        using var req = new HttpRequestMessage(HttpMethod.Patch, url) { Content = content };
-        var resp = await client.SendAsync(req);
-        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        { _navManager.NavigateTo("/login"); return default; }
-        if (!resp.IsSuccessStatusCode) return default;
-        var json = await resp.Content.ReadAsStringAsync();
-        return SmartDeserialize<T>(json);
+        var json = body == null ? null : JsonSerializer.Serialize(body);
+        using var response = await SendWithRefreshAsync(
+            HttpMethod.Patch,
+            url,
+            json == null ? null : () => JsonContent(json));
+        if (!response.IsSuccessStatusCode) return default;
+        return SmartDeserialize<T>(await response.Content.ReadAsStringAsync());
     }
 
     public async Task DeleteAsync(string url)
     {
-        var client = await GetClientAsync();
-        var resp = await client.DeleteAsync(url);
-        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        { _navManager.NavigateTo("/login"); return; }
-        // Không throw — để caller quyết định
+        using var response = await SendWithRefreshAsync(HttpMethod.Delete, url);
     }
 
     public async Task<bool> DeleteWithResultAsync(string url)
     {
-        var client = await GetClientAsync();
-        var resp = await client.DeleteAsync(url);
-        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            _navManager.NavigateTo("/login");
-            return false;
-        }
-
-        return resp.IsSuccessStatusCode;
+        using var response = await SendWithRefreshAsync(HttpMethod.Delete, url);
+        return response.IsSuccessStatusCode;
     }
 
     public async Task<HttpResponseMessage> PostFormAsync(string url, MultipartFormDataContent content)
     {
-        var client = await GetClientAsync();
-        return await client.PostAsync(url, content);
+        var accessToken = await _authService.GetValidAccessTokenAsync();
+        var response = await SendOnceAsync(HttpMethod.Post, url, accessToken, content);
+
+        // Stream upload không tự gửi lại. Preflight ở trên đã refresh trước khi upload.
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            var refreshedToken = await _authService.RefreshAccessTokenAsync(accessToken);
+            if (string.IsNullOrEmpty(refreshedToken)) RedirectToLogin();
+        }
+
+        return response;
     }
 
     public async Task<T?> PostFormAsync<T>(string url, MultipartFormDataContent content)
@@ -152,10 +115,64 @@ public class ApiService
 
     public async Task<byte[]?> GetBytesAsync(string url)
     {
-        var client = await GetClientAsync();
-        using var response = await client.GetAsync(url);
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        { _navManager.NavigateTo("/login"); return null; }
+        using var response = await SendWithRefreshAsync(HttpMethod.Get, url);
         return response.IsSuccessStatusCode ? await response.Content.ReadAsByteArrayAsync() : null;
     }
+
+    private async Task<HttpResponseMessage> SendWithRefreshAsync(
+        HttpMethod method,
+        string url,
+        Func<HttpContent?>? contentFactory = null,
+        CancellationToken cancellationToken = default)
+    {
+        var accessToken = await _authService.GetValidAccessTokenAsync();
+        var response = await SendOnceAsync(
+            method,
+            url,
+            accessToken,
+            contentFactory?.Invoke(),
+            cancellationToken);
+
+        if (response.StatusCode != HttpStatusCode.Unauthorized)
+            return response;
+
+        var refreshedToken = await _authService.RefreshAccessTokenAsync(accessToken);
+        if (string.IsNullOrEmpty(refreshedToken))
+        {
+            RedirectToLogin();
+            return response;
+        }
+
+        response.Dispose();
+        return await SendOnceAsync(
+            method,
+            url,
+            refreshedToken,
+            contentFactory?.Invoke(),
+            cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> SendOnceAsync(
+        HttpMethod method,
+        string url,
+        string? accessToken,
+        HttpContent? content = null,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(method, url) { Content = content };
+        if (!string.IsNullOrWhiteSpace(accessToken))
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        return await _httpClient.SendAsync(request, cancellationToken);
+    }
+
+    private void RedirectToLogin()
+    {
+        var relativePath = _navManager.ToBaseRelativePath(_navManager.Uri);
+        if (!relativePath.StartsWith("login", StringComparison.OrdinalIgnoreCase))
+            _navManager.NavigateTo("/login");
+    }
+
+    private static StringContent JsonContent(string json)
+        => new(json, Encoding.UTF8, "application/json");
 }

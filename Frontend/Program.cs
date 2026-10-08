@@ -11,10 +11,15 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// HTTP Client — Blazor WASM pattern
+// Browser calls the public Gateway URL configured by the web container.
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5000/";
+if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var apiBaseUri) ||
+    apiBaseUri.Scheme is not ("http" or "https"))
+    throw new InvalidOperationException("ApiBaseUrl must be an absolute HTTP(S) URL.");
+
 builder.Services.AddScoped(_ => new HttpClient
 {
-    BaseAddress = new Uri("http://localhost:5000/")
+    BaseAddress = apiBaseUri
 });
 
 // Auth & Services

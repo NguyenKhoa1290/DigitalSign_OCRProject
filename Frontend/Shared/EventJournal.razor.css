@@ -1,4 +1,9 @@
-.journal-filters { margin-bottom: 20px; }
+.journal-filters {
+    position: relative;
+    z-index: 10;
+    margin-bottom: 20px;
+    overflow: visible;
+}
 .filter-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
 .filter-grid .form-group { min-width: 0; }
 .journal-count { color: var(--color-text-secondary); margin-bottom: 12px; }

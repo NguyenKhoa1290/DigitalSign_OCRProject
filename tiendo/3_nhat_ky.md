@@ -1695,6 +1695,18 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 51 — 08/10/2026
+### CI/CD Docker bằng GitHub Actions và GHCR
+
+- Thêm workflow `.github/workflows/ci-cd.yml`. Pull request và push vào `main` đều restore, chạy bốn bộ test .NET (Identity, Document, Sign, Gateway) và kiểm tra cú pháp Compose kèm Cloudflare Tunnel.
+- Sau khi CI thành công, workflow build sáu image Docker. Với push vào `main`, image được publish lên GitHub Container Registry bằng tag bất biến `sha-<commit>` và `latest`; Docker label liên kết package với repository.
+- Job deploy chỉ chạy sau push `main`, dùng environment `production`, SSH vào VPS, pull đúng tag theo commit, chạy Compose bằng `--no-build` và kiểm tra endpoint nội bộ `127.0.0.1:5227/health`. Vì vậy VPS không phải build image.
+- Docker Compose nhận `IMAGE_PREFIX` và `IMAGE_TAG`; local vẫn dùng mặc định `hau/<service>:local`, còn CD dùng image GHCR mà không phải duy trì Compose thứ hai.
+- Thêm `CI_CD_GITHUB_ACTIONS.md`: chuẩn bị package GHCR, clone/secret/tunnel trên VPS, deploy key đọc repository private, environment secrets, rollback bằng tag commit và lưu ý giới hạn VPS 1 GB RAM.
+- Kiểm tra kỹ thuật local: Docker Compose merge/config hợp lệ, sáu image vẫn resolve về tag local mặc định; `git diff --check` pass. Chưa chạy GitHub workflow hoặc deploy VPS vì environment secrets chưa được cấu hình.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

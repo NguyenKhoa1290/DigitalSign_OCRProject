@@ -81,7 +81,7 @@ services:
     build:
       context: ./IdentityService
       dockerfile: Dockerfile
-    image: hau/identity-service:local
+    image: ${IMAGE_PREFIX:-hau}/identity-service:${IMAGE_TAG:-local}
     container_name: hau_identity_service
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
@@ -119,7 +119,7 @@ services:
     build:
       context: .
       dockerfile: DocumentService/Dockerfile
-    image: hau/document-service:local
+    image: ${IMAGE_PREFIX:-hau}/document-service:${IMAGE_TAG:-local}
     container_name: hau_document_service
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
@@ -156,7 +156,7 @@ services:
     build:
       context: .
       dockerfile: SignService/Dockerfile
-    image: hau/sign-service:local
+    image: ${IMAGE_PREFIX:-hau}/sign-service:${IMAGE_TAG:-local}
     container_name: hau_sign_service
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
@@ -188,7 +188,7 @@ services:
     build:
       context: .
       dockerfile: OCRService/Dockerfile
-    image: hau/ocr-service:local
+    image: ${IMAGE_PREFIX:-hau}/ocr-service:${IMAGE_TAG:-local}
     container_name: hau_ocr_service
     environment:
       PORT: 5051
@@ -220,7 +220,7 @@ services:
     build:
       context: .
       dockerfile: ApiGateway/Dockerfile
-    image: hau/api-gateway:local
+    image: ${IMAGE_PREFIX:-hau}/api-gateway:${IMAGE_TAG:-local}
     container_name: hau_api_gateway
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
@@ -253,7 +253,7 @@ services:
     build:
       context: .
       dockerfile: Frontend/Dockerfile
-    image: hau/frontend:local
+    image: ${IMAGE_PREFIX:-hau}/frontend:${IMAGE_TAG:-local}
     container_name: hau_frontend
     depends_on:
       api-gateway:

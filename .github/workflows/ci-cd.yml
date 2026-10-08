@@ -1,0 +1,164 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test and validate Compose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore test projects
+        run: |
+          dotnet restore IdentityService/tests/IdentityService.Tests/IdentityService.Tests.csproj
+          dotnet restore DocumentService/tests/DocumentService.Tests/DocumentService.Tests.csproj
+          dotnet restore SignService/tests/SignService.Tests/SignService.Tests.csproj
+          dotnet restore ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj
+
+      - name: Run tests
+        run: |
+          dotnet test IdentityService/tests/IdentityService.Tests/IdentityService.Tests.csproj --no-restore --configuration Release
+          dotnet test DocumentService/tests/DocumentService.Tests/DocumentService.Tests.csproj --no-restore --configuration Release
+          dotnet test SignService/tests/SignService.Tests/SignService.Tests.csproj --no-restore --configuration Release
+          dotnet test ApiGateway/tests/ApiGateway.Tests/ApiGateway.Tests.csproj --no-restore --configuration Release
+
+      - name: Validate Docker Compose files
+        run: docker compose -f docker-compose.yml -f docker-compose.tunnel.yml config --quiet
+
+  build-images:
+    name: Build ${{ matrix.service }} image
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: identity-service
+            context: ./IdentityService
+            file: ./IdentityService/Dockerfile
+          - service: document-service
+            context: .
+            file: ./DocumentService/Dockerfile
+          - service: sign-service
+            context: .
+            file: ./SignService/Dockerfile
+          - service: ocr-service
+            context: .
+            file: ./OCRService/Dockerfile
+          - service: api-gateway
+            context: .
+            file: ./ApiGateway/Dockerfile
+          - service: frontend
+            context: .
+            file: ./Frontend/Dockerfile
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Resolve lowercase GHCR image prefix
+        id: image
+        shell: bash
+        run: echo "prefix=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ steps.image.outputs.prefix }}/${{ matrix.service }}:sha-${{ github.sha }}
+            ${{ steps.image.outputs.prefix }}/${{ matrix.service }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://hauquanlycongvan.com
+
+    steps:
+      - name: Resolve immutable image tag
+        id: image
+        shell: bash
+        run: |
+          echo "prefix=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "tag=sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy prebuilt images through SSH
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          IMAGE_PREFIX: ${{ steps.image.outputs.prefix }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+          DEPLOY_SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          envs: GHCR_TOKEN,IMAGE_PREFIX,IMAGE_TAG,DEPLOY_SHA
+          script_stop: true
+          script: |
+            set -eu
+            cd "${{ secrets.VPS_DEPLOY_PATH }}"
+            git fetch --depth=1 origin main
+            git checkout --detach "$DEPLOY_SHA"
+            cleanup() { docker logout ghcr.io >/dev/null 2>&1 || true; }
+            trap cleanup EXIT
+            printf '%s\n' "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+            export IMAGE_PREFIX IMAGE_TAG
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml pull
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-build --remove-orphans
+            for attempt in $(seq 1 20); do
+              if curl --fail --silent --show-error http://127.0.0.1:5227/health; then
+                exit 0
+              fi
+              sleep 5
+            done
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml ps
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml logs --tail=50 frontend api-gateway
+            exit 1

@@ -11,12 +11,27 @@ from pdf2image import convert_from_bytes
 from app.ocr.engine import OcrEngine
 from app.ocr.extractor import extract_fields
 from app.services import minio_service, document_service
+from app.services.word_exporter import create_editable_docx, extract_document
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 # Engine singleton (load model một lần duy nhất)
 _engine: Optional[OcrEngine] = None
+
+
+async def export_word_from_upload(file_bytes: bytes) -> bytes:
+    """Create an editable DOCX draft from a scanned PDF using PaddleOCR and optional local LLM."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        images = convert_from_bytes(file_bytes, dpi=200, fmt="png")
+        all_lines = []
+        for page_num, image in enumerate(images, start=1):
+            image_path = os.path.join(tmpdir, f"export_{page_num}.png")
+            image.save(image_path, "PNG")
+            all_lines.extend(get_engine().extract_lines(image_path))
+    fields = extract_fields(all_lines)
+    structured = await extract_document(images, all_lines, fields)
+    return create_editable_docx(structured)
 
 
 def get_engine() -> OcrEngine:

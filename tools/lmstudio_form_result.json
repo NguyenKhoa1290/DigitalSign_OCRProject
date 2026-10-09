@@ -1,0 +1,33 @@
+﻿{
+    "id":  "chatcmpl-97e77pfng45pv2tlbajne",
+    "object":  "chat.completion",
+    "created":  1791474805,
+    "model":  "gemma4-12b-qat-uncensored-hauhaucs-balanced",
+    "choices":  [
+                    {
+                        "index":  0,
+                        "message":  {
+                                        "role":  "assistant",
+                                        "content":  "```json\n{\n  \"form_title\": \"BẢNG KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỂ TỐT NGHIỆP\",\n  \"term\": \"ĐỢT 1, NĂM HỌC 2026 - 2027\",\n  \"student_name\": \"Nguyễn Đăng Khoa\",\n  \"class_name\": \"22CN2\",\n  \"major\": \"CNTT\",\n  \"project_title\": \"Nghiên cứu các kỹ thuật xử lý chữ ký số và nhận diện ký tự quang học OCR hiện đại ứng dụng trong phát triển hệ thống thông tin trợ quản lý công văn đi và đến của trường Đại học Kiến trúc Hà Nội\",\n  \"advisor\": \"TS. Trần Trung\",\n  \"timeframe\": \"15 tuần (105 ngày) - Từ 05/10/2026 đến 18/01/2027\",\n  \"table_headers\": [\n    \"TT\",\n    \"Nội dung thực hiện\",\n    \"Thời gian (tuần)\",\n    \"Kết quả dự kiến\"\n  ],\n  \"blank_body_rows\": [\n    {\n      \"TT\": \"\",\n      \"Nội dung thực hiện\": \"\",\n      \"Thời gian (tuần)\": \"\",\n      \"Kết quả dự kiến\": \"\"\n    },\n    {\n      \"TT\": \"\",\n      \"Nội dung thực hiện\": \"\",\n      \"Thời gian (tuần)\": \"\",\n      \"Kết quả dự kiến\": \"\"\n    },\n    {\n      \"TT\": \"\",\n      \"Nội dung thực hiện\": \"\",\n      \"Thời gian (tuần)\": \"\",\n      \"Kết quả dự kiến\": \"\"\n    },\n    {\n      \"TT\": \"\",\n      \"Nội dung thực hiện\": \"\",\n      \"Thời gian (tuần)\": \"\",\n      \"Kết quả dự kiến\": \"\"\n    },\n    {\n      \"TT\": \"\",\n      \"Nội dung thực hiện\": \"\",\n      \"Thời gian (tuần)\": \"\",\n      \"Kết quả dự kiến\": \"\"\n    }\n  ],\n  \"date_place\": \"Hà Nội, ngày 03 tháng 10 năm 2026\",\n  \"student_signer\": \"Sinh viên thực hiện đề tài\\n(Ký và ghi rõ họ tên)\\nNguyễn Đăng Khoa\",\n  \"advisor_signer\": \"Giảng viên hướng dẫn\\n(Ký và ghi rõ họ tên)\\nTS. Trần Trung\",\n  \"notes\": \"Đề xuất kế hoạch dự kiến thực hiện để tốt nghiệp (Tham khảo các trình bày - trang 23- của Quy định thực hiện ĐATN của sinh viên khoa CNTT). Sinh viên chịu sự hướng dẫn của GVHD đưa ra kế hoạch dự kiến thực hiện đề tài tốt nghiệp. Chậm nhất sau 10 ngày sau ĐATN, phải nộp Bảng kế hoạch dự kiến về Văn phòng Khoa CNTT, MS04.\"\n}\n```",
+                                        "reasoning_content":  "",
+                                        "tool_calls":  [
+
+                                                       ]
+                                    },
+                        "logprobs":  null,
+                        "finish_reason":  "stop"
+                    }
+                ],
+    "usage":  {
+                  "prompt_tokens":  599,
+                  "completion_tokens":  678,
+                  "total_tokens":  1277,
+                  "completion_tokens_details":  {
+                                                    "reasoning_tokens":  0
+                                                }
+              },
+    "stats":  {
+
+              },
+    "system_fingerprint":  "gemma4-12b-qat-uncensored-hauhaucs-balanced"
+}

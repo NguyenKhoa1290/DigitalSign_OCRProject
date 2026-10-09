@@ -1,5 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, Header, UploadFile, File
+from fastapi.responses import StreamingResponse
+import io
 from pydantic import BaseModel
 from typing import Optional
 
@@ -94,6 +96,19 @@ async def process_upload(
     except Exception as e:
         logger.error("Lỗi OCR upload: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/export-word-upload", summary="Xuất Word nháp từ PDF bằng PaddleOCR và LLM")
+async def export_word_upload(file: UploadFile = File(...)):
+    if not (file.filename or "").lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ tệp PDF.")
+    try:
+        docx_bytes = await ocr_processor.export_word_from_upload(await file.read())
+        filename = f"ocr-draft-{(file.filename or 'document').rsplit('.', 1)[0]}.docx"
+        return StreamingResponse(io.BytesIO(docx_bytes), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+    except Exception as exc:
+        logger.error("Word export failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.get("/health", summary="Health check")

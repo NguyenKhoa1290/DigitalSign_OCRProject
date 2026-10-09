@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     ocr_language: str = "vi"  # Tiếng Việt
     ocr_use_gpu: bool = False  # Set True nếu có GPU
 
+    # Local vision LLM (LM Studio, OpenAI-compatible API). Disabled by default.
+    llm_enabled: bool = False
+    llm_base_url: str = "http://host.docker.internal:1234/v1"
+    llm_model: str = ""
+    llm_timeout_seconds: int = 180
+    llm_max_pages: int = 4
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

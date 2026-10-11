@@ -1,0 +1,54 @@
+@page "/admin/organization"
+@page "/admin/users"
+@page "/admin/departments"
+@using Blazored.LocalStorage
+@attribute [Authorize(Roles = "Admin")]
+@inject NavigationManager NavManager
+@inject ILocalStorageService LocalStorage
+
+@if (!_ready)
+{
+    <LoadingSpinner />
+}
+else
+{
+    <div class="organization-tabs" role="tablist" aria-label="Quản lý tổ chức">
+        <button id="organization-users-tab" type="button" role="tab" aria-selected="@(_selected == "users")"
+                aria-controls="organization-panel" class="@(_selected == "users" ? "selected" : "")"
+                @onclick="@(() => OpenSection("users"))">Người dùng</button>
+        <button id="organization-departments-tab" type="button" role="tab" aria-selected="@(_selected == "departments")"
+                aria-controls="organization-panel" class="@(_selected == "departments" ? "selected" : "")"
+                @onclick="@(() => OpenSection("departments"))">Phòng ban</button>
+    </div>
+    <div id="organization-panel" role="tabpanel" aria-labelledby="@($"organization-{_selected}-tab")">
+        @if (_selected == "departments")
+        {
+            <Departments />
+        }
+        else
+        {
+            <Users />
+        }
+    </div>
+}
+
+@code {
+    private const string StorageKey = "organization.active-section";
+    private string _selected = "users";
+    private bool _ready;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var path = new Uri(NavManager.Uri).AbsolutePath.TrimEnd('/');
+        _selected = path switch
+        {
+            "/admin/users" => "users",
+            "/admin/departments" => "departments",
+            _ => await LocalStorage.GetItemAsync<string>(StorageKey) == "departments" ? "departments" : "users"
+        };
+        await LocalStorage.SetItemAsync(StorageKey, _selected);
+        _ready = true;
+    }
+
+    private void OpenSection(string section) => NavManager.NavigateTo($"/admin/{section}");
+}

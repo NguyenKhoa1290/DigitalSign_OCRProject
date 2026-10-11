@@ -36,7 +36,7 @@
     </div>
 </glass-surface>
 
-<AuthorizeView Roles="Admin"><Authorized><flight-taskbar class="mobile-flight-taskbar" labels="Tổng quan|Công văn|Người dùng|Phòng ban|Chứng thư|Cá nhân" icons="home|document|users|building|certificate|user" routes="/|/documents|/admin/users|/admin/departments|/admin/certificates|/profile" aria-label="Điều hướng chính"></flight-taskbar></Authorized></AuthorizeView>
+<AuthorizeView Roles="Admin"><Authorized><flight-taskbar class="mobile-flight-taskbar" labels="Tổng quan|Công văn|Tổ chức|Chứng thư|Cá nhân" icons="home|document|users|certificate|user" routes="/|/documents|/admin/organization|/admin/certificates|/profile" aria-label="Điều hướng chính"></flight-taskbar></Authorized></AuthorizeView>
 <AuthorizeView Roles="Manager,BoardOfDirectors"><Authorized><flight-taskbar class="mobile-flight-taskbar" labels="Tổng quan|Công văn|Ký số|Chứng thư|Cá nhân" icons="home|document|sign|certificate|user" routes="/|/documents|/signatures|/certificates/me|/profile" aria-label="Điều hướng chính"></flight-taskbar></Authorized></AuthorizeView>
 <AuthorizeView Roles="Clerk,Specialist"><Authorized><flight-taskbar class="mobile-flight-taskbar" labels="Tổng quan|Công văn|Tạo mới|Công văn|Cá nhân" icons="home|document|plus|document|user" routes="/|/documents|/documents/create|/documents|/profile" aria-label="Điều hướng chính"></flight-taskbar></Authorized></AuthorizeView>
 
@@ -57,7 +57,7 @@
     {
         if (!firstRender) return;
 
-        _taskbarModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/liquid-glass.js?v=20261011-5");
+        _taskbarModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/liquid-glass.js?v=20261011-6");
         _taskbarReference = DotNetObjectReference.Create(this);
         await _taskbarModule.InvokeVoidAsync("bindTaskbarNavigation", _taskbarReference);
     }

@@ -1,0 +1,39 @@
+.organization-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 20px;
+    width: fit-content;
+    max-width: 100%;
+    border: 1px solid rgba(255, 255, 255, .8);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .45);
+}
+
+.organization-tabs button {
+    min-height: 44px;
+    padding: 10px 20px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary, #527087);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.organization-tabs button.selected {
+    background: rgba(255, 255, 255, .85);
+    color: #007ab8;
+    box-shadow: 0 2px 8px rgba(32, 77, 105, .1);
+}
+
+.organization-tabs button:focus-visible {
+    outline: 2px solid #007ab8;
+    outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+    .organization-tabs { width: 100%; }
+    .organization-tabs button { flex: 1; padding-inline: 8px; }
+}

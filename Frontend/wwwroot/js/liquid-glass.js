@@ -21,7 +21,8 @@ export function unbindTaskbarNavigation() {
 }
 
 export function syncTaskbarSelection() {
-    const currentPath = normalizePath(window.location.pathname);
+    const path = normalizePath(window.location.pathname);
+    const currentPath = ['/admin/users', '/admin/departments'].includes(path) ? '/admin/organization' : path;
     document.querySelectorAll('flight-taskbar').forEach(taskbar => {
         const routes = (taskbar.getAttribute('routes') || '').split('|');
         let activeIndex = routes.findIndex(route => normalizePath(route) === currentPath);

@@ -6,6 +6,17 @@ import { setGlassBackdrop } from '../lib/flight/components/backdrop.js';
 const backdrop = document.createElement('canvas');
 const context = backdrop.getContext('2d');
 let navigationReference = null;
+const taskbarSettings = fetch(new URL('./flight-taskbar-config.json', import.meta.url), { cache: 'no-store' })
+    .then(response => {
+        if (!response.ok) throw new Error(`Taskbar config HTTP ${response.status}`);
+        return response.json();
+    })
+    .then(config => {
+        if (config.format !== 'flight-taskbar-web/config' || config.version !== 1 || config.component !== 'flight-taskbar')
+            throw new Error('Unsupported taskbar config');
+        return config.taskbar.settings;
+    })
+    .catch(error => { console.error('Taskbar config failed:', error); return {}; });
 
 function normalizePath(path) {
     return path.replace(/\/$/, '') || '/';
@@ -70,6 +81,8 @@ function configureTaskbar(taskbar) {
     if (taskbar.dataset.configured === 'true') return;
 
     const routes = (taskbar.getAttribute('routes') || '').split('|');
+    taskbar.setAttribute('live-backdrop', '');
+    taskbarSettings.then(settings => taskbar.setSettings(settings));
     taskbar.backdrop = backdrop;
     taskbar.addEventListener('tabchange', event => {
         const route = routes[event.detail.index];

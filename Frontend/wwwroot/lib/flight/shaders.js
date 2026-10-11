@@ -39,6 +39,7 @@ uniform float uHighlightAlpha;
 uniform float uShadowRadius;
 uniform float uDepthEffect;
 uniform float uBlue;
+uniform float uLiveBackdrop;
 out vec4 outputColor;
 const float PAD = 64.0;
 
@@ -166,9 +167,11 @@ void main() {
     float panelMask = mask(panelSdf, aa);
     float panelShadow = uShadowRadius > 0.0 ? exp(-pow(max(panelSdf - uShadowRadius / 6.0, 0.0) / (uShadowRadius * 0.75), 2.0)) * 0.08 : 0.0;
     vec4 color = vec4(0.0, 0.0, 0.0, panelShadow);
+    float contentAlpha = 0.0;
     if (panelMask > 0.0) {
         vec3 glass = panel(panelPoint, 1.0, 64.0);
         vec4 labels = labelAt(uLabels, panelPoint);
+        contentAlpha = labels.a * panelMask;
         glass = mix(glass, labels.rgb, labels.a);
         glass += vec3(edgeHighlight(panelPoint - halfSize, halfSize, panelSdf, aa));
         color = vec4(clamp(glass, 0.0, 1.0), panelMask + panelShadow * (1.0 - panelMask));
@@ -195,6 +198,10 @@ void main() {
         // The icon retains only LocalLiquidBottomTabScale (1 -> 1.2).
         vec2 screenRefraction = refracted * uScale;
         vec2 samplePoint = screen + screenRefraction - vec2(uPanelOffset, 0.0);
+        float labelIndex = clamp(floor((samplePoint.x - 4.0) / tabWidth), 0.0, uTabCount - 1.0);
+        vec2 labelCenter = vec2(4.0 + (labelIndex + 0.5) * tabWidth, 32.0);
+        vec2 labelPoint = labelCenter + (samplePoint - labelCenter) / (1.0 + 0.2 * uPress);
+        contentAlpha = mix(contentAlpha, labelAt(uAccentLabels, labelPoint).a, selectorMask);
         float dispersion = centered.x * centered.y / (selectorHalfSize.x * selectorHalfSize.y);
         vec3 lens = uPress > 0.001 && uChromaticAberration > 0.0 ? dispersedScene(samplePoint, screenRefraction, dispersion) : accentScene(samplePoint);
         float tint = mix(0.1 * (1.0 - uPress), 0.0, uDark) + 0.03 * uPress;
@@ -204,6 +211,13 @@ void main() {
         float inner = exp(-max(-selectorSdf, 0.0) / max(8.0 * uPress, 0.001)) * 0.15 * uPress;
         lens = clamp(lens * (1.0 - inner) + edge, 0.0, 1.0);
         color = vec4(mix(color.rgb, lens, selectorMask), max(color.a, selectorMask));
+    }
+    // Keep labels opaque while allowing the native CSS backdrop to show the
+    // live page below. The supplied canvas still provides the refraction texture.
+    if (uLiveBackdrop > 0.5) {
+        float glassMask = max(panelMask, selectorMask);
+        float glassAlpha = mix(uSurfaceAlpha, 1.0, contentAlpha);
+        color.a = glassMask * glassAlpha + color.a * (1.0 - glassMask);
     }
     outputColor = color;
 }`;

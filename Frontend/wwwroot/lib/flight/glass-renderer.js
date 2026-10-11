@@ -172,6 +172,7 @@ export class GlassRenderer {
       uHighlightAlpha: settings.highlightAlpha, uShadowRadius: settings.shadowRadius,
       uDepthEffect: settings.depthEffect ? 1 : 0,
       uBlue: this.blue ? 1 : 0,
+      uLiveBackdrop: this.canvas.getRootNode().host?.hasAttribute('live-backdrop') ? 1 : 0,
     })) gl.uniform1f(this.uniform(name), value);
     for (const [slot, name] of ['uBackdrop', 'uLabels', 'uAccentLabels'].entries()) {
       gl.activeTexture(gl.TEXTURE0 + slot);

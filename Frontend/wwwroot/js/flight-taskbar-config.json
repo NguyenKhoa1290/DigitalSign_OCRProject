@@ -1,0 +1,24 @@
+{
+  "format": "flight-taskbar-web/config",
+  "version": 1,
+  "component": "flight-taskbar",
+  "taskbar": {
+    "settings": {
+      "cornerRadiusFraction": 1,
+      "blurRadius": 8,
+      "refractionHeightFraction": 0.75,
+      "refractionAmountFraction": 0.375,
+      "chromaticAberration": 1,
+      "surfaceAlpha": 0.4,
+      "saturation": 1.5,
+      "highlightAlpha": 1,
+      "shadowRadius": 24,
+      "pressedScale": 1.3928571428571428,
+      "valueStiffness": 1000,
+      "valueDamping": 1,
+      "scaleDampingX": 0.6,
+      "scaleDampingY": 0.7,
+      "depthEffect": false
+    }
+  }
+}

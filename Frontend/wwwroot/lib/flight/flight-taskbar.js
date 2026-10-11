@@ -39,6 +39,9 @@ const styles = `
   .accent { color: #0088ff; pointer-events: none; clip-path: inset(0 var(--clip-right) 0 var(--clip-left) round var(--selector-radius,28px)); }
   :host([data-renderer="css"]) button[aria-selected="true"] .content { color: #0088ff; }
   :host([data-renderer="webgl2"]) .fallback, :host([data-renderer="webgl2"]) button .content { opacity: 0; }
+  :host([live-backdrop][data-renderer="webgl2"]) .surface {
+    opacity: 1; background: transparent; box-shadow: none;
+  }
   :host([data-renderer="css"]) canvas { display: none; }
   :host([data-dark="true"]) .surface { background: rgba(18,18,18,var(--surface-alpha,.4)); }
   :host([data-dark="true"]) button { color: #fff; }
@@ -51,7 +54,7 @@ const styles = `
 `;
 
 export class FlightTaskbar extends HTMLElement {
-  static observedAttributes = ['selected-index', 'theme', 'dir', 'labels', 'icons', 'blue'];
+  static observedAttributes = ['selected-index', 'theme', 'dir', 'labels', 'icons', 'blue', 'live-backdrop'];
 
   constructor() {
     super();

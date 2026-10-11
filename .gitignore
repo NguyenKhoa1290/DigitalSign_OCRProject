@@ -8,6 +8,7 @@
 **/.pytest_cache/
 **/tai_lieu/
 **/tiendo/
+**/FlightTaskbarWeb/
 .env
 .env.*
 !.env.example

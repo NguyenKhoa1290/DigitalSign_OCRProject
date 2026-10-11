@@ -1727,6 +1727,17 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 54 — 11/10/2026
+### Áp dụng mẫu nút bấm LiquidButton
+
+- Tham khảo tab Nút bấm trong `FlightTaskbarWeb/src/gallery.js`: capsule, nền kính blur 2px, nút chuẩn cao 48px, spring khi nhấn với scale `1 + 4 / 48`.
+- Áp dụng cho các nút hành động `.btn` bằng CSS và dùng lại `PressMotion` từ source mẫu. Nền kính dùng CSS, không phải shader khúc xạ WebGL của LiquidButton. Giữ nguyên nút HTML, sự kiện Blazor, submit biểu mẫu, trạng thái disabled và focus bàn phím.
+- Giữ nguyên taskbar, tab chuyển mục, nền trang và các thành phần khác. Nút nhỏ dùng chiều cao 36px để phù hợp bảng và popup.
+- Build frontend thành công (0 warning, 0 error), build Docker và recreate frontend/cloudflared local. Tên miền trả HTTP 200 và phục vụ module mới.
+- Kiểm tra trình duyệt với API giả lập ở viewport 390px và 1440px: mở/đóng popup, Enter, spring khi nhấn, submit một lần và disabled đều đạt; không có lỗi JavaScript. Kiểm thử nghiệp vụ với dữ liệu thật do người dùng thực hiện.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase

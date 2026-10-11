@@ -1,5 +1,6 @@
 import '../lib/flight/components/glass-surface.js';
 import '../lib/flight/components/liquid-button.js';
+import './liquid-action-buttons.js';
 import '../lib/flight/flight-taskbar.js';
 import { setGlassBackdrop } from '../lib/flight/components/backdrop.js';
 

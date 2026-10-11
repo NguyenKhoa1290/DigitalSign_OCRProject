@@ -346,7 +346,7 @@ a:hover { text-decoration: underline; }
     line-height: 1;
     text-decoration: none;
 }
-.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-sm { padding: 6px 12px; font-size: 12.5px; }
 .btn-lg { padding: 12px 24px; font-size: 15px; }
 
@@ -1508,4 +1508,43 @@ body {
     .detail-item,
     .file-upload-area,
     .sig-item { background: rgba(255, 255, 255, 0.94); }
+}
+
+/* Action buttons: capsule/glass appearance from the sample's Buttons tab.
+   Native controls preserve form submission, keyboard activation and Blazor events. */
+.btn {
+    --button-tint: 255, 255, 255;
+    --button-alpha: .15;
+    min-height: 48px;
+    min-width: 48px;
+    justify-content: center;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .5);
+    background: linear-gradient(160deg, rgba(255,255,255,.26), rgba(255,255,255,0) 55%), rgba(var(--button-tint), var(--button-alpha));
+    -webkit-backdrop-filter: blur(2px) saturate(1.5);
+    backdrop-filter: blur(2px) saturate(1.5);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.65), inset 0 -1px 2px rgba(18,70,109,.12), 0 4px 12px rgba(18,70,109,.12);
+    transform: translate(var(--button-offset-x, 0px), var(--button-offset-y, 0px)) scale(var(--button-scale-x, 1), var(--button-scale-y, 1));
+    transition: background-color .18s, border-color .18s, box-shadow .18s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.btn-primary { --button-tint: 0, 136, 255; --button-alpha: .85; color: white; }
+.btn-success { --button-tint: 5, 150, 105; --button-alpha: .85; color: white; }
+.btn-danger { --button-tint: 220, 38, 38; --button-alpha: .85; color: white; }
+.btn-warning { --button-tint: 255, 141, 40; --button-alpha: .85; color: #492000; }
+.btn-outline, .btn-ghost { color: var(--color-text-secondary); }
+.btn:hover:not(:disabled) {
+    background: linear-gradient(160deg, rgba(255,255,255,.32), rgba(255,255,255,0) 55%), rgba(var(--button-tint), var(--button-alpha));
+    border-color: rgba(255,255,255,.75);
+    box-shadow: inset 0 1px 2px rgba(255,255,255,.8), 0 5px 16px rgba(18,70,109,.16), 0 0 12px rgba(255,255,255,calc(var(--button-glow, 0) * .7));
+    transform: translate(var(--button-offset-x, 0px), var(--button-offset-y, 0px)) scale(var(--button-scale-x, 1), var(--button-scale-y, 1));
+}
+.btn:focus-visible { outline: 2px solid #0088ff; outline-offset: 4px; }
+.btn-sm { min-height: 36px; min-width: 36px; padding: 0 12px; }
+.btn-lg { min-height: 52px; padding: 0 24px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) {
+    .btn { transition: none; transform: none !important; }
 }

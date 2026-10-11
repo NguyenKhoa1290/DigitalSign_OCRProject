@@ -57,7 +57,7 @@
     {
         if (!firstRender) return;
 
-        _taskbarModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/liquid-glass.js?v=20261011-7");
+        _taskbarModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/liquid-glass.js?v=20261011-8");
         _taskbarReference = DotNetObjectReference.Create(this);
         await _taskbarModule.InvokeVoidAsync("bindTaskbarNavigation", _taskbarReference);
     }

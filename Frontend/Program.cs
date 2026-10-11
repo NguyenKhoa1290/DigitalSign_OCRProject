@@ -11,8 +11,10 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Browser calls the public Gateway URL configured by the web container.
+// Docker can use the current browser origin; local dotnet development keeps its configured Gateway URL.
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5000/";
+if (apiBaseUrl == "/")
+    apiBaseUrl = builder.HostEnvironment.BaseAddress;
 if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var apiBaseUri) ||
     apiBaseUri.Scheme is not ("http" or "https"))
     throw new InvalidOperationException("ApiBaseUrl must be an absolute HTTP(S) URL.");

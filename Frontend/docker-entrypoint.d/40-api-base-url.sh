@@ -2,6 +2,8 @@
 set -eu
 
 if [ -z "${PUBLIC_API_BASE_URL:-}" ]; then
+    # Use the current browser origin, where Nginx proxies /api/ to the Gateway.
+    printf '{"ApiBaseUrl":"/"}\n' > /usr/share/nginx/html/appsettings.json
     exit 0
 fi
 

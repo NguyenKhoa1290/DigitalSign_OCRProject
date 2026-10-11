@@ -1,0 +1,29 @@
+FlightTaskbarWeb
+
+Derived from the local FlightTaskbar / AndroidLiquidGlass-kmp project.
+Original Liquid Glass (Backdrop) code: Copyright 2025 Kyant.
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+This web version translates LiquidBottomTabs.kt, LiquidBottomTab.kt,
+DampedDragAnimation.kt, InteractiveHighlight.kt, FlightIcon.kt, and the
+refraction/highlight shaders in backdrop/internal/Shaders.kt into browser
+JavaScript, SVG/Canvas2D, and GLSL ES 3.00. These files have been modified
+for WebGL2 rendering, browser input, accessibility, and lifecycle handling.
+
+Additional modified web components are based on LiquidButton.kt, LiquidToggle.kt,
+LiquidSlider.kt, AdaptiveLuminanceGlassContent.kt, ControlCenterContent.kt,
+backdrops/LayerBackdrop.kt, internal/InverseLayerScope.kt and effects/ColorFilter.kt.
+Control Center actions, vertical sliders, the page gallery and resource packaging
+are web additions. Original Kotlin reference snapshots are included unchanged in
+the downloadable resource kit, with their local origins recorded in sources.json.
+
+Further web adaptations include DialogContent.kt, LockScreenContent.kt, SdfShader.kt,
+MagnifierContent.kt, ProgressiveBlurContent.kt, ScrollContainerContent.kt,
+LazyScrollContainerContent.kt, GlassPlaygroundContent.kt, HomeContent.kt and Android
+UISensor.kt. src/assets/clock_sdf.webp is copied unchanged from the original project's
+app/src/commonMain/composeResources/drawable/clock_sdf.webp. It retains the original
+project's Apache-2.0 attribution. Browser-native modal focus handling, keyboard gestures,
+shared WebGL scroll rendering and opt-in sensor permission UI are web adaptations.
+
+Inter font: Copyright 2020 The Inter Project Authors. Bundled Latin and Vietnamese
+WOFF2 subsets are licensed under SIL Open Font License 1.1; see INTER-OFL.txt.

@@ -1,0 +1,79 @@
+@page "/profile"
+@attribute [Authorize]
+@inject AdminService AdminService
+@inject AuthService AuthService
+@inject NavigationManager NavManager
+@inject IToastService Toast
+
+<PageTitle>Trang cá nhân - HAU</PageTitle>
+
+<div class="page-header"><div><h1 class="page-title">Trang cá nhân</h1><p class="page-subtitle">Cập nhật thông tin liên hệ và quản lý phiên đăng nhập.</p></div></div>
+
+@if (_isLoading)
+{
+    <LoadingSpinner />
+}
+else
+{
+    <div class="card profile-card">
+        <div class="card-header"><span class="card-title">Thông tin tài khoản</span></div>
+        <div class="card-body">
+            <div class="form-group"><label class="form-label required" for="profile-full-name">Họ và tên</label><input id="profile-full-name" class="form-control" maxlength="100" @bind="_fullName" disabled="@_isSaving" /></div>
+            <div class="form-group"><label class="form-label" for="profile-email">Email</label><input id="profile-email" type="email" class="form-control" maxlength="100" @bind="_email" disabled="@_isSaving" /></div>
+            <div class="form-group"><label class="form-label" for="profile-phone">Số điện thoại</label><input id="profile-phone" type="tel" class="form-control" maxlength="15" @bind="_phone" disabled="@_isSaving" /></div>
+        </div>
+        <div class="modal-footer profile-actions">
+            <button type="button" class="btn btn-danger" @onclick="Logout" disabled="@_isSaving">Đăng xuất</button>
+            <button type="button" class="btn btn-primary" @onclick="Save" disabled="@_isSaving">@(_isSaving ? "Đang lưu..." : "Lưu thay đổi")</button>
+        </div>
+    </div>
+}
+
+@code {
+    private UserDto? _user;
+    private string _fullName = string.Empty;
+    private string _email = string.Empty;
+    private string _phone = string.Empty;
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _user = await AdminService.GetCurrentUserAsync();
+            if (_user is null) { Toast.ShowError("Không thể tải thông tin tài khoản."); return; }
+            _fullName = _user.FullName;
+            _email = _user.Email ?? string.Empty;
+            _phone = _user.PhoneNumber ?? string.Empty;
+        }
+        catch { Toast.ShowError("Không thể tải thông tin tài khoản."); }
+        finally { _isLoading = false; }
+    }
+
+    private async Task Save()
+    {
+        if (_user is null || string.IsNullOrWhiteSpace(_fullName)) { Toast.ShowWarning("Vui lòng nhập họ và tên."); return; }
+        _isSaving = true;
+        try
+        {
+            var result = await AdminService.UpdateUserAsync(_user.Id, new UpdateUserDto
+            {
+                FullName = _fullName.Trim(), Email = _email.Trim(),
+                PhoneNumber = string.IsNullOrWhiteSpace(_phone) ? null : _phone.Trim(),
+                DepartmentId = _user.DepartmentId, IsActive = _user.IsActive, Role = _user.Role
+            });
+            if (result is null) { Toast.ShowError("Cập nhật thông tin thất bại."); return; }
+            _user = result;
+            Toast.ShowSuccess("Đã cập nhật thông tin.");
+        }
+        catch { Toast.ShowError("Cập nhật thông tin thất bại."); }
+        finally { _isSaving = false; }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        NavManager.NavigateTo("/login", forceLoad: true);
+    }
+}

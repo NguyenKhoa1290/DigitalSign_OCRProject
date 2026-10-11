@@ -12,6 +12,7 @@ services:
     depends_on:
       frontend:
         condition: service_started
+        restart: true
       api-gateway:
         condition: service_started
     restart: unless-stopped

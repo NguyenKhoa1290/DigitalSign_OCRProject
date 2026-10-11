@@ -12,6 +12,11 @@ on:
         required: false
         default: false
         type: boolean
+      deploy_to_local:
+        description: Deploy an existing commit image on the local Windows runner
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -161,6 +166,7 @@ jobs:
             export IMAGE_PREFIX IMAGE_TAG
             docker compose -f docker-compose.yml -f docker-compose.tunnel.yml pull
             docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-build --remove-orphans
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-build --no-deps --force-recreate cloudflared
             for attempt in $(seq 1 20); do
               if curl --fail --silent --show-error http://127.0.0.1:5227/health; then
                 exit 0
@@ -170,3 +176,53 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.tunnel.yml ps
             docker compose -f docker-compose.yml -f docker-compose.tunnel.yml logs --tail=50 frontend api-gateway
             exit 1
+
+  deploy-local:
+    name: Deploy on this Windows machine
+    needs: build-images
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_to_local
+    runs-on: [self-hosted, Windows, X64, hau-local]
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Check out deployment configuration
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy prebuilt images to local Docker
+        shell: pwsh
+        env:
+          LOCAL_DEPLOY_PATH: E:\DigitalSign_OCRProject
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $target = $env:LOCAL_DEPLOY_PATH
+          if (!(Test-Path -LiteralPath (Join-Path $target '.env'))) { throw 'Missing local .env' }
+          if (!(Test-Path -LiteralPath (Join-Path $target '.env.tunnel'))) { throw 'Missing local .env.tunnel' }
+          Copy-Item -LiteralPath 'docker-compose.yml' -Destination $target -Force
+          Copy-Item -LiteralPath 'docker-compose.tunnel.yml' -Destination $target -Force
+          $env:IMAGE_PREFIX = "ghcr.io/${{ github.repository }}".ToLowerInvariant()
+          $env:IMAGE_TAG = 'sha-${{ github.sha }}'
+          Push-Location $target
+          try {
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml pull
+            if ($LASTEXITCODE -ne 0) { throw 'Docker image pull failed' }
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-build --remove-orphans
+            if ($LASTEXITCODE -ne 0) { throw 'Docker Compose deployment failed' }
+            docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-build --no-deps --force-recreate cloudflared
+            if ($LASTEXITCODE -ne 0) { throw 'Cloudflare Tunnel restart failed' }
+            for ($attempt = 1; $attempt -le 20; $attempt++) {
+              curl.exe --fail --silent --show-error --output NUL http://127.0.0.1:5227/health
+              if ($LASTEXITCODE -eq 0) { exit 0 }
+              Start-Sleep -Seconds 5
+            }
+            throw 'Frontend health check failed'
+          }
+          finally { Pop-Location }

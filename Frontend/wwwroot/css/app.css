@@ -1121,6 +1121,72 @@ body {
 .app-loading .loading-text { color: rgba(255, 255, 255, 0.76); }
 .app-loading .loading-spinner-ring { border-color: rgba(255, 255, 255, 0.23); border-top-color: #83dcff; }
 
+/* FlightTaskbarWeb components: a single shared backdrop, not one WebGL context per row. */
+.liquid-sidebar-shell {
+    flex: 0 0 var(--sidebar-width);
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    height: calc(100vh - 24px);
+    margin: 12px 0 12px 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow: 18px 0 44px rgba(5, 38, 64, 0.18), 0 18px 48px rgba(18, 70, 109, 0.22);
+}
+
+.liquid-sidebar-shell .sidebar {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: inherit;
+    background: rgba(14, 78, 125, 0.78);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    contain: none;
+}
+
+.liquid-action {
+    min-width: 180px;
+    color: #0d3654;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.liquid-action svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+}
+
+.liquid-action-primary { color: #fff; }
+
+@media (max-width: 960px) {
+    .liquid-sidebar-shell {
+        display: none;
+    }
+
+    .liquid-action { width: 100%; }
+}
+
+.mobile-flight-taskbar { display: none; }
+
+@media (max-width: 960px) {
+    .mobile-flight-taskbar {
+        display: block;
+        position: fixed;
+        z-index: 100;
+        right: 10px;
+        bottom: max(var(--mobile-taskbar-bottom), env(safe-area-inset-bottom));
+        left: 10px;
+        width: auto;
+        max-width: 560px;
+        height: 64px;
+        margin: 0 auto;
+    }
+}
+
 /* Mobile bottom navigation */
 @media (max-width: 960px) {
     .app-layout { display: block; min-height: 100vh; overflow: hidden; }

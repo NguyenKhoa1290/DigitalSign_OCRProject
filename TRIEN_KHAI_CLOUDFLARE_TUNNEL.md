@@ -35,6 +35,12 @@ Chạy toàn bộ Compose với overlay tunnel:
 docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --build
 ```
 
+Sau khi thay thế container Frontend, cần tạo lại `cloudflared` để nó gắn vào network namespace của Frontend mới. Khi cập nhật bằng Compose, luôn dùng cả hai file cấu hình. Nếu đã chạy riêng `docker compose up -d frontend`, khôi phục tunnel bằng:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-deps --force-recreate cloudflared
+```
+
 Kiểm tra container và connector:
 
 ```bash

@@ -198,48 +198,48 @@ else
                 <span class="card-title">Thao tác nhanh</span>
             </div>
             <div class="card-body quick-action-buttons">
-                <a href="/documents" class="btn btn-outline">
+                <liquid-button class="liquid-action" label="Xem tất cả công văn" @onclick="@(() => Navigate("/documents"))">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                     Xem tất cả công văn
-                </a>
+                </liquid-button>
                 <AuthorizeView Roles="Clerk,Specialist">
-                    <a href="/documents/create" class="btn btn-primary">
+                    <liquid-button class="liquid-action liquid-action-primary" label="Tạo công văn mới" tint="#304e8a" @onclick="@(() => Navigate("/documents/create"))">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                         </svg>
                         Tạo công văn mới
-                    </a>
+                    </liquid-button>
                 </AuthorizeView>
                 <AuthorizeView Roles="Manager,BoardOfDirectors">
-                    <a href="/signatures" class="btn btn-primary">
+                    <liquid-button class="liquid-action liquid-action-primary" label="Ký số tài liệu" tint="#304e8a" @onclick="@(() => Navigate("/signatures"))">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                         Ký số tài liệu
-                    </a>
+                    </liquid-button>
                 </AuthorizeView>
                 <AuthorizeView Roles="Admin">
-                    <a href="/admin/system-logs" class="btn btn-outline">
+                    <liquid-button class="liquid-action" label="Nhật ký hệ thống" @onclick="@(() => Navigate("/admin/system-logs"))">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m3 6V7m3 10v-3M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
                         </svg>
                         Nhật ký hệ thống
-                    </a>
-                    <a href="/admin/activity" class="btn btn-outline">
+                    </liquid-button>
+                    <liquid-button class="liquid-action" label="Hoạt động ứng dụng" @onclick="@(() => Navigate("/admin/activity"))">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l3-8 4 16 3-8h4" />
                         </svg>
                         Hoạt động ứng dụng
-                    </a>
+                    </liquid-button>
                 </AuthorizeView>
-                <a href="/notifications" class="btn btn-outline">
+                <liquid-button class="liquid-action" label="Trung tâm thông báo" @onclick="@(() => Navigate("/notifications"))">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     Trung tâm thông báo
-                </a>
+                </liquid-button>
             </div>
         </div>
     </div>
@@ -267,6 +267,8 @@ else
         catch { _stats = new DashboardStats { HasUnavailableData = true }; }
         finally { _isLoading = false; }
     }
+
+    private void Navigate(string path) => NavManager.NavigateTo(path);
 
     private static string FormatCount(int? count) => count?.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) ?? "—";
 }

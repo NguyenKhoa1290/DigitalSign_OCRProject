@@ -5,6 +5,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject NavigationManager NavManager
 @inject ILocalStorageService LocalStorage
+@implements IDisposable
 
 @if (!_ready)
 {
@@ -37,7 +38,13 @@ else
     private string _selected = "users";
     private bool _ready;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
+    {
+        NavManager.LocationChanged += OnLocationChanged;
+        await SyncSectionAsync();
+    }
+
+    private async Task SyncSectionAsync()
     {
         var path = new Uri(NavManager.Uri).AbsolutePath.TrimEnd('/');
         _selected = path switch
@@ -50,5 +57,20 @@ else
         _ready = true;
     }
 
-    private void OpenSection(string section) => NavManager.NavigateTo($"/admin/{section}");
+    private void OpenSection(string section)
+    {
+        _selected = section;
+        NavManager.NavigateTo($"/admin/{section}");
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await SyncSectionAsync();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose() => NavManager.LocationChanged -= OnLocationChanged;
 }

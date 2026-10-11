@@ -1735,6 +1735,20 @@ Trong quá trình viết tài liệu phát hiện:
 - Giữ nguyên taskbar, tab chuyển mục, nền trang và các thành phần khác. Nút nhỏ dùng chiều cao 36px để phù hợp bảng và popup.
 - Build frontend thành công (0 warning, 0 error), build Docker và recreate frontend/cloudflared local. Tên miền trả HTTP 200 và phục vụ module mới.
 - Kiểm tra trình duyệt với API giả lập ở viewport 390px và 1440px: mở/đóng popup, Enter, spring khi nhấn, submit một lần và disabled đều đạt; không có lỗi JavaScript. Kiểm thử nghiệp vụ với dữ liệu thật do người dùng thực hiện.
+- Đã đẩy thay đổi source lên nhánh `main` GitHub, commit `40e1526` (`Apply sample capsule glass styling and press motion to action buttons`). Tăng phiên bản CSS và module JavaScript để trình duyệt tải bản mới khi tải lại trang.
+- Các file thay đổi: `Frontend/wwwroot/css/app.css`, `Frontend/wwwroot/js/liquid-action-buttons.js`, `Frontend/wwwroot/js/liquid-glass.js`, `Frontend/wwwroot/index.html` và `Frontend/Layout/NavMenu.razor`.
+
+---
+
+## Công việc số 55 — 11/10/2026
+### Danh sách công văn phù hợp giao diện điện thoại
+
+- Tham khảo dạng thẻ mobile của tab Người dùng và Chứng thư số; chuyển danh sách Công văn thành thẻ ở màn hình rộng tối đa 768px. Máy tính giữ nguyên bảng sáu cột.
+- Mỗi thẻ hiển thị tiêu đề, số hiệu, trạng thái, loại văn bản, ngày ban hành, người tạo và ngày tạo; tiêu đề và liên kết Xem chi tiết mở trang công văn bằng điều hướng SPA.
+- Cho phép nội dung dài xuống dòng, thông tin chuyển về một cột ở màn hình tối đa 360px. Giữ tìm kiếm, bộ lọc và phân trang; các bộ lọc xếp dọc trên điện thoại.
+- File sửa: `Frontend/Pages/Documents/Index.razor`, `Frontend/Pages/Documents/Index.razor.css`, `Frontend/wwwroot/index.html` (tăng phiên bản scoped CSS).
+- Build .NET đạt 0 warning, 0 error; build và cập nhật Docker frontend/cloudflared local. Trang `/documents` và CSS mới trên tên miền đều trả HTTP 200.
+- Kiểm tra bằng API giả lập với nội dung dài: viewport 300, 390, 768, 769 và 1440px không tràn chiều ngang; thẻ/bảng chuyển đúng ngưỡng. Phân trang, tìm kiếm, lọc trạng thái và mở chi tiết không reload đều đạt; không có lỗi JavaScript. Kiểm thử nghiệp vụ với dữ liệu thật do người dùng thực hiện.
 
 ---
 

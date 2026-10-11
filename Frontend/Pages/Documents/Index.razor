@@ -57,8 +57,8 @@ else if (_result == null || _result.Items.Count == 0)
 }
 else
 {
-    <div class="table-wrapper">
-        <table class="table">
+    <div class="table-wrapper document-list-wrapper">
+        <table class="table document-desktop-table">
             <thead>
                 <tr>
                     <th>Tiêu đề / Số hiệu</th>
@@ -95,6 +95,31 @@ else
                 }
             </tbody>
         </table>
+        <div class="document-mobile-list">
+            @foreach (var doc in _result.Items)
+            {
+                <article class="document-mobile-card" @key="doc.Id">
+                    <a class="document-mobile-title" href="@($"/documents/{doc.Id}")">@doc.Title</a>
+                    @if (!string.IsNullOrEmpty(doc.DocumentNumber))
+                    {
+                        <div class="document-mobile-number">Số: @doc.DocumentNumber</div>
+                    }
+                    <div class="document-mobile-badges">
+                        <StatusBadge Status="@doc.Status" />
+                        @if (!string.IsNullOrEmpty(doc.DocumentTypeName))
+                        {
+                            <span class="badge badge-indigo">@doc.DocumentTypeName</span>
+                        }
+                    </div>
+                    <dl class="document-mobile-details">
+                        <div><dt>Ngày ban hành</dt><dd>@(doc.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div>
+                        <div><dt>Người tạo</dt><dd>@(doc.CreatedByName ?? "—")</dd></div>
+                        <div><dt>Ngày tạo</dt><dd>@doc.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                    </dl>
+                    <a class="document-mobile-open" href="@($"/documents/{doc.Id}")">Xem chi tiết <span aria-hidden="true">→</span></a>
+                </article>
+            }
+        </div>
         <div class="pagination">
             <span class="pagination-info">
                 Hiển thị @((_currentPage - 1) * _pageSize + 1)–@Math.Min(_currentPage * _pageSize, _result.TotalCount) / @_result.TotalCount văn bản

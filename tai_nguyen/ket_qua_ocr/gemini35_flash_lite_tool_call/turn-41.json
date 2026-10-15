@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_64659",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"space_after_pt\":4,\"text\":\"Đề xuất kế hoạch dự kiến thực hiện đề tài tốt nghiệp\",\"align\":\"center\",\"bold\":true,\"font_size\":10}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EmAKXgFpFH0T/TElDZqhQ1lCAaMavsv1+phKPSWQlwn7exvWQVrFyz2Z5S7qVKJ4URNG2PPLwLqy2D0uv7jr8rjA7Fy+TSLuP2thV+MTbvSF4PPv+8vFm0T2XMk3c10pI1w="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 53,
+    "prompt_tokens": 9052,
+    "prompt_tokens_details": {
+      "cached_tokens": 5834
+    },
+    "total_tokens": 9105
+  }
+}

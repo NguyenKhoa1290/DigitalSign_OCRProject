@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "i4W7S51kQdpLUkL5TzcQxlKpGc3AKn5q",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"align\":\"center\",\"bold\":{\"true\":false},\"font_size\":12,\"text\":\"Đề xuất kế hoạch dự kiến thực hiện đề tài tốt nghiệp\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

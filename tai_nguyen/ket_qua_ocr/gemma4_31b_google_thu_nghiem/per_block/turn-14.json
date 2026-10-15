@@ -1,0 +1,27 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_487378",
+        "type": "function",
+        "function": {
+          "name": "render_document",
+          "arguments": "{}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 10,
+    "prompt_tokens": 4567,
+    "total_tokens": 4577
+  }
+}

@@ -172,8 +172,8 @@ async function main() {
     await page.locator('#assign-comment').press('Tab');
     const dialog = await page.getByRole('dialog').boundingBox();
     assert(dialog.x >= 0 && dialog.x + dialog.width <= viewport.width + 1);
-    await fs.mkdir(path.join(__dirname, 'artifacts'), { recursive: true });
-    await page.screenshot({ path: path.join(__dirname, 'artifacts', `document-assignment-${viewport.width}.png`) });
+    await fs.mkdir(path.join(__dirname, '..', 'tai_nguyen', 'ket_qua_kiem_thu'), { recursive: true });
+    await page.screenshot({ path: path.join(__dirname, '..', 'tai_nguyen', 'ket_qua_kiem_thu', `document-assignment-${viewport.width}.png`) });
     if (viewport.width === 1366) {
       await page.route('**' + route + '/assign', handler => handler.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ success: false, message: 'Smoke unavailable' }) }));
       await page.getByRole('button', { name: 'Xác nhận phân công', exact: true }).click();
@@ -192,7 +192,7 @@ async function main() {
   await page.getByRole('button', { name: 'Sửa thông tin', exact: true }).click();
   await page.locator('#edit-type').click();
   await page.getByRole('option').first().click();
-  await page.screenshot({ path: path.join(__dirname, 'artifacts', 'document-edit-450.png') });
+  await page.screenshot({ path: path.join(__dirname, '..', 'tai_nguyen', 'ket_qua_kiem_thu', 'document-edit-450.png') });
   await page.getByRole('button', { name: 'Hủy', exact: true }).click();
   assert.deepEqual(errors, []);
   pass('Mobile edit modal and no browser runtime errors');
@@ -258,10 +258,10 @@ async function cleanup() {
 main().catch(async e => {
   console.error(e.stack); process.exitCode = 1;
   if (browser) {
-    await fs.mkdir(path.join(__dirname, 'artifacts'), { recursive: true });
+    await fs.mkdir(path.join(__dirname, '..', 'tai_nguyen', 'ket_qua_kiem_thu'), { recursive: true });
     let index = 0;
     for (const context of browser.contexts()) for (const page of context.pages())
-      await page.screenshot({ path: path.join(__dirname, 'artifacts', `failure-${index++}.png`) });
+      await page.screenshot({ path: path.join(__dirname, '..', 'tai_nguyen', 'ket_qua_kiem_thu', `failure-${index++}.png`) });
   }
 }).finally(async () => {
   try { await cleanup(); } catch (e) { console.error(`Cleanup failed: ${e.message}`); process.exitCode = 1; }

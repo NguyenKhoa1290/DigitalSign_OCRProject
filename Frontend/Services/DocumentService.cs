@@ -1,4 +1,5 @@
 using HauDocumentApp.Models;
+using System.Net.Http.Json;
 
 namespace HauDocumentApp.Services;
 
@@ -13,7 +14,7 @@ public class DocumentService
     {
         var q = $"api/documents?page={page}&pageSize={pageSize}";
         if (!string.IsNullOrEmpty(status)) q += $"&status={Uri.EscapeDataString(status)}";
-        if (!string.IsNullOrEmpty(typeId)) q += $"&typeId={Uri.EscapeDataString(typeId)}";
+        if (!string.IsNullOrEmpty(typeId)) q += $"&docTypeId={Uri.EscapeDataString(typeId)}";
         if (!string.IsNullOrEmpty(search)) q += $"&search={Uri.EscapeDataString(search)}";
         return await _api.GetAsync<PagedResult<DocumentDto>>(q);
     }
@@ -25,14 +26,14 @@ public class DocumentService
         => await _api.PostAsync<DocumentDto>("api/documents", new
         {
             dto.Title, DocNumber = dto.DocumentNumber, DocTypeId = dto.DocumentTypeId,
-            IssuedDate = dto.IssuedDate.HasValue ? DateOnly.FromDateTime(dto.IssuedDate.Value) : (DateOnly?)null
+            dto.IssuedDate
         });
 
     public async Task<DocumentDto?> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto)
         => await _api.PutAsync<DocumentDto>($"api/documents/{id}", new
         {
             dto.Title, DocNumber = dto.DocumentNumber, DocTypeId = dto.DocumentTypeId,
-            IssuedDate = dto.IssuedDate.HasValue ? DateOnly.FromDateTime(dto.IssuedDate.Value) : (DateOnly?)null
+            dto.IssuedDate
         });
 
     public async Task<bool> SubmitDocumentAsync(Guid id, string? comment = null)
@@ -62,14 +63,28 @@ public class DocumentService
         if (document is null || string.IsNullOrWhiteSpace(document.MinioObjectName))
             return false;
 
-        var result = await _api.PostAsync<object>("api/ocr/process", new
+        using var response = await _api.PostResponseAsync("api/ocr/process", new
         {
             doc_id = id.ToString(),
             minio_path = document.MinioObjectName,
             token = string.Empty
         });
 
-        return result is not null;
+        if (!response.IsSuccessStatusCode)
+        {
+            var message = "OCR thất bại. Vui lòng thử lại.";
+            try
+            {
+                using var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    && body.RootElement.TryGetProperty("detail", out var detail)
+                    && detail.ValueKind == System.Text.Json.JsonValueKind.String)
+                    message = detail.GetString() ?? message;
+            }
+            catch (System.Text.Json.JsonException) { }
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        return true;
     }
 
     // GET api/documents/types  (route trong DocumentsController)
@@ -84,8 +99,27 @@ public class DocumentService
 
     public async Task<DocumentDto?> UploadFileAsync(Guid id, System.IO.Stream fileStream, string fileName)
     {
-        var content = new MultipartFormDataContent();
-        content.Add(new StreamContent(fileStream), "file", fileName);
-        return await _api.PostFormAsync<DocumentDto>($"api/documents/{id}/upload", content);
+        using var content = new MultipartFormDataContent();
+        var fileContent = new StreamContent(fileStream);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            DocumentFileFormats.GetContentType(fileName)
+                ?? throw new ArgumentException("Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.", nameof(fileName)));
+        content.Add(fileContent, "file", fileName);
+        using var response = await _api.PostFormAsync($"api/documents/{id}/upload", content);
+        if (!response.IsSuccessStatusCode)
+        {
+            var message = response.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge
+                ? "File vượt giới hạn tải lên. Dung lượng tối đa là 50 MB."
+                : "Không tải được file. Vui lòng thử lại tại trang chi tiết.";
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        return await response.Content.ReadFromJsonAsync<DocumentUploadResponse>() is { Success: true } result
+            ? result.Data : null;
+    }
+
+    private sealed class DocumentUploadResponse
+    {
+        public bool Success { get; set; }
+        public DocumentDto? Data { get; set; }
     }
 }

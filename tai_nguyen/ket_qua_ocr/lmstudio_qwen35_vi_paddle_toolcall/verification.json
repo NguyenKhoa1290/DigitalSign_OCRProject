@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-13",
+  "model": "qwen/qwen3.5-9b",
+  "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
+  "paddle_input_sha256": "4458dd420ab5f13b08a125c64e9f3138dcd90583ee20455defd4a6db660b0e40",
+  "prompt_sha256": "ae5dadf4ef139d755fb9f896afeb0d6ae3ddd60a7913f44cb81dbe826e773a9b",
+  "tool_calls": 4,
+  "turns": 4,
+  "failed_render_calls": 2,
+  "selected_iteration": 3,
+  "elapsed_seconds": 237.29,
+  "paddle_table_total_rows": 8,
+  "paddle_table_body_rows": 7,
+  "model_rows_array_count": 9,
+  "model_blank_rows": 8,
+  "model_effective_body_rows": 17,
+  "rendered_pages": 2,
+  "docx_zip_valid": true,
+  "docx_matches_selected_iteration": true,
+  "manual_content_edits": false,
+  "overall_visual_match": "fail"
+}

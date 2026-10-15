@@ -11,15 +11,16 @@ public class DocumentDto
     public string StatusDisplay { get; set; } = string.Empty;
     public string? DocTypeName { get; set; }
     public Guid? DocTypeId { get; set; }
-    public DateTime? IssuedDate { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateOnly? IssuedDate { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public string? CreatedByName { get; set; }
     public Guid? CreatedById { get; set; }
     public string? DepartmentName { get; set; }
     public Guid? DepartmentId { get; set; }
     public string? MinioPath { get; set; }
     public string? FileName { get; set; }
+    public string FileContentType { get; set; } = "application/pdf";
     public string? OcrDataRaw { get; set; }
     public List<DocumentProcessDto> Processes { get; set; } = new();
     public List<SignatureDto> Signatures { get; set; } = new();
@@ -37,6 +38,9 @@ public class DocumentDto
         get => DocTypeName ?? string.Empty;
         set => DocTypeName = value;
     }
+
+    [JsonIgnore]
+    public string DocumentTypeDisplayName => DocumentTypeDto.GetDisplayName(DocTypeName);
 
     [JsonIgnore]
     public Guid? DocumentTypeId

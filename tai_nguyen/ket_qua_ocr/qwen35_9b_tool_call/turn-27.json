@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "iUzEbuVsG9MR8KMSfHx2dRZ24TqNqK4W",
+        "type": "function",
+        "function": {
+          "name": "add_columns",
+          "arguments": "{\"texts\":[\"Sinh viên thực hiện đề tài\", \"(Ký và ghi rõ họ tên)\", \"Nguyễn Đăng Khoa\"],\"widths\":[0.3, 0.3, 0.4],\"align\":\"left\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

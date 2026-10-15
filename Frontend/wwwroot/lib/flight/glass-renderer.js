@@ -3,6 +3,16 @@ import { taskbarIconPaths } from './taskbar-icons.js';
 
 const PADDING = 64;
 
+export function taskbarContentMetrics(width, count) {
+  const tabWidth = (width - 8) / count;
+  const iconSize = clampSize(tabWidth * 0.34, 20, 24);
+  const fontSize = clampSize(tabWidth * 0.17, 9.5, 11);
+  const lineHeight = fontSize + 2;
+  return { iconSize, fontSize, lineHeight, iconTop: (64 - iconSize - 2 - lineHeight) / 2 };
+}
+
+function clampSize(value, min, max) { return Math.min(max, Math.max(min, value)); }
+
 export class GlassRenderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -70,6 +80,14 @@ export class GlassRenderer {
     }
   }
 
+  setAvatarInitial(initial) {
+    this.avatarInitial = initial;
+    if (this.width) {
+      this.makeLabels(1, this.dark || this.blue ? '#eaf7ff' : '#000000');
+      this.makeLabels(2, this.blue ? '#aee8ff' : '#0088ff');
+    }
+  }
+
   uniform(name) {
     if (!this.uniforms.has(name)) this.uniforms.set(name, this.gl.getUniformLocation(this.program, name));
     return this.uniforms.get(name);
@@ -110,7 +128,8 @@ export class GlassRenderer {
     ctx.scale(this.dpr, this.dpr);
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
-    ctx.font = `${this.count === 6 ? (this.width < 360 ? 9 : 10) : 12}px Inter, Arial, Helvetica, sans-serif`;
+    const { iconSize, fontSize, iconTop } = taskbarContentMetrics(this.width, this.count);
+    ctx.font = `${fontSize}px Inter, Arial, Helvetica, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     const tabWidth = (this.width - 8) / this.count;
@@ -118,13 +137,23 @@ export class GlassRenderer {
       const visualIndex = this.direction === 'rtl' ? this.count - 1 - i : i;
       const x = 4 + (visualIndex + 0.5) * tabWidth;
       ctx.save();
-      const iconSize = this.count === 6 ? 24 : 28;
-      ctx.translate(x - iconSize / 2, 10);
-      ctx.scale(iconSize / 24, iconSize / 24);
-      ctx.lineWidth = 1.8;
-      for (const path of taskbarIconPaths[this.icons[i]] || taskbarIconPaths.home) ctx.stroke(new Path2D(path));
+      if (this.icons[i] === 'user' && this.avatarInitial) {
+        ctx.fillStyle = '#0093dd';
+        ctx.beginPath();
+        ctx.arc(x, iconTop + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `600 ${iconSize * 0.52}px Inter, Arial, Helvetica, sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.avatarInitial, x, iconTop + iconSize / 2, iconSize - 4);
+      } else {
+        ctx.translate(x - iconSize / 2, iconTop);
+        ctx.scale(iconSize / 24, iconSize / 24);
+        ctx.lineWidth = 1.8;
+        for (const path of taskbarIconPaths[this.icons[i]] || taskbarIconPaths.home) ctx.stroke(new Path2D(path));
+      }
       ctx.restore();
-      ctx.fillText(this.labels[i], x, 51, tabWidth - 4);
+      ctx.fillText(this.labels[i], x, iconTop + iconSize + 2 + fontSize, tabWidth - 4);
     }
     this.upload(slot, canvas);
   }

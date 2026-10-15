@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_1468347",
+        "type": "function",
+        "function": {
+          "name": "finish_document",
+          "arguments": "{\"iteration\":1}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EmAKXgFpFH0TP3NF1hEx/D1vL7EgZqByzQPUSpfMs69Y0TUmWVvQUyNesuVxp/ZU79UDBMllZLOeJPivkGoelzpecSSypqtM4LE4tF97WK0jVgcCiElC1KYv98u1YHZnpRQ="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 14,
+    "prompt_tokens": 7167,
+    "prompt_tokens_details": {
+      "cached_tokens": 3890
+    },
+    "total_tokens": 7181
+  }
+}

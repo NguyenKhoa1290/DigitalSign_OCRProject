@@ -1,0 +1,27 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_281289",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"text\":\"Giảng viên hướng dẫn: TS. Trần Trung\"}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 6,
+    "prompt_tokens": 3905,
+    "total_tokens": 3911
+  }
+}

@@ -53,7 +53,7 @@ else
             <thead>
                 <tr>
                     <th>Người dùng</th>
-                    <th>Tên đăng nhập</th>
+                    <th>Mã cán bộ/giảng viên</th>
                     <th>Vai trò</th>
                     <th>Phòng ban</th>
                     <th>Trạng thái</th>
@@ -139,7 +139,7 @@ else
                 </div>
                 <dl class="user-mobile-details">
                     <div>
-                        <dt>Tên đăng nhập</dt>
+                        <dt>Mã cán bộ/giảng viên</dt>
                         <dd class="username-cell">@user.Username</dd>
                     </div>
                     <div>
@@ -187,12 +187,50 @@ else
             </svg>
             Sửa
         </button>
+        <button type="button" class="user-action-item" role="menuitem" @onclick="ResetPasswordActionUser">
+            <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-5-5V8a5 5 0 0110 0v4M5 12h14v9H5z" />
+            </svg>
+            Đặt lại mật khẩu
+        </button>
         <button type="button" class="user-action-item user-action-delete" role="menuitem" @onclick="DeleteActionUser">
             <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 10v6m4-6v6" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636 5.636 18.364M5.636 5.636l12.728 12.728" />
             </svg>
             Xóa
         </button>
+    </div>
+}
+
+@if (_resettingUser != null)
+{
+    <div class="modal-overlay" @onclick="CloseResetModal">
+        <div class="modal user-reset-modal" @onclick:stopPropagation>
+            <div class="modal-header">
+                <span class="modal-title">Đặt lại mật khẩu</span>
+                <button type="button" class="modal-close" @onclick="CloseResetModal" disabled="@_isResetting">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="user-reset-note">Cấp mật khẩu tạm cho <strong>@_resettingUser.FullName</strong> (@_resettingUser.Username). Phiên đăng nhập cũ sẽ bị thu hồi. Người dùng phải nhập và xác minh lại email ở lần đăng nhập tiếp theo.</p>
+                <div class="form-group">
+                    <label class="form-label required" for="temporary-password">Mật khẩu tạm (tối thiểu 8 ký tự)</label>
+                    <input id="temporary-password" type="password" class="form-control" autocomplete="new-password"
+                           @bind="_temporaryPassword" disabled="@_isResetting" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label required" for="confirm-temporary-password">Xác nhận mật khẩu tạm</label>
+                    <input id="confirm-temporary-password" type="password" class="form-control" autocomplete="new-password"
+                           @bind="_confirmTemporaryPassword" disabled="@_isResetting" />
+                </div>
+                <p class="user-reset-note">Sau khi đặt lại, hãy chuyển mật khẩu tạm cho người dùng qua kênh riêng.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" @onclick="CloseResetModal" disabled="@_isResetting">Hủy</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveResetPassword" disabled="@_isResetting">
+                    @(_isResetting ? "Đang đặt lại..." : "Đặt lại mật khẩu")
+                </button>
+            </div>
+        </div>
     </div>
 }
 
@@ -212,11 +250,11 @@ else
                         <input type="text" class="form-control" @bind="_formFullName" />
                     </div>
                     <div class="form-group">
-                        <label class="form-label required">Tên đăng nhập</label>
+                        <label class="form-label required">Mã cán bộ/giảng viên</label>
                         <input type="text" class="form-control" @bind="_formUsername" disabled="@(_editingUser != null)" />
                     </div>
                     <div class="form-group">
-                        <label class="form-label required">Email</label>
+                        <label class="form-label">Email (người dùng sẽ xác minh khi đăng nhập lần đầu)</label>
                         <input type="email" class="form-control" @bind="_formEmail" />
                     </div>
                     @if (_editingUser == null)
@@ -238,6 +276,7 @@ else
                         <input type="tel" class="form-control" @bind="_formPhone" />
                     </div>
                 </div>
+                <DepartmentAssignmentPicker Departments="_formDepartments" @bind-Value="_formDepartmentId" />
                 @if (_editingUser != null)
                 {
                     <div class="form-group">
@@ -276,10 +315,12 @@ else
     private UserDto? _editingUser;
     private string _formFullName = "", _formUsername = "", _formEmail = "", _formPassword = "", _formRole = "", _formPhone = "";
     private bool _formIsActive = true;
+    private Guid? _formDepartmentId;
+    private IReadOnlyList<DepartmentDto> _formDepartments = Array.Empty<DepartmentDto>();
 
     private static readonly IReadOnlyList<SelectOption> RoleOptions = new List<SelectOption>
     {
-        new("", "-- Chọn vai trò --"),
+        new("", "Chọn vai trò"),
         new("Admin", "Quản trị viên"),
         new("Clerk", "Văn thư"),
         new("Specialist", "Chuyên viên"),
@@ -289,6 +330,9 @@ else
 
     private bool _showDeleteConfirm;
     private UserDto? _deletingUser;
+    private UserDto? _resettingUser;
+    private string _temporaryPassword = "", _confirmTemporaryPassword = "";
+    private bool _isResetting;
 
     private UserDto? _actionUser;
     private bool _actionMenuFromTouch;
@@ -316,25 +360,49 @@ else
         catch (TaskCanceledException) { }
     }
 
-    private void ShowCreateModal()
+    private async Task ShowCreateModal()
     {
         CloseActionMenu();
+        if (!await LoadDepartmentOptions()) return;
         _editingUser = null;
         _formFullName = _formUsername = _formEmail = _formPassword = _formRole = _formPhone = "";
+        _formDepartmentId = null;
         _formIsActive = true;
         _showFormModal = true;
     }
 
-    private void ShowEditModal(UserDto user)
+    private async Task ShowEditModal(UserDto user)
     {
+        if (!await LoadDepartmentOptions()) return;
         _editingUser = user;
         _formFullName = user.FullName;
         _formUsername = user.Username;
-        _formEmail = user.Email;
+        _formEmail = user.Email ?? string.Empty;
         _formRole = user.Role;
         _formPhone = user.PhoneNumber ?? "";
         _formIsActive = user.IsActive;
+        _formDepartmentId = user.DepartmentId;
         _showFormModal = true;
+    }
+
+    private async Task<bool> LoadDepartmentOptions()
+    {
+        try
+        {
+            var departments = await AdminService.GetDepartmentsAsync();
+            if (departments == null)
+            {
+                Toast.ShowError("Không tải được danh sách phòng ban. Vui lòng thử lại.");
+                return false;
+            }
+            _formDepartments = departments;
+            return true;
+        }
+        catch
+        {
+            Toast.ShowError("Không tải được danh sách phòng ban. Vui lòng thử lại.");
+            return false;
+        }
     }
 
     private void ShowActionMenu(UserDto user, Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
@@ -379,11 +447,11 @@ else
         _actionMenuFromTouch = false;
     }
 
-    private void EditActionUser()
+    private async Task EditActionUser()
     {
         var user = _actionUser;
         CloseActionMenu();
-        if (user != null) ShowEditModal(user);
+        if (user != null) await ShowEditModal(user);
     }
 
     private void DeleteActionUser()
@@ -391,6 +459,47 @@ else
         var user = _actionUser;
         CloseActionMenu();
         if (user != null) ShowDeleteConfirm(user);
+    }
+
+    private void ResetPasswordActionUser()
+    {
+        var user = _actionUser;
+        CloseActionMenu();
+        if (user == null) return;
+        _resettingUser = user;
+        _temporaryPassword = _confirmTemporaryPassword = string.Empty;
+    }
+
+    private void CloseResetModal()
+    {
+        if (_isResetting) return;
+        _resettingUser = null;
+        _temporaryPassword = _confirmTemporaryPassword = string.Empty;
+    }
+
+    private async Task SaveResetPassword()
+    {
+        if (_resettingUser == null) return;
+        if (_temporaryPassword.Length < 8 || _temporaryPassword.Length > 128)
+        { Toast.ShowWarning("Mật khẩu tạm phải từ 8 đến 128 ký tự."); return; }
+        if (_temporaryPassword != _confirmTemporaryPassword)
+        { Toast.ShowWarning("Mật khẩu xác nhận không khớp."); return; }
+
+        _isResetting = true;
+        try
+        {
+            var success = await AdminService.ResetUserPasswordAsync(_resettingUser.Id, _temporaryPassword, _confirmTemporaryPassword);
+            if (success)
+            {
+                _isResetting = false;
+                CloseResetModal();
+                Toast.ShowSuccess("Đã đặt lại mật khẩu. Người dùng cần xác minh lại email khi đăng nhập.");
+                await LoadUsers();
+            }
+            else Toast.ShowError("Đặt lại mật khẩu thất bại.");
+        }
+        catch { Toast.ShowError("Đặt lại mật khẩu thất bại."); }
+        finally { _isResetting = false; }
     }
 
     private void CloseModal() => _showFormModal = false;
@@ -401,13 +510,15 @@ else
         if (string.IsNullOrWhiteSpace(_formFullName))
         { Toast.ShowWarning("Vui lòng nhập họ tên."); return; }
         if (string.IsNullOrWhiteSpace(_formUsername) && _editingUser == null)
-        { Toast.ShowWarning("Vui lòng nhập tên đăng nhập."); return; }
+        { Toast.ShowWarning("Vui lòng nhập mã cán bộ/giảng viên."); return; }
         if (string.IsNullOrWhiteSpace(_formPassword) && _editingUser == null)
         { Toast.ShowWarning("Vui lòng nhập mật khẩu tạm thời."); return; }
         if (_formPassword.Length < 6 && _editingUser == null)
         { Toast.ShowWarning("Mật khẩu phải có ít nhất 6 ký tự."); return; }
         if (string.IsNullOrWhiteSpace(_formRole))
         { Toast.ShowWarning("Vui lòng chọn vai trò."); return; }
+
+        var departmentId = _formDepartmentId;
 
         _isSaving = true;
         try
@@ -418,17 +529,25 @@ else
                 {
                     FullName     = _formFullName,
                     Username     = _formUsername,
-                    Email        = _formEmail,
+                    Email        = string.IsNullOrWhiteSpace(_formEmail) ? null : _formEmail.Trim(),
                     Password     = _formPassword,
-                    Role         = _formRole
+                    Role         = _formRole,
+                    PhoneNumber  = string.IsNullOrWhiteSpace(_formPhone) ? null : _formPhone.Trim(),
+                    DepartmentId = departmentId
                 };
                 var result = await AdminService.CreateUserAsync(dto);
-                if (result != null) { Toast.ShowSuccess("Tạo người dùng thành công! Người dùng sẽ được yêu cầu đổi mật khẩu lần đầu đăng nhập."); _showFormModal = false; await LoadUsers(); }
-                else Toast.ShowError("Tạo người dùng thất bại. Kiểm tra tên đăng nhập hoặc email đã tồn tại.");
+                if (result != null) { Toast.ShowSuccess("Tạo người dùng thành công! Người dùng sẽ xác minh email và đổi mật khẩu khi đăng nhập lần đầu."); _showFormModal = false; await LoadUsers(); }
+                else Toast.ShowError("Tạo người dùng thất bại. Kiểm tra mã cán bộ/giảng viên hoặc email đã tồn tại.");
             }
             else
             {
-                var dto = new UpdateUserDto { FullName = _formFullName, Email = _formEmail, PhoneNumber = _formPhone, Role = _formRole, IsActive = _formIsActive };
+                var dto = new UpdateUserDto
+                {
+                    FullName = _formFullName,
+                    Email = string.IsNullOrWhiteSpace(_formEmail) ? null : _formEmail.Trim(),
+                    PhoneNumber = string.IsNullOrWhiteSpace(_formPhone) ? null : _formPhone.Trim(),
+                    Role = _formRole, DepartmentId = departmentId, IsActive = _formIsActive
+                };
                 var result = await AdminService.UpdateUserAsync(_editingUser.Id, dto);
                 if (result != null) { Toast.ShowSuccess("Cập nhật thành công!"); _showFormModal = false; await LoadUsers(); }
                 else Toast.ShowError("Cập nhật thất bại.");

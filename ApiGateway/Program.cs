@@ -119,7 +119,18 @@ try
                         if (isValidProperty.ValueKind != JsonValueKind.True)
                         {
                             ctx.Fail("Token has been revoked or is no longer valid.");
+                            return;
                         }
+
+                        var requiresOnboarding = json.RootElement.TryGetProperty("mustChangePassword", out var mustChangeProperty)
+                            && mustChangeProperty.ValueKind == JsonValueKind.True;
+                        var path = ctx.Request.Path.Value;
+                        var isOnboardingEndpoint = path is not null &&
+                            (path.Equals("/api/auth/send-email-verification", StringComparison.OrdinalIgnoreCase)
+                            || path.Equals("/api/auth/change-password", StringComparison.OrdinalIgnoreCase)
+                            || path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase));
+                        if (requiresOnboarding && !isOnboardingEndpoint)
+                            ctx.Fail("Complete first login before accessing the application.");
                     }
                     catch (Exception ex)
                     {
@@ -148,7 +159,7 @@ try
             };
         });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(ApiGateway.OcrAccessPolicy.Configure);
 
     // ── YARP Reverse Proxy ────────────────────────────────────────────────────
     builder.Services.AddReverseProxy()

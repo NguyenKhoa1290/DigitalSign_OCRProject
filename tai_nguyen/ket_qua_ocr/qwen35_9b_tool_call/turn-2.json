@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "FhGXRu5z6sLrjgw0QtYHzvjS3ZJQPnRe",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"text\":\"TRƯỜNG ĐH KIẾN TRÚC HÀ NỘI\\tCỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM\\tKHOA CÔNG NGHỆ THÔNG TIN\\tĐộc lập - Tự do - Hạnh phúc\\tBẢNG KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỒ ÁN TỐT NGHIỆP\\tĐỢT 1, NĂM HỌC 2026 – 2027\",\"align\":\"center\",\"bold\":true}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

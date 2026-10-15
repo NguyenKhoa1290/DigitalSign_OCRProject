@@ -7,8 +7,10 @@ using Serilog;
 using System.Text;
 using System.Reflection;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using IdentityService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,7 +62,33 @@ builder.Services.AddAuthentication(options =>
                 .AnyAsync(t => t.Jti == jti && t.ExpiresAt > DateTime.UtcNow);
 
             if (isRevoked)
+            {
                 context.Fail("Token has been revoked.");
+                return;
+            }
+
+            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            if (!Guid.TryParse(userId, out var parsedUserId))
+            {
+                context.Fail("User ID is missing.");
+                return;
+            }
+
+            var user = await db.AppUsers.FindAsync(parsedUserId);
+            if (user is null || !user.IsActive)
+            {
+                context.Fail("Account is inactive or missing.");
+                return;
+            }
+
+            var path = context.Request.Path.Value;
+            var isOnboardingEndpoint = path is not null &&
+                (path.Equals("/api/auth/send-email-verification", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/api/auth/change-password", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase));
+            if (user.MustChangePassword && !isOnboardingEndpoint)
+                context.Fail("Complete first login before accessing the application.");
         },
         OnAuthenticationFailed = context =>
         {
@@ -76,6 +104,20 @@ builder.Services.AddAuthorization();
 // Infrastructure Layer (DbContext, Repositories, Services)
 // ============================================================
 builder.Services.AddInfrastructure(builder.Configuration);
+
+var dataProtectionPath = builder.Configuration["DataProtection:KeysPath"];
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("HAU.DigitalSign");
+if (!string.IsNullOrWhiteSpace(dataProtectionPath))
+{
+    Directory.CreateDirectory(dataProtectionPath);
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath));
+}
+
+builder.Services.AddHttpClient("gemini-key-validation", client =>
+{
+    client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
 
 // ============================================================
 // Controllers + FluentValidation

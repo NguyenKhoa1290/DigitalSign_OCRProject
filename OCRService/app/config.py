@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # Document Service
     document_service_url: str = "http://localhost:5049"
+    identity_service_url: str = "http://localhost:5048"
     service_token: str = ""  # Service-token nội bộ dùng khi Kafka event không có JWT
 
     # Kafka (optional)

@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "RxWAPAGreDt93Pd1udNIl1Lz8iGv4Gzo",
+        "type": "function",
+        "function": {
+          "name": "add_columns",
+          "arguments": "{\"align\":\"center\",\"bold\":{\"true\":true},\"font_size\":12,\"texts\":[\"TRƯỜNG ĐẠI HỌC KIẾN TRÚC HÀ NỘI\\\\nKHOA CÔNG NGHỆ THÔNG TIN\",\"CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\\\\nĐộc lập - Tự do - Hạnh phúc\"],\"widths\":[0.5,0.5]}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

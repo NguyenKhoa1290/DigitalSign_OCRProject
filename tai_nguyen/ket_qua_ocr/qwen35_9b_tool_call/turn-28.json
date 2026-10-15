@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "Do7wWfqABqCXTZ1TlOAWjBGNYEaj9U9r",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"text\":\"246\",\"align\":\"right\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

@@ -118,6 +118,9 @@
             Tạo tài khoản người dùng mới (chỉ Admin).
             </summary>
         </member>
+        <member name="M:IdentityService.API.Controllers.UsersController.AdminResetPassword(System.Guid,IdentityService.Core.DTOs.Auth.AdminResetPasswordDto)">
+            <summary>Admin cấp mật khẩu tạm; người dùng xác minh lại email ở lần đăng nhập sau.</summary>
+        </member>
         <member name="M:IdentityService.API.Controllers.UsersController.Update(System.Guid,IdentityService.Core.DTOs.Users.UpdateUserDto)">
             <summary>
             Cập nhật thông tin người dùng (Admin hoặc chính người dùng đó).

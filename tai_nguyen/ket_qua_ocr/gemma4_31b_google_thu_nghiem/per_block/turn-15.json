@@ -1,0 +1,35 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "extra_content": {
+      "google": {
+        "thought": true
+      }
+    },
+    "tool_calls": [
+      {
+        "id": "call_287537",
+        "type": "function",
+        "function": {
+          "name": "clear_draft",
+          "arguments": "{}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 10,
+    "prompt_tokens": 4620,
+    "prompt_tokens_details": {
+      "cached_tokens": 3407
+    },
+    "total_tokens": 4630
+  }
+}

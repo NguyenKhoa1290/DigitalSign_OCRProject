@@ -8,6 +8,9 @@ public class ValidateTokenResponseDto
     /// <summary>Cho biết token có hợp lệ và còn hiệu lực hay không.</summary>
     public bool IsValid { get; set; }
 
+    /// <summary>Tài khoản phải hoàn tất xác minh email và đổi mật khẩu lần đầu.</summary>
+    public bool MustChangePassword { get; set; }
+
     /// <summary>ID (GUID) của người dùng chủ sở hữu token. Null nếu token không hợp lệ.</summary>
     public Guid? UserId { get; set; }
 

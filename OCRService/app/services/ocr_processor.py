@@ -6,7 +6,7 @@ import tempfile
 from datetime import date
 from typing import Optional
 
-from pdf2image import convert_from_bytes
+from app.services.document_input import load_document_images
 
 from app.ocr.engine import OcrEngine
 from app.ocr.extractor import extract_fields
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 _engine: Optional[OcrEngine] = None
 
 
-async def export_word_from_upload(file_bytes: bytes) -> bytes:
+async def export_word_from_upload(file_bytes: bytes, filename: str = "document.pdf") -> bytes:
     """Create an editable DOCX draft from a scanned PDF using PaddleOCR and optional local LLM."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        images = convert_from_bytes(file_bytes, dpi=200, fmt="png")
+        images = load_document_images(file_bytes, filename)
         all_lines = []
         for page_num, image in enumerate(images, start=1):
             image_path = os.path.join(tmpdir, f"export_{page_num}.png")
@@ -60,8 +60,8 @@ async def process_document(doc_id: str, minio_path: str, token: str) -> dict:
 
     # 2. Chuyển PDF → ảnh
     with tempfile.TemporaryDirectory() as tmpdir:
-        images = convert_from_bytes(pdf_bytes, dpi=200, fmt="png")
-        logger.info("PDF có %d trang, bắt đầu nhận diện...", len(images))
+        images = load_document_images(pdf_bytes, minio_path)
+        logger.info("Tài liệu có %d trang, bắt đầu nhận diện...", len(images))
 
         all_lines = []
         raw_pages = []

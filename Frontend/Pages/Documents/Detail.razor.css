@@ -28,10 +28,6 @@
     margin-bottom: 24px;
 }
 
-.upload-label {
-    cursor: pointer;
-}
-
 .hidden-file-input {
     display: none;
 }
@@ -54,13 +50,20 @@
     padding: 0;
 }
 
+.document-image {
+    display: block;
+    width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+}
+
 .ocr-raw {
     max-height: 180px;
     padding: 12px;
     margin-top: 12px;
     overflow-y: auto;
     border: 1px solid var(--color-border-light);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-surface);
     background: var(--color-bg);
     color: var(--color-text-secondary);
     font-family: Consolas, monospace;

@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "yaeolUa6e1Hi4KAfTwXn1aPTeMZdxalx",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"align\":\"center\",\"bold\":{\"true\":true},\"font_size\":14,\"text\":\"ĐỀ XUẤT KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỂ TỐT NGHIỆP\\\\nĐỢT 1, NĂM HỌC 2026 - 2027\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

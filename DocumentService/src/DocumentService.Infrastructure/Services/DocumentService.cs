@@ -111,13 +111,14 @@ public class DocumentService : IDocumentService
         var document = await _documentRepository.GetByIdAsync(id)
             ?? throw new DocumentNotFoundException(id);
         if (string.IsNullOrWhiteSpace(document.MinioPath))
-            throw new DocumentNotFoundException("Văn bản chưa có file PDF.");
+            throw new DocumentNotFoundException("Văn bản chưa có file đính kèm.");
 
-        var path = document.MinioPath.Trim().Replace('\\', '/').TrimStart('/');
-        const string prefix = BucketName + "/";
-        if (path.StartsWith(prefix, StringComparison.Ordinal)) path = path[prefix.Length..];
+        var path = GetObjectName(document.MinioPath);
         var stream = await _fileStorageService.DownloadFileAsync(path, BucketName);
-        return new DocumentFileDto(stream, $"cong-van-{id}.pdf");
+        var extension = Path.GetExtension(path);
+        return new DocumentFileDto(stream, string.IsNullOrWhiteSpace(document.FileName)
+            ? $"cong-van-{id}{(string.IsNullOrEmpty(extension) ? ".pdf" : extension)}" : document.FileName,
+            DocumentFileFormats.GetContentType(path) ?? "application/pdf");
     }
 
     public async Task<DocumentDto> GetDocumentByIdAsync(Guid id)
@@ -167,13 +168,30 @@ public class DocumentService : IDocumentService
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
 
-        // 1. Upload lên MinIO
-        var storedFileName = await _fileStorageService.UploadFileAsync(
-            fileStream, fileName, contentType, BucketName);
+        var originalFileName = Path.GetFileName(fileName.Replace('\\', '/'));
+        if (string.IsNullOrWhiteSpace(originalFileName) || originalFileName.Length > 255
+            || originalFileName.Any(char.IsControl))
+            throw new DocumentServiceException("Tên file không hợp lệ hoặc dài quá 255 ký tự.");
+        var supportedContentType = DocumentFileFormats.GetContentType(originalFileName)
+            ?? throw new DocumentServiceException("Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.");
 
-        // 2. Cập nhật MinioPath: "documents/{filename}"
-        document.MinioPath = $"{BucketName}/{storedFileName}";
-        var updated = await _documentRepository.UpdateAsync(document);
+        // Save the new object before changing the document or deleting its old PDF.
+        var storedFileName = await _fileStorageService.UploadFileAsync(
+            fileStream, originalFileName, supportedContentType, BucketName);
+
+        var oldPath = document.MinioPath;
+        var newPath = $"{BucketName}/{storedFileName}";
+        // On a database exception, keep both objects: the commit outcome may be unknown.
+        var replaced = await _documentRepository.ReplaceFileAsync(id, oldPath, newPath, originalFileName);
+        if (!replaced)
+        {
+            await DeleteFileWithRetryAsync(storedFileName);
+            throw new DocumentServiceException("Công văn đã thay đổi trong khi tải PDF. Hãy mở lại và thử tải lên.");
+        }
+        document.MinioPath = newPath;
+        document.FileName = originalFileName;
+        if (!string.IsNullOrWhiteSpace(oldPath) && GetObjectName(oldPath) != storedFileName)
+            await DeleteFileWithRetryAsync(GetObjectName(oldPath));
 
         _logger.LogInformation("Upload file cho văn bản ID={Id}, path={Path}", id, document.MinioPath);
 
@@ -181,13 +199,37 @@ public class DocumentService : IDocumentService
         //    - Không throw nếu Kafka lỗi (upload vẫn thành công)
         //    - minioPath chỉ là objectName (không có bucket prefix) cho OCR Service
         await _kafkaProducer.PublishDocumentUploadedAsync(
-            docId:     updated.Id,
+            docId:     document.Id,
             minioPath: storedFileName,          // objectName trên MinIO
             authToken: string.Empty);           // token sẽ được OCR Service lấy riêng
 
-        var full = await _documentRepository.GetByIdAsync(updated.Id, includeProcesses: true)
-                   ?? updated;
+        var full = await _documentRepository.GetByIdAsync(document.Id, includeProcesses: true)
+                   ?? document;
         return MapToDto(full);
+    }
+
+    private static string GetObjectName(string path)
+    {
+        var objectName = path.Trim().Replace('\\', '/').TrimStart('/');
+        const string prefix = BucketName + "/";
+        return objectName.StartsWith(prefix, StringComparison.Ordinal)
+            ? objectName[prefix.Length..] : objectName;
+    }
+
+    private async Task DeleteFileWithRetryAsync(string objectName)
+    {
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                if (await _fileStorageService.DeleteFileAsync(objectName, BucketName)) return;
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "Không xóa được PDF {ObjectName}, lần {Attempt}", objectName, attempt);
+            }
+        }
+        _logger.LogWarning("PDF {ObjectName} chưa xóa được sau 3 lần; cần kiểm tra MinIO", objectName);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -453,7 +495,12 @@ public class DocumentService : IDocumentService
         DocNumber = doc.DocNumber,
         Title = doc.Title,
         IssuedDate = doc.IssuedDate,
+        CreatedAt = doc.Processes.Where(process => process.Action == DocumentAction.Submit)
+            .OrderBy(process => process.Timestamp).Select(process => (DateTime?)process.Timestamp).FirstOrDefault(),
+        UpdatedAt = doc.Processes.Select(process => (DateTime?)process.Timestamp).Max(),
         MinioPath = doc.MinioPath,
+        FileName = doc.FileName,
+        FileContentType = DocumentFileFormats.GetContentType(doc.MinioPath) ?? "application/pdf",
         OcrDataRaw = doc.OcrDataRaw,
         Status = doc.Status,
         StatusDisplay = DocumentStatus.GetDisplayName(doc.Status),

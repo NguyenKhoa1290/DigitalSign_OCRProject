@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "qYmvj2G8GADzXzDPUgeJosnMsZIrCrfg",
+        "type": "function",
+        "function": {
+          "name": "add_columns",
+          "arguments": "{\"texts\":[\"Giảng viên hướng dẫn\", \"(Ký và ghi rõ họ tên)\", \"TS. Trần Trung\"],\"widths\":[0.3, 0.3, 0.4],\"align\":\"left\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

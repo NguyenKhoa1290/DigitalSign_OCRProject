@@ -213,7 +213,7 @@ async function main() {
   await page.locator('#password').fill(process.env.HAU_TEST_PASSWORD||'Admin@123');
   await page.locator('button[type=submit]').click();await page.waitForURL(web+'/');
   sessions.push(await page.evaluate(()=>localStorage.getItem('auth_token')));
-  await fs.mkdir(path.join(__dirname,'artifacts'),{recursive:true});
+  await fs.mkdir(path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu'),{recursive:true});
   for(const route of ['/admin/system-logs','/admin/activity']) {
     await page.goto(web+route);await page.locator('.journal-entry').first().waitFor();
     await select(page,'journal-service','DocumentService');
@@ -221,12 +221,12 @@ async function main() {
     await page.getByRole('button',{name:'Lọc / Làm mới',exact:true}).click();
     await eventually(()=>page.locator('.journal-entry').count(),n=>assert.equal(n,1));
     assert((await page.locator('.journal-entry').innerText()).includes(creationTrace));
-    await page.screenshot({path:path.join(__dirname,'artifacts',path.basename(route)+'-1366.png')});
+    await page.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu',path.basename(route)+'-1366.png')});
     await page.setViewportSize({width:450,height:500});
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-    await page.screenshot({path:path.join(__dirname,'artifacts',path.basename(route)+'-450.png')});
+    await page.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu',path.basename(route)+'-450.png')});
     await page.locator('.journal-entry').scrollIntoViewIfNeeded();
-    await page.screenshot({path:path.join(__dirname,'artifacts',path.basename(route)+'-450-event.png')});
+    await page.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu',path.basename(route)+'-450-event.png')});
     await page.setViewportSize({width:1366,height:768});
   }
   await page.locator('#journal-trace').fill('');await page.locator('#journal-actor').fill(accounts.Manager.id);
@@ -242,11 +242,11 @@ async function main() {
   const ownPage=await personal.newPage();watch(ownPage,errors);
   await ownPage.goto(web+'/notifications');await ownPage.locator('.notification-entry').first().waitFor();
   assert(await ownPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await ownPage.screenshot({path:path.join(__dirname,'artifacts','notifications-450.png')});
+  await ownPage.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu','notifications-450.png')});
   await ownPage.locator('.notification-entry').first().scrollIntoViewIfNeeded();
-  await ownPage.screenshot({path:path.join(__dirname,'artifacts','notifications-450-event.png')});
+  await ownPage.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu','notifications-450-event.png')});
   await ownPage.setViewportSize({width:1366,height:768});
-  await ownPage.screenshot({path:path.join(__dirname,'artifacts','notifications-1366.png')});
+  await ownPage.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu','notifications-1366.png')});
   await select(ownPage,'notification-kind','Công văn được giao');await ownPage.locator('#notification-unread').check();
   await eventually(()=>ownPage.locator('.notification-entry').count(),n=>assert.equal(n,1));
   const card=ownPage.locator('.notification-entry').first(), newId=await card.getAttribute('data-notification-id');
@@ -322,7 +322,7 @@ async function cleanup() {
 }
 main().catch(async e=>{
   console.error(e.stack);process.exitCode=1;
-  if(browser) {let i=0;await fs.mkdir(path.join(__dirname,'artifacts'),{recursive:true});
+  if(browser) {let i=0;await fs.mkdir(path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu'),{recursive:true});
     for(const context of browser.contexts())for(const page of context.pages())
-      await page.screenshot({path:path.join(__dirname,'artifacts',`monitoring-failure-${i++}.png`)});}
+      await page.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu',`monitoring-failure-${i++}.png`)});}
 }).finally(async()=>{try {await cleanup();}catch(e){console.error('Cleanup failed: '+e.message);process.exitCode=1;}});

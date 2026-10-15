@@ -7,7 +7,7 @@ public class UserDto
     public Guid Id { get; set; }
     public string Username { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
     public bool IsEmailVerified { get; set; }
     public string? PhoneNumber { get; set; }
     public List<string> Roles { get; set; } = new();
@@ -26,16 +26,17 @@ public class CreateUserDto
 {
     public string Username { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
     public string Password { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
     public Guid? DepartmentId { get; set; }
 }
 
 public class UpdateUserDto
 {
     public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
     public string? PhoneNumber { get; set; }
     public string Role { get; set; } = string.Empty;
     public Guid? DepartmentId { get; set; }

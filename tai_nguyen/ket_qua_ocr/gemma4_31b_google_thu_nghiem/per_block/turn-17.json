@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_292500",
+        "type": "function",
+        "function": {
+          "name": "add_columns",
+          "arguments": "{\"widths\":[45,55],\"bold\":true,\"texts\":[\"TRƯỜNG ĐH KIẾN TRÚC HÀ NỘI\\\\nKHOA CÔNG NGHỆ THÔNG TIN\",\"CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM\\\\nĐộc lập - Tự do - Hạnh phúc\"],\"align\":\"center\"}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 99,
+    "prompt_tokens": 4704,
+    "prompt_tokens_details": {
+      "cached_tokens": 3410
+    },
+    "total_tokens": 4803
+  }
+}

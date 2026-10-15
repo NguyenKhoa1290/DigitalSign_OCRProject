@@ -79,6 +79,14 @@ build_metadata.AdditionalFiles.CssScope = b-gacwemiy66
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cRGVwYXJ0bWVudHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-28pjhsbejw
 
+[E:/DigitalSign_OCRProject/Frontend/Pages/Admin/GeminiSettings.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cR2VtaW5pU2V0dGluZ3MucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-h039gb6sw9
+
+[E:/DigitalSign_OCRProject/Frontend/Pages/Admin/Organization.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cT3JnYW5pemF0aW9uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-q2hcjkhq1f
+
 [E:/DigitalSign_OCRProject/Frontend/Pages/Admin/SystemLogs.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cU3lzdGVtTG9ncy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-07dwt3fcth
@@ -98,6 +106,10 @@ build_metadata.AdditionalFiles.CssScope = b-cyyrdxj2jb
 [E:/DigitalSign_OCRProject/Frontend/Pages/Documents/Detail.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXERldGFpbC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-eo4s0izygq
+
+[E:/DigitalSign_OCRProject/Frontend/Pages/Documents/GeminiOcrScan.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEdlbWluaU9jclNjYW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-1047pwfhxs
 
 [E:/DigitalSign_OCRProject/Frontend/Pages/Documents/Index.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEluZGV4LnJhem9y
@@ -123,6 +135,10 @@ build_metadata.AdditionalFiles.CssScope = b-hvwtd8f9pw
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTm90aWZpY2F0aW9ucy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-ei14h6si1a
 
+[E:/DigitalSign_OCRProject/Frontend/Pages/Profile.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJvZmlsZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-g73vmk4uui
+
 [E:/DigitalSign_OCRProject/Frontend/Pages/ResetPassword.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVzZXRQYXNzd29yZC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-fjv3wauipt
@@ -138,6 +154,10 @@ build_metadata.AdditionalFiles.CssScope = b-9s0mk9wl7h
 [E:/DigitalSign_OCRProject/Frontend/Shared/CustomSelect.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEN1c3RvbVNlbGVjdC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-50bx6f3t73
+
+[E:/DigitalSign_OCRProject/Frontend/Shared/DepartmentAssignmentPicker.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERlcGFydG1lbnRBc3NpZ25tZW50UGlja2VyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-szu893nhvk
 
 [E:/DigitalSign_OCRProject/Frontend/Shared/EventJournal.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEV2ZW50Sm91cm5hbC5yYXpvcg==

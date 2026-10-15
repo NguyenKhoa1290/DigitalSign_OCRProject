@@ -1,0 +1,33 @@
+{
+  "model": "gemini-3.8-flash",
+  "generation_requests": 1,
+  "retries": 0,
+  "manual_content_edits": false,
+  "input_mode": "image_only",
+  "source_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
+  "generation_seconds": 26.96,
+  "http_status": 200,
+  "model_version": "gemini-3.8-flash",
+  "usage": {
+    "promptTokenCount": 1716,
+    "candidatesTokenCount": 3074,
+    "totalTokenCount": 6073,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 652
+      },
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1064
+      }
+    ],
+    "thoughtsTokenCount": 1283,
+    "serviceTier": "standard"
+  },
+  "finish_reason": "STOP",
+  "word_sha256": "3a8149fd07e128d3a08d0120426f37d9744368f4a7ebd4589cb7aab44e8e90d2",
+  "render_pages": 1,
+  "status": "rendered_for_review",
+  "total_seconds": 28.51
+}

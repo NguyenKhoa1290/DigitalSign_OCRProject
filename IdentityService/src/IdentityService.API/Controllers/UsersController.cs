@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using IdentityService.Core.Common;
 using IdentityService.Core.DTOs.Users;
+using IdentityService.Core.DTOs.Auth;
 using IdentityService.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +18,13 @@ namespace IdentityService.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthService _authService;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    public UsersController(IUserService userService, IAuthService authService, ILogger<UsersController> logger)
     {
         _userService = userService;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -90,6 +93,19 @@ public class UsersController : ControllerBase
         _logger.LogInformation("User created successfully: {UserId}", user.Id);
         return CreatedAtAction(nameof(GetById), new { id = user.Id },
             ApiResponse<UserDto>.Ok(user, "Tạo tài khoản thành công"));
+    }
+
+    /// <summary>Admin cấp mật khẩu tạm; người dùng xác minh lại email ở lần đăng nhập sau.</summary>
+    [HttpPost("{id:guid}/reset-password")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AdminResetPassword(Guid id, [FromBody] AdminResetPasswordDto request)
+    {
+        await _authService.AdminResetPasswordAsync(id, request);
+        _logger.LogInformation("Admin reset password for user {UserId}", id);
+        return Ok(ApiResponse<bool>.Ok(true, "Đã cấp mật khẩu tạm; người dùng cần xác minh lại email."));
     }
 
     /// <summary>

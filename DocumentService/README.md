@@ -2,6 +2,8 @@
 
 DocumentService quản lý metadata công văn, upload file lên MinIO, ghi log workflow và phát Kafka event `document.uploaded` cho OCRService.
 
+File công văn hỗ trợ PDF, PNG, JPG/JPEG và WEBP, tối đa 50 MiB. API trả `fileName` gốc và `fileContentType`; endpoint `/api/documents/{id}/file` trả MIME tương ứng, thêm `?download=true` để tải xuống đúng tên gốc. Thay file thành công sẽ xóa object cũ; cơ chế này áp dụng cả khi đổi PDF sang ảnh hoặc ngược lại. OCRService giới hạn 5 trang mỗi lượt; ký số hiện vẫn dùng PDF.
+
 ## Chạy local
 
 Khởi động hạ tầng trước:

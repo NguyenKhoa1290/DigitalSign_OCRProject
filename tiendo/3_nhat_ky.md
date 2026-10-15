@@ -1587,7 +1587,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Build/recreate `identity-service`, `document-service`, `frontend`: pass; Identity healthy, Document/Frontend đang chạy. Build/recreate riêng Document lần cuối sau bổ sung kiểm tra JSON danh bạ null/array.
 - Smoke API/UI: 13 nhóm pass trên Docker/Gateway, gồm đăng nhập UI, sửa/tạo công văn kèm upload, xem/tải PDF, phân quyền, người nhận không tồn tại/bị khóa, lỗi API phân công, modal desktop 1366×768 và mobile 450×500.
 - PDF download kiểm tra byte-for-byte; HTTP range trả 206; chưa có file/không có văn bản trả 404; không có JWT trả 401.
-- Ảnh modal được xem lại trong `tests/artifacts`; không lỗi JavaScript ở trang chi tiết.
+- Ảnh modal được xem lại trong `tai_nguyen/ket_qua_kiem_thu`; không lỗi JavaScript ở trang chi tiết.
 - Dữ liệu lần chạy hoàn tất: xóa 2 document, 2 user và 2 object PDF tạm, logout các phiên test. Một lần chạy trước chạm rate limit 429; script đã hỗ trợ Retry-After, dữ liệu còn lại của lần đó đã được dọn bằng chế độ recovery.
 - Test case: `TC-DOC-EDIT-045`, `TC-DOC-FILE-046`, `TC-DOC-ASSIGN-047`.
 - Kiểm tra cuối: 24 file Markdown, 28 liên kết tương đối hợp lệ; danh mục khớp đủ 47 mã test; Compose config và diff whitespace của source/tài liệu pass. Các file build sinh tự động trong bin/obj không thuộc phạm vi diff kiểm tra source.
@@ -1633,7 +1633,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Docker build/recreate `api-gateway document-service frontend`; rebuild Gateway/Frontend sau sửa audit upload/thao tác thất bại và bộ lọc đổi trong lúc request đang tải.
 - `tests/monitoring-notifications.spec.cjs`: 14 nhóm SQL/API/UI Pass trên image cuối. Kiểm tra 401/403, dữ liệu riêng/404 khi sửa thông báo người khác, pagination >20, read/read-all idempotent, loại thông báo workflow, chứng thư sắp hết hạn không lặp, năm nguồn log, bộ lọc và che dữ liệu nhạy cảm.
 - Recreate riêng Gateway bằng Compose: audit/notification ID và ReadAt giữ nguyên, initializer không nhân bản lịch sử. UI đăng nhập Admin, trace/service/pagination/lỗi nguồn; thông báo tự render mới theo polling, đổi lọc giữa request tải đúng dữ liệu mới; điều hướng không lỗi JavaScript.
-- Desktop 1366×768 và mobile 450×500 không tràn ngang; ảnh trong `tests/artifacts` đã được xem lại. Ký duyệt ở test là chuyển trạng thái metadata, không khẳng định có chữ ký PDF. OCR callback nội bộ được mô phỏng; PDF trắng riêng dùng kiểm tra audit upload, không đánh giá chất lượng OCR.
+- Desktop 1366×768 và mobile 450×500 không tràn ngang; ảnh trong `tai_nguyen/ket_qua_kiem_thu` đã được xem lại. Ký duyệt ở test là chuyển trạng thái metadata, không khẳng định có chữ ký PDF. OCR callback nội bộ được mô phỏng; PDF trắng riêng dùng kiểm tra audit upload, không đánh giá chất lượng OCR.
 - Bổ sung whitelist route thực tế `/api/ocr/process-upload`, kiểm tra audit ProcessOCR/Warning khi thiếu file; alert chứng thư Admin dẫn tới trang quản trị, Manager/Board dẫn tới trang chứng thư cá nhân đúng quyền. Rebuild/recreate riêng Gateway và chạy lại 21 test Gateway cùng 14 nhóm smoke trên image cuối.
 - Dọn đúng 3 document/process fixture (notices cascade), 5 user, 2 chứng thư, 1 object PDF, phiên test và event theo ID/trace test. Không gửi email, không xóa dữ liệu/log có sẵn.
 - Test case mới: `TC-GW-LOGS-050`, `TC-AUDIT-051`, `TC-NOTIFICATIONS-052`; danh mục 52 test case. Việc còn lại: Gmail reset bằng OTP thật, bộ scan thực tế và coverage sâu ký/workflow/OCR; mở rộng thu gom log nội bộ/push nền chưa triển khai.
@@ -1752,6 +1752,266 @@ Trong quá trình viết tài liệu phát hiện:
 
 ---
 
+## Công việc số 56 — 11/10/2026
+### Gom tài nguyên vào thư mục riêng
+
+- Tạo `tai_nguyen` với các thư mục `tai_lieu_goc`, `noi_dung_trich_xuat`, `mau_cong_van`, `ket_qua_ocr`, `ket_qua_kiem_thu` và README hướng dẫn.
+- Chuyển bản đồ án Word, hai file nội dung trích xuất, ảnh công văn thực tế, kết quả LM Studio và 14 ảnh chụp kiểm thử vào thư mục tương ứng. Chuyển `.gitignore` của ảnh kiểm thử theo thư mục mới; chuyển script `extract_tables.py` từ root vào `tools`. Tổng cộng 21 file được di chuyển và đối chiếu SHA-256 trước/sau.
+- Cập nhật đường dẫn trong script LM Studio, script trích xuất bảng và ba script kiểm thử giao diện. Các đường dẫn dựa trên vị trí script. Cập nhật tham chiếu ảnh trong nhật ký/test case và bỏ `tai_nguyen/` khỏi Docker build context.
+- Giữ tài liệu vận hành tại `tai_lieu`, tiến độ tại `tiendo` và tài nguyên phục vụ frontend tại `Frontend/wwwroot`.
+- Kiểm tra cú pháp ba script Node và script PowerShell đạt; JSON LM Studio hợp lệ, ảnh mẫu resolve đúng đường dẫn. Chạy trích xuất bảng với `python-docx` cài riêng trong thư mục tạm: 16 bảng, file sinh ra trùng SHA-256 với kết quả cũ. Không chạy kiểm thử nghiệp vụ hoặc gọi lại LM Studio.
+
+---
+
+## Công việc số 57 — 11/10/2026
+### Thử nghiệm ảnh thực tế qua PaddleOCR + LLM và xuất Word theo bố cục
+
+- Chạy thật PaddleOCR 2.9.1 trên ảnh `tai_nguyen/mau_cong_van/ke-hoach-thuc-te.jpg`: 30 dòng có confidence và tọa độ. Gửi cả ảnh và các dòng cho model Gemma 12B tại LM Studio local; không thay thế bằng kết quả JSON cũ.
+- Lượt đầu hết thời gian chờ 240 giây; chuyển sang streaming, lượt sau hoàn tất trong 307,99 giây của script (không gồm lượt Paddle ban đầu). Lưu metadata và toàn bộ dữ liệu thô tại `tai_nguyen/ket_qua_ocr/paddle_llm_thu_nghiem`.
+- Thêm bộ xuất thử nghiệm `layout_exporter.py` và script `tools/test_paddle_llm_word.py`: dựng đoạn văn, cột song song và bảng Word thật từ JSON; không hardcode biểu mẫu. Sửa lỗi các bảng liên tiếp bị renderer gộp làm mất đường viền.
+- Bản tự động còn sai tên trường, tiêu đề, cụm chữ ký số, ghi chú, số hàng trống (8 thay vì 7) và tỷ lệ cột. Đã đối chiếu thủ công với ảnh để tạo bản giao; giữ JSON/bản Word tự động nguyên trạng riêng và ghi hiệu chỉnh trong `review_changes.json`. Dấu đỏ chồng lên tiêu đề không được tái tạo.
+- Xuất `ke_hoach_paddle_llm_da_doi_chieu.docx`: một trang A4, bảng 4 cột/7 hàng thân trống, đầu trang và chữ ký song song, văn bản/bảng chỉnh sửa được. Render bằng skill `documents` (`render_docx.py`, LibreOffice, Times New Roman) và kiểm tra hình ảnh. Bản tự động và bản đã đối chiếu đều có bản render lưu riêng.
+- Chỉ thử nghiệm local; endpoint xuất Word hiện tại chưa tích hợp bộ xuất mới. Không coi bản đã hiệu chỉnh là độ chính xác của pipeline tự động.
+
+---
+
+## Công việc số 58 — 11/10/2026
+### Kiểm thử native tool calling để PaddleOCR + LLM tự xuất Word
+
+- Chạy lại Paddle trên ảnh thực tế: 30 dòng; gửi ảnh và bằng chứng OCR cho Gemma 12B tại LM Studio local, không dùng bản đã sửa tay.
+- Thử schema toàn bộ layout gặp cấu trúc không hợp lệ; chuyển sang tool thêm đoạn, cột và bảng. Model thực hiện 24 native tool calls trong 402,49 giây, hai lần render, tự gọi `clear_draft` rồi chọn bản thứ hai bằng `finish_document`. Có ID/arguments và finish reason `tool_calls` trong log API.
+- Lưu nguyên file `tai_nguyen/ket_qua_ocr/paddle_llm_tool_call/ke_hoach_model_tool_call.docx`, dữ liệu Paddle, toàn bộ response/tool events, metadata, hai bản trung gian và render PNG/PDF. Không hiệu chỉnh nội dung hoặc định dạng sau khi model chọn; file cuối trùng SHA-256 với bản thứ hai.
+- Kiểm tra render một trang, văn bản và bảng sửa được, không nhúng ảnh. Chưa đạt độ giống ảnh: sai tiêu đề, thiếu “ký”, thiếu ngày ký, ký tự xuống dòng bị escape, bảng 16 hàng trống thay vì 7. Model gửi cả tám rows rỗng và blank_rows=8; bộ xuất cộng hai phần.
+- Lỗi in đậm còn liên quan adapter: model trả object thay cho boolean, bộ xuất dùng bool(object) nên nhận thành true. Cần kiểm tra kiểu tham số trước khi tích hợp; không coi tool thực thi thành công là nội dung đúng. Chi tiết tại README của thư mục kết quả. Chưa triển khai endpoint production.
+
+---
+
+## Công việc số 59 — 11/10/2026
+### Thử model mới Gemma 4 E4B với cùng testcase Word
+
+- Xác nhận LM Studio cung cấp `google/gemma-4-e4b`; gửi cùng ảnh thực tế và 30 dòng bằng chứng Paddle đã lưu, không chạy lại Paddle hoặc cung cấp bản sửa tay.
+- Lượt đầu bị dừng vì renderer chưa có LibreOffice; lưu riêng tại `gemma4_e4b_tool_call/infrastructure_failed_attempt`. Hoàn tất renderer trong container thử nghiệm, rồi chạy mới từ đầu.
+- Runner bổ sung lỗi schema rõ ràng khi thiếu tham số bắt buộc và chặn boolean sai kiểu; không tự sửa tham số hay nội dung. Lượt hoàn tất: 64,11 giây, 40 native tool calls, hai render, model tự clear draft và chọn bản thứ hai. Cả 40 thao tác trả ok, nhưng không đồng nghĩa tài liệu đúng.
+- Lưu file nguyên trạng `tai_nguyen/ket_qua_ocr/gemma4_e4b_tool_call/ke_hoach_model_tool_call.docx`, bằng chứng Paddle, response/tool events, metadata và render. Kiểm tra một trang, bảng/văn bản sửa được, không nhúng ảnh; file cuối trùng SHA-256 với bản model chọn.
+- Có cải thiện chữ “ký”, ngày ký và kiểu boolean; không còn in đậm toàn trang hoặc ký tự escape xuống dòng. Bố cục chưa đạt: thiếu tiêu đề, lặp đầu trang, bảng đặt trước thông tin sinh viên, 10 hàng trống thay vì 7, nhãn ký đảo và thiếu tên sinh viên ở phần ký. Model gửi ba độ rộng cho bốn cột nên exporter dùng mặc định. Giữ nguyên lỗi theo yêu cầu, chưa tích hợp production. Chi tiết trong README của thư mục kết quả.
+
+---
+
+## Công việc số 60 — 11/10/2026
+### Kiểm thử Qwen 3.5 9B với testcase tái tạo Word
+
+- Xác nhận LM Studio cung cấp `qwen/qwen3.5-9b`. Dùng cùng ảnh, 30 dòng Paddle đã lưu, prompt, tools và bộ xuất như lượt Gemma 4; không sửa nội dung thủ công.
+- 423,31 giây, 32 native tool calls; một phóng to ảnh, ba render, hai clear draft. Không có lỗi tool/renderer nhưng model chưa gọi finish_document khi hết giới hạn 32 lượt; metadata ghi selected_iteration=null. Runner thoát lỗi, không xuất nhầm bản trung gian thành file cuối.
+- Giữ toàn bộ response, tool_events, metadata, bằng chứng OCR, ba bản Word/render tại `tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call`. Bản đã render gần nhất là `iteration-3/document.docx`, chưa được model chọn. Sau đó model đã clear draft và bắt đầu dựng lại.
+- Kiểm tra bản thứ ba: một trang, văn bản/bảng thật; có tiêu đề, năm học, chữ ký số, ngày và hai tên ký. Bố cục chưa đạt: đầu trang gộp bằng tab, thân căn giữa, bảng cột đều với 8 hàng trống thay vì 7, khu vực ký thành hai dòng ba cột, số trang đưa xuống cuối. Không chỉnh lại kết quả. Chưa tích hợp production; README kết quả nêu rõ giới hạn của phép thử.
+- Kết luận giai đoạn thử local: cả Gemma 12B, Gemma 4 E4B và Qwen 3.5 9B đều chưa đáp ứng yêu cầu tái tạo bố cục ảnh mẫu. Không đánh dấu tính năng xuất Word theo ảnh là hoàn thành; các thời gian ghi nhận chỉ là từng lượt thử, không phải benchmark nhiều lần.
+- Bằng chứng Qwen: [metadata](../tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call/metadata.json), [log tool](../tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call/tool_events.json), [Word trung gian gần nhất](../tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call/iteration-3/document.docx). Hướng tiếp theo theo trao đổi: đánh giá model cloud với cùng testcase nếu người dùng chuyển sang cloud; chưa chọn model, gọi API cloud hoặc gửi ảnh ra ngoài.
+
+---
+
+## Công việc số 61 — 11/10/2026
+### Viết lại kế hoạch phát triển và triển khai
+
+- Tạo `tiendo/8_ke_hoach_trien_khai.md` theo source, trạng thái hiện tại và nhật ký 51–60; giữ các phần đã triển khai, không coi bản OCR sửa tay là kết quả tự động đạt yêu cầu.
+- Sắp thứ tự: đánh giá model cloud với testcase cố định, hoàn thiện schema/bộ xuất Word, tích hợp tác vụ/bản nháp/chỉnh sửa và phiên bản, đối chiếu hai luồng công văn/nghiệm thu, rồi xác minh CI/CD local và chuẩn bị VPS. Mỗi giai đoạn có trạng thái và điều kiện hoàn thành, không tự đặt lịch hoặc chọn provider cloud.
+- Ghi rõ vấn đề cần kiểm tra ở CD: workflow chỉ publish khi push main, deploy thủ công cần tag commit đã tồn tại trên GHCR; chưa xác nhận Actions/CD mới. Kiểm thử thực tế vẫn chờ người dùng; chưa áp dụng giới hạn tài nguyên hoặc chuyển stack sang VPS.
+- Liên kết kế hoạch từ `tiendo/2_da_lam.md`, `tai_lieu/README.md` và tài liệu triển khai service; sửa đường dẫn hướng dẫn Docker đã chuyển sang `tai_nguyen` tại README triển khai.
+- Chỉ thay tài liệu; kiểm tra liên kết và diff, không build, redeploy Docker, chạy test nghiệp vụ hoặc gọi model/cloud trong công việc này.
+
+---
+
+## Công việc số 62 — 12/10/2026
+### Thử PP-StructureV3 xuất Word không dùng LLM, dọn renderer cũ
+
+- Xóa container thử `hau-ocr-render` theo yêu cầu; dùng thư viện OS/LibreOffice đã cài làm base cho container Paddle riêng `hau_ppstructure_trial`. Không xóa image OCR dùng chung hoặc đổi service OCR đang chạy.
+- Tạo virtualenv riêng PaddleOCR 3.7.0/PaddlePaddle 3.3.1/PaddleX 3.7.2; thêm `tools/test_ppstructure_word.py`. Chạy ảnh công văn mẫu với UVDoc, nhận diện tiếng Việt, layout và bảng; xuất Word trực tiếp bằng save_to_word, không LLM hoặc sửa tay.
+- Ba lượt: OCRv3 tổng 73,36 giây (xử lý/xuất 15,48), OCRv5 tổng 51,53 (35,12), override OCRv6 medium tổng 50,78 (31,67). Có tải model/font, không coi thời gian một lượt là benchmark. JSON giữ tên model thực tế.
+- Cả ba bản Word render một trang, bảng 4 cột/7 hàng thân trống đúng ảnh, văn bản/bảng sửa được, không nhúng ảnh. Chữ tiếng Việt vẫn sai dấu/thiếu chữ; đầu trang gộp, chữ ký xếp dọc, cột bảng đều và số trang đưa xuống footer. Chưa đạt tái tạo giống ảnh.
+- Lưu Word/JSON/HTML/Markdown, ảnh nhận diện/render, cấu hình, dependencies, log và metadata tại `tai_nguyen/ket_qua_ocr/ppstructure_v3_thu_nghiem`. Kiểm tra cấu trúc/ảnh render cả ba, py_compile script; ghi testcase `TC-OCR-PPSTRUCTURE-053`. Container Paddle mới dừng sau thử, giữ cache cho lần sau.
+- Cập nhật kế hoạch ưu tiên cải thiện Paddle-only và bộ xuất từ tọa độ trước; cloud là phương án bổ sung khi cần. Chưa nâng cấp endpoint OCR chính hoặc tích hợp frontend; kiểm thử này không thay nghiệm thu nghiệp vụ.
+
+---
+
+## Công việc số 63 — 12/10/2026
+### Thử PaddleOCR + Gemini 3.5 Flash Lite qua Google AI Studio
+
+- Người dùng chọn Google và cấp khóa; API listing xác nhận `gemini-3.5-flash-lite`. Khóa lưu `.env.gemini` bị Git bỏ qua, không ghi vào log; bản tạm trong container đã xóa. Gửi ảnh/bằng chứng OCR lên Google theo yêu cầu, không dùng Word sửa tay làm đầu vào.
+- Sửa adapter streaming: Google có call thiếu index, dùng ID để tách call; giữ thought_signature, usage và SSE nguyên bản. Thêm chờ retry 429 theo API và resume từ log, không sửa nội dung model. Kiểm tra fixture parser và py_compile đạt.
+- Sửa thiếu pdf2image trong virtualenv để renderer chạy. Có các lượt bị lỗi hạ tầng/widths; lưu và phân biệt với kết quả model. Giới hạn free-tier 15 request gây chờ; nới tối đa 64 lượt sau khôi phục, model chọn iteration 6 ở lượt 60.
+- 60 tool calls, 51 thành công/9 lỗi, 6 render yêu cầu/3 thành công, 3 clear draft. Thời gian metadata 427,54 giây có quota/khôi phục, không phải benchmark thuần inference. Usage trong response lưu tổng 474941 token, chưa tính tiền.
+- Word cuối một trang, chữ/bảng thật, đầu trang/chữ ký song song, hết escape xuống dòng; file trùng hash bản model chọn. Chưa đạt giống ảnh: 6 hàng thân trống thay vì 7, thiếu số 246, ghi chú thiếu “này”, typography/tỷ lệ khác. Giữ nguyên file, không sửa tay.
+- Kết quả tại `tai_nguyen/ket_qua_ocr/gemini35_flash_lite_tool_call`, testcase 054. Cập nhật kế hoạch theo provider đã chọn; chưa tích hợp Gemini vào endpoint hoặc deploy stack. Dừng môi trường thử sau khi lưu kết quả.
+
+---
+
+## Công việc số 64 — 12/10/2026
+### Thử Gemma 4 31B qua Google theo yêu cầu bản lớn
+
+- API có `gemma-4-31b-it`, không có tên Gemma 4 32B trong listing; thông báo tên chính thức 31B trước khi thử. LM Studio không kết nối được, dùng Google với cùng ảnh/30 dòng Paddle; reasoning minimal, không sửa tay.
+- Lượt từng khối ghi 21 calls, một render lỗi widths, nhiều API 500/429. Chuyển sang tool toàn layout để giảm request; compatibility vẫn 500. Native API ban đầu HTTP 400 do schema array thiếu items; sửa schema rõ ràng. Sửa echo functionResponse.id theo tài liệu Google, kiểm tra fixture đạt; lưu các lượt bị lỗi riêng.
+- Native lượt cuối replay nguyên call đầu đã lưu, model tự xem render, dựng lại và chọn iteration 3. Có 4 calls thực thi gồm một replay/3 call mới; metadata 353,31 giây có retry và render, chưa gồm các lượt trước, không so benchmark với Gemini.
+- Word model chọn một trang, chữ/bảng thật, có số 246 và ghi chú đầy đủ hơn; bảng 10 hàng thân thay vì 7, literal backslash-n còn trong header/title/chữ ký, typography/tỷ lệ khác ảnh. Đã xem render, kiểm tra hash/file model chọn; không sửa nội dung.
+- Kết quả tại `tai_nguyen/ket_qua_ocr/gemma4_31b_google_thu_nghiem`, testcase 055. Chưa đạt tái tạo giống ảnh hoặc xác nhận thay thế Gemini; chưa đổi endpoint ứng dụng/deploy. Quét output không có khóa, xóa khóa tạm, dừng container thử.
+
+---
+
+## Công việc số 65 — 12/10/2026
+### Thử Gemini 3.8 Flash với prompt và một request
+
+- Xác nhận model qua API listing/tài liệu Google. Viết `tools/test_gemini_single_shot_word.py`: prompt số hóa chuyên biệt, schema đầy đủ, một POST native generateContent, không retry/tool loop/sửa tay; Word và render chạy local nếu nhận layout hợp lệ.
+- Gửi cùng ảnh và bằng chứng Paddle đã lưu, thinking medium/temperature 0. Request duy nhất nhận HTTP 503 UNAVAILABLE sau 3,40 giây, thông báo nhu cầu sử dụng cao. Chưa có Word; chưa đánh giá được chất lượng model.
+- Lưu prompt/schema/config/evidence/response/metadata tại `tai_nguyen/ket_qua_ocr/gemini38_flash_single_shot`. Kiểm tra cú pháp script đạt; quét output không có khóa, xóa khóa tạm và dừng container thử. Không đổi endpoint/deploy.
+- Testcase 056 ghi lỗi dịch vụ, không kết luận model thất bại về độ chính xác. Giữ giới hạn một request theo yêu cầu người dùng.
+
+---
+
+## Công việc số 66 — 12/10/2026
+### Thử tên Gemini 3.7 Flash trong một request
+
+- Xác nhận tên model còn trong API listing; tài liệu Google ghi tự định tuyến 3.7 sang 3.8. Thông báo trước khi chạy; response thực tế xác nhận modelVersion=gemini-3.8-flash.
+- Dùng cùng ảnh/Paddle/prompt/schema, một POST duy nhất, HTTP 200. Sinh 52,93 giây; tổng gồm Word/render 54,49 giây; usage 9472 tokens. Không retry/tool loop/sửa tay. Script đặt tên Word theo model yêu cầu thay vì hardcode 3.8.
+- Word một trang, văn bản/bảng editable, số 246 và vùng đầu trang/chữ ký rõ, không literal escape. Đã xem render và đối chiếu ảnh: bảng 8 hàng thân thay vì 7, typography/spacing/in đậm còn khác; chưa đạt giống ảnh toàn bộ.
+- Lưu tại `tai_nguyen/ket_qua_ocr/gemini37_flash_single_shot`, testcase 057. Kiểm tra cú pháp, cấu trúc Word/hash và quét khóa; xóa khóa tạm, dừng container. Chưa tích hợp endpoint/deploy hoặc chốt đổi model.
+
+---
+
+## Công việc số 67 — 12/10/2026
+### Chốt Gemini cho phần xuất Word theo xác nhận người dùng
+
+- Người dùng chấp nhận bản lượt 057 và yêu cầu chốt. Chọn Gemini 3.8 Flash theo modelVersion thực tế; một request dựng layout, xuất Word editable local, văn thư kiểm tra/chỉnh sửa. Ghi nhận lựa chọn, không đổi lỗi bảng/typography đã quan sát thành Pass đối chiếu ảnh toàn bộ.
+- Làm rõ lượt 057 vẫn gửi kèm 30 dòng Paddle lưu sẵn, không chạy lại Paddle. Chưa có bằng chứng chất lượng image-only tương đương. Runner cho phép bỏ `--paddle-json`, lưu input_mode chính xác; không gọi cloud mới trong lần chốt.
+- Cập nhật trạng thái/kế hoạch: Paddle không bắt buộc cho luồng Word mới, vẫn giữ OCR/Kafka hiện hữu đến khi thay thế được xác minh. Bước tiếp theo tích hợp endpoint, Word nháp và chỉnh sửa/phiên bản; chưa deploy hoặc xóa dependency Paddle.
+
+---
+
+## Công việc số 68 — 12/10/2026
+### Thử Gemini trực tiếp ảnh, bỏ hoàn toàn Paddle
+
+- Theo yêu cầu người dùng, chạy runner không có --paddle-json: chỉ ảnh/prompt/schema, không chạy Paddle hoặc gửi OCR/Word/layout cũ. Model gemini-3.8-flash, cùng cấu hình medium/temperature 0, một POST không retry.
+- HTTP 503 UNAVAILABLE sau 2,41 giây, Google thông báo nhu cầu sử dụng cao. Chưa có Word/render; chưa đánh giá được chất lượng image-only hoặc khả năng thay thế Paddle.
+- Lưu `tai_nguyen/ket_qua_ocr/gemini38_image_only`, testcase 058; metadata input_mode=image_only, không có paddle_evidence.json. Quét output không có khóa, xóa khóa tạm và dừng container. Không đổi endpoint/deploy.
+
+---
+
+## Công việc số 69 — 12/10/2026
+### Thử lại Gemini trực tiếp ảnh thành công
+
+- Người dùng yêu cầu thử lại lượt không Paddle sau 503. Một request mới, chỉ ảnh/prompt/schema, không OCR/Word/layout cũ; không retry/tool loop/sửa tay.
+- gemini-3.8-flash HTTP 200/STOP, sinh 26,96 giây/tổng 28,51 giây gồm Word/render; usage 6073 tokens. Word editable một trang, không ảnh nhúng/literal escape, giữ số 246 và các vùng chính.
+- Đã xem render và kiểm tra cấu trúc/hash: bảng 4 cột/10 hàng thân thay vì 7, typography/in đậm/vị trí chữ ký khác nguồn. Chứng minh xuất Word không cần Paddle trên mẫu này, chưa chứng minh chất lượng tương đương hoặc đúng toàn bộ ảnh.
+- Lưu `tai_nguyen/ket_qua_ocr/gemini38_image_only_retry1`, testcase 059. Xóa khóa tạm, quét output, dừng container thử; chưa thay endpoint/deploy. Giữ nguyên lượt 058 lỗi dịch vụ và lượt 057 có Paddle.
+
+---
+
+## Công việc số 70 — 12/10/2026
+### Sửa prompt đếm số hàng theo đường biên
+
+- Theo yêu cầu người dùng, bổ sung protocol grid vào runner: đếm separator/dải hàng hai chiều, tách header, bỏ đường nền/baseline/bóng, kiểm tra tổng rows+blank_rows. Chốt số hàng trước căn trang, không tăng/giảm để lấp chiều cao; không hardcode số hàng đúng của mẫu.
+- Thêm prompt_version/hash metadata. Cùng ảnh/model/schema/config, chỉ ảnh không Paddle, một POST nhận HTTP 503 UNAVAILABLE sau 4,87 giây. Không retry, chưa có Word để đánh giá cải thiện.
+- Lưu `tai_nguyen/ket_qua_ocr/gemini38_image_only_prompt_v2`, testcase 060. py_compile đạt, quét output/xóa khóa tạm/dừng container; không đổi endpoint/deploy hoặc sửa Word cũ.
+
+---
+
+## Công việc số 71 — 12/10/2026
+### Hai request liên tiếp với prompt v2
+
+- Người dùng yêu cầu gửi hai lần: đúng hai POST độc lập cùng ảnh/prompt/schema/config, không Paddle; không dùng bản đầu cho bản sau hoặc sửa tay.
+- Cả hai HTTP 200/STOP và Word editable một trang, số 246, không ảnh nhúng/literal escape. Request 1 sinh 33,05 giây, bảng 10 hàng thân; request 2 sinh 35,45 giây, bảng 8 hàng thân. Nguồn có 7 hàng: chưa đạt, prompt chưa đảm bảo chính xác/ổn định.
+- Đã xem cả hai render và kiểm tra hash/cấu trúc, lưu `tai_nguyen/ket_qua_ocr/gemini38_prompt_v2_pair`, testcase 061. Quét output/xóa khóa tạm/dừng container; chưa đổi endpoint/deploy. Không kết luận hai lần gọi luôn khắc phục 503.
+
+---
+
+## Công việc số 72 — 12/10/2026
+### Chuyển prompt tái tạo Word sang tiếng Việt
+
+- Theo yêu cầu người dùng, chuyển system prompt và lời yêu cầu kèm ảnh/Paddle trong runner sang tiếng Việt; phiên bản image-layout-v3-vi-grid-counting. Giữ tên trường/enum JSON để tương thích bộ xuất Word.
+- Giữ protocol đếm đường biên/dải hàng hai chiều, tách header, kiểm tra rows+blank_rows, không hardcode số hàng đúng hoặc thay hàng để căn trang. Bổ sung diễn đạt giữ in đậm/in nghiêng theo vùng.
+- py_compile và diff whitespace đạt. Không gọi cloud mới hoặc tạo Word trong lần thay prompt; chưa có bằng chứng prompt tiếng Việt cải thiện độ chính xác. Giữ nguyên các kết quả lịch sử.
+
+---
+
+## Công việc số 73 — 12/10/2026
+### Prompt tiếng Việt kèm cấu trúc Paddle: đúng 7 hàng thân
+
+- Người dùng yêu cầu thử kèm Paddle/xem 7 hay 8. Parse HTML từ ba kết quả PP-Structure đã lưu cùng ảnh: 8 hàng tổng, hàng đầu tiêu đề/7 hàng sau trống. Không inference lại Paddle, không gán đáp án tay.
+- Thêm helper chuẩn bị evidence từ native: 32 dòng OCR, HTML/cell boxes, số hàng HTML/hash; khác các lượt trước chỉ có 30 dòng chữ OCR. Dùng prompt tiếng Việt v3 và hai POST độc lập, không sửa tay/retry.
+- Request 1 HTTP 200: 17,94 giây sinh/19,50 giây tổng, Word một trang, bảng 4 cột/7 hàng thân đúng. Đã xem render/kiểm tra cấu trúc/hash. Request 2 HTTP 503 sau 6,31 giây, chưa Word.
+- Bản 1 vẫn gộp ghi chú/hướng dẫn, thiếu dấu đóng ngoặc ghi chú và khác typography/in đậm; chưa giống ảnh hoàn toàn. Thay cả prompt và evidence nên chưa quy riêng nguyên nhân hoặc xác nhận độ ổn định. Giữ Paddle là nguồn cấu trúc bổ trợ hữu ích trên mẫu này.
+- Lưu `tai_nguyen/ket_qua_ocr/gemini38_vi_paddle_table`, testcase 062. Helper/cú pháp đạt, sửa in Unicode terminal; quét/xóa khóa tạm/dừng container, chưa đổi endpoint/deploy.
+
+---
+
+## Công việc số 74 — 12/10/2026
+### Chốt phương án kết hợp và bổ sung báo cáo đồ án
+
+- Người dùng chốt Paddle cấu trúc + Gemini tiếng Việt theo lượt 062. Ghi phương án chính: ảnh/Paddle evidence → Gemini 3.8 Flash → JSON → DOCX editable local → văn thư đối chiếu/sửa, chưa coi tích hợp ứng dụng đã hoàn tất.
+- Tạo `tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_OCR.docx` từ bản gốc, thêm mục 2.7.1–2.7.4: cơ sở lựa chọn, quy trình, kết quả/giới hạn và phạm vi triển khai. Có nguồn Paddle/Google chính thức và evidence testcase 062; không bịa độ chính xác hoặc bỏ lỗi API/định dạng còn tồn tại.
+- Script chèn OOXML, verification chứng minh nội dung gốc và các phần gói DOCX khác giữ nguyên; bản gốc không ghi đè. Render 87 trang, xem tổng quan và ba trang mới 85–87; chỉnh giãn cách/ngắt trang để sạch phần bổ sung. Mục lục cũ cần Update entire table trong Word, đã ghi hướng dẫn.
+- py_compile đạt, dừng container thử; không gọi cloud mới, thay endpoint hoặc deploy. Cập nhật trạng thái/kế hoạch theo phương án người dùng đã chốt.
+
+---
+
+## Công việc số 75 — 12/10/2026
+### Sửa mục 1.2.3 theo phương án kết hợp
+
+- Theo yêu cầu người dùng, đổi mục 1.2.3 thành “PaddleOCR và mô hình ngôn ngữ lớn”, sửa ba đoạn làm rõ Paddle/PP-Structure cung cấp chữ/cấu trúc bảng, Gemini đọc ảnh/evidence và xuất JSON, Word nháp cần văn thư xác nhận; dẫn đến phần thử nghiệm/phạm vi 2.7.
+- Đổi tên mục trong mục lục, giữ cấu trúc/định dạng cũ. Verification xác nhận chỉ bốn đoạn mục 1.2.3 và nhãn mục lục thay đổi; các đoạn và thành phần DOCX khác còn nguyên. Sao lưu bản trước khi cập nhật cùng file bàn giao.
+- Render lại báo cáo 87 trang, xem trang mục lục và nội dung 1.2.3, kiểm tra cú pháp/hash. File cũ bị ứng dụng khác khóa nên lưu bản bàn giao mới tại tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_OCR_1_2_3.docx và QA tại kiem_tra_1_2_3; không ép đóng ứng dụng. Không gọi model/deploy; dừng môi trường thử.
+
+---
+
+## Công việc số 76 — 13/10/2026
+### Kiểm tra nốt LM Studio với prompt tiếng Việt và Paddle
+
+- Theo yêu cầu dùng model đang nạp: API trạng thái xác nhận qwen/qwen3.5-9b VLM/Q4_K_M, context 30208; không nạp/đổi model khác. Runner hỗ trợ provider lmstudio qua chat/completions và JSON schema, giữ provider Google mặc định; local không cần khóa Google.
+- Hai request độc lập cùng ảnh/evidence bảng Paddle và prompt tiếng Việt v3, temperature 0/max_tokens 12000; không tool loop/retry/Google API. Hoàn tất kiểm tra ngày 13/10. HTTP 200/stop, thời gian 346,56 và 380,88 giây.
+- Hai JSON layout giống nhau: 4 cột nhưng rows chứa 10 mảng rỗng, blank_rows=0, trong khi Paddle có 8 hàng tổng/7 thân. Validator từ chối thiếu ô mỗi hàng; chưa tạo DOCX/render. Không sửa tay hoặc nới kiểm tra để báo thành công.
+- Lưu `tai_nguyen/ket_qua_ocr/lmstudio_qwen35_vi_paddle`, loaded_model/response/layout/metadata/verification, testcase 063. Cú pháp và kiểm tra raw đạt, container thử đã dừng. Chưa đạt trong phép thử này; giữ phương án Paddle + Gemini đã chốt, không sửa báo cáo/endpoint/deploy.
+
+---
+
+## Công việc số 77 — 13/10/2026
+### Thử lại LM Studio Qwen bằng tool call
+
+- Chạy `qwen/qwen3.5-9b` đang nạp qua LM Studio, prompt tiếng Việt, ảnh gốc và bằng chứng PP-Structure/Paddle đã lưu; không inference Paddle mới, không gọi Google.
+- Model thực hiện 4 tool calls trong 4 lượt/237,29 giây: hai lần render đầu thiếu header bảng; lần 3 render Word được; lượt 4 xem render rồi chọn iteration 3. Không sửa nội dung hay số hàng bằng tay.
+- Bản chọn là DOCX hợp lệ nhưng chưa đạt: 9 hàng rỗng trong `rows` cộng `blank_rows=8` thành 17 hàng thân, trong khi cấu trúc Paddle có 7; render 2 trang, chữ ký bị đẩy sang trang hai, các vùng song song/246/dấu đỏ chưa được tái tạo.
+- Lưu prompt, Paddle input, tool logs, DOCX/render tại `tai_nguyen/ket_qua_ocr/lmstudio_qwen35_vi_paddle_toolcall`, testcase 064. Tool calling hoạt động nhưng chưa cải thiện độ giống ảnh trong lượt này. Giữ phương án Paddle + Gemini đã chốt; chưa tích hợp endpoint hoặc triển khai.
+
+---
+
+## Công việc số 78 — 13/10/2026
+### Tích hợp PaddleOCR + Gemini xuất Word và cấu hình Admin
+
+- Theo lựa chọn của người dùng, chỉ cung cấp các model Gemini lấy động từ Google AI Studio; không thêm model local. Thêm trang Văn thư quét PDF/ảnh, chọn model khả dụng, gửi yêu cầu dựng Word và có thể chọn model khác khi quota/quá tải. Giới hạn tệp 25 MB, PDF tối đa 10 trang; đầu ra là bản nháp cần rà soát.
+- PaddleOCR hiện có trích các dòng chữ làm bằng chứng; Gemini đọc ảnh từng trang cùng evidence, trả layout JSON theo schema rồi tạo DOCX editable. PP-Structure chưa được nối vào pipeline sản phẩm; không coi testcase dùng evidence PP-Structure trước đây là kiểm chứng endpoint này.
+- Thêm trang Admin lưu/xóa API key; kiểm tra danh sách model trước khi ghi, mã hóa bằng ASP.NET Data Protection, chỉ trả masked key ở UI. OCR lấy key qua endpoint nội bộ có OCR service-token. Key Data Protection lưu ở named volume `hau_identity_keys`.
+- Gộp lối vào Quét OCR và Cấu hình Gemini vào trang Hoạt động ứng dụng để Admin truy cập được trên điện thoại; Văn thư có tab Quét OCR riêng trên taskbar.
+- Đã phát hiện volume key ban đầu không cho appuser ghi; thêm thư mục có ownership phù hợp vào Docker image, sửa ownership volume local, restart và xác nhận key ring được tạo. Không có API key nào được nhập hoặc in vào log.
+- Build .NET IdentityService, Gateway, Frontend, Python OCR và `docker compose config -q` đều đạt. Docker build/recreate bốn service; smoke test frontend/Gateway/OCR trả 200, endpoint Admin khi chưa đăng nhập trả 401, IdentityService healthy. Không gọi Google vì Admin chưa nhập API key; chưa kiểm thử chất lượng Word qua UI.
+- Cập nhật testcase 065 và trạng thái kế hoạch. Cần người dùng nhập API key ở trang Admin và tự kiểm thử model/file thật; đánh giá bố cục trên tài liệu thực tế vẫn chờ nghiệm thu.
+
+---
+
+## Công việc số 79 — 13/10/2026
+### Khôi phục Cloudflare Tunnel sau khi frontend được tạo lại
+
+- Xác định `cloudflared` chỉ được khai báo trong `docker-compose.tunnel.yml`; lệnh chạy với riêng `docker-compose.yml` bỏ qua service này. Container cũ còn running nhưng chia sẻ network namespace của frontend cũ sau khi frontend bị recreate, nên tunnel trỏ vào namespace không còn Nginx.
+- Tạo lại connector bằng cả compose file: `docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-deps --force-recreate cloudflared`.
+- Xác minh cloudflared đăng ký 4 kết nối tunnel, Compose hiển thị service running và `https://hauquanlycongvan.com/health` trả HTTP 200. Không đọc/in token.
+- Lần sau khởi động/cập nhật stack cần dùng cả hai file; hướng dẫn lệnh đã có tại `tai_nguyen/TRIEN_KHAI_CLOUDFLARE_TUNNEL.md`.
+
+---
+
+## Công việc số 80 — 13/10/2026
+### Tự động hóa khởi động stack và Cloudflare Tunnel
+
+- Thêm `scripts/Start-Stack.ps1` cho Windows và `scripts/start-stack.sh` cho Linux. Cả hai dùng đầy đủ compose base + tunnel overlay, chờ Compose cập nhật frontend xong rồi force-recreate cloudflared để gắn đúng network namespace. Có cờ `-Build`/`--build` để build image khi cần.
+- Hướng dẫn vận hành cập nhật: Docker Desktop cần bật khởi động khi đăng nhập; các service giữ `restart: unless-stopped` để tự lên theo Docker Engine. Script dùng cho khởi động/cập nhật chủ động.
+- Đã chạy PowerShell script thành công; kiểm tra cú pháp Bash qua container Alpine thành công. Tunnel có 4 kết nối đã đăng ký, trang public `/health` trả HTTP 200. Không đổi origin trên Cloudflare Dashboard và không mở thêm cổng máy chủ.
+
+---
+
 ## 💡 Bài Học Rút Ra
 
 1. **PostgreSQL + EF Core:** Tên cột phải dùng dấu `""` PascalCase đúng từ đầu khi tạo bảng thủ công — không để PostgreSQL tự convert lowercase
@@ -1763,3 +2023,242 @@ Trong quá trình viết tài liệu phát hiện:
 4. **z-index:** Modal và Toast cần được quản lý z-index rõ ràng. Quy ước hiện tại trong `Frontend/wwwroot/css/app.css`: Modal = 20000, Toast = 30000; cảnh báo viewport = 50000. Giá trị 1000/10000 trong buổi 6 là lịch sử trước khi chỉnh responsive.
 
 5. **Type mismatch giữa frontend DTO và backend DTO:** Frontend có thể dùng string (tên role) nhưng backend cần GUID — cần có lớp chuyển đổi ở service layer
+
+---
+
+## Công việc số 81 — 13/10/2026
+### Bật/tắt Cloudflare Tunnel theo yêu cầu
+
+- Bổ sung lệnh riêng cho Windows và Linux để bật hoặc tắt connector mà không dừng ứng dụng: `Start-Tunnel.ps1`, `Stop-Tunnel.ps1`, `start-tunnel.sh`, `stop-tunnel.sh`.
+- Lệnh bật bảo đảm frontend sẵn sàng rồi tạo lại `cloudflared` để gắn vào network namespace hiện tại. Lệnh tắt chỉ dừng service `cloudflared`; frontend và các service khác tiếp tục chạy local.
+- Cập nhật `tai_nguyen/TRIEN_KHAI_CLOUDFLARE_TUNNEL.md`, ghi rõ lệnh, trạng thái sau Docker restart và phân biệt với `Start-Stack`.
+- Kiểm thử thực tế: sau khi tắt tunnel, frontend local trả HTTP 200; bật lại tunnel, `https://hauquanlycongvan.com/health` trả HTTP 200 và connector chạy. Kiểm tra cú pháp hai script Bash bằng `bash -n` trong Alpine đạt.
+- Kết thúc kiểm thử để tunnel ở trạng thái bật. Không thay đổi route trên Cloudflare Dashboard và không đọc/in token.
+
+---
+
+## Công việc số 82 — 13/10/2026
+### Sửa bộ lọc loại công văn và đối chiếu danh mục với báo cáo
+
+- Nguyên nhân công văn đến/đi trả cùng danh sách: frontend gửi `typeId` nhưng controller bind `DocumentQueryParams.DocTypeId`; tham số bị bỏ qua. Đổi query frontend thành `docTypeId`, bộ lọc loại/trạng thái quay về trang 1 khi thay đổi.
+- Danh mục seed và database đang chạy đều có `CongVanDen`, `CongVanDi`, `ToTrinh`, `QuyetDinh`. Dữ liệu thật tại thời điểm kiểm tra: 11 công văn đến, các loại còn lại 0 bản ghi; không đổi phân loại hoặc tạo văn bản thật trong kiểm thử.
+- Bổ sung tên hiển thị tiếng Việt tại bộ lọc, tạo mới, sửa metadata, danh sách, chi tiết và kết quả OCR. Tờ trình/Quyết định nằm trong “Loại văn bản” của `/documents/create` (Clerk/Specialist) và popup sửa metadata; không có tab nghiệp vụ riêng.
+- Đối chiếu nội dung báo cáo đã trích xuất và mục 4 của kế hoạch triển khai: đến/đi hiện là hai giá trị của cùng `DocTypeId`, chưa có trường hướng công văn riêng. Các loại dùng chung workflow duyệt/ký; phân công hiện ghi lịch sử, chưa đủ để kết luận đã hoàn thiện luồng tiếp nhận → chỉ đạo → xử lý → báo cáo kết quả/kết thúc cho công văn đến. Không đánh dấu hoàn thành hai luồng nghiệp vụ chỉ vì sửa bộ lọc.
+- Thêm `tests/document-type-filter.spec.cjs`: fixture trình duyệt độc lập cho bốn loại, phân trang, lọc kết hợp/rỗng/bỏ lọc và lựa chọn tạo mới; tùy chọn gọi GET API thật với phiên đăng nhập tạm rồi logout. Không ghi tài liệu hoặc dùng kết quả mô phỏng làm nghiệm thu nghiệp vụ.
+- Tái hiện trên image cũ: request thiếu `docTypeId`, kiểm thử fail đúng lỗi. Build Docker frontend đạt; sau cập nhật, kiểm thử tại 1366px và 390px đạt, GET API thật trả đúng loại và số lượng. Public `/health` trả 200. Tunnel giữ trạng thái đang bật trước khi cập nhật, connector được tạo lại sau frontend để dùng đúng network namespace.
+- Người dùng vẫn tự nghiệm thu hai luồng nghiệp vụ trên công văn và tài khoản vai trò thật; kết quả này xác nhận lỗi lọc và sự tồn tại của danh mục.
+
+---
+
+## Công việc số 83 — 13/10/2026
+### Chỉnh báo cáo Word theo luồng công văn và giữ định dạng
+
+- Theo yêu cầu người dùng, chỉnh từ bản Word mới nhất có phần OCR 1.2.3/2.7; xuất riêng `tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_luong_cong_van.docx`, giữ bản nguồn.
+- Sửa bảng 2.1.4.5 để công văn đến lưu chỉ đạo/chuyển xử lý; công văn đi ký PDF rồi chuyển Văn thư phát hành. Giữ hai luồng trong phạm vi đề tài, phân biệt bước ký với trạng thái ban hành và lỗi ký.
+- Làm rõ Tờ trình/Quyết định trong mục 2.6.3.6; cập nhật phạm vi tích hợp OCR tại 2.7.4 và thêm 2.8 ghi chức năng đã triển khai, giới hạn, kiểm thử và nghiệm thu cần thực hiện.
+- Script OOXML xác nhận chỉ đổi 18 đoạn cũ và thêm 12 đoạn: đoạn ngoài phạm vi và định dạng đoạn cũ giữ nguyên; các phần gói DOCX khác trùng byte; vẫn có 16 bảng với số hàng cũ. Không thay hình, styles, margin, header/footer hoặc sửa nội dung ứng dụng.
+- Render bản nguồn và bản sửa bằng renderer của skill tài liệu trong image có LibreOffice; bản cuối 89 trang. Xem toàn bộ trang; lặp sửa đoạn mới để bỏ trang gần trống. Các đặc điểm bìa/bảng và sơ đồ gốc giữ theo nguồn, không coi lần này là rà soát toàn bộ báo cáo.
+- Đồng bộ nội dung trích xuất tại `tai_nguyen/noi_dung_trich_xuat/`, lưu `source.json` xác định nguồn. README báo cáo ghi bản mới, cách tái lập và yêu cầu Update entire table trong Word; không gán số trang render làm số trang Word.
+- Testcase TC-DOC-REPORT-WORKFLOWS-070 và verification lưu bằng chứng. Không gọi model OCR, không chạy thử nghiệp vụ hoặc deploy trong lần chỉnh tài liệu này.
+
+---
+
+## Công việc số 84 — 14/10/2026
+### Nền xám đơn cho Thao tác nhanh và bo góc khối nội dung 10px
+
+- Đổi sáu lựa chọn Thao tác nhanh của Dashboard sang nút native `.btn-neutral`, hiển thị theo vai trò. Nền xám đặc, chữ/viền xám, không dùng gradient hoặc backdrop lấy màu nền. Giữ dạng nút capsule, icon, điều hướng Blazor và hiệu ứng nhấn từ mẫu dùng chung cho `.btn`.
+- Thêm token `--radius-surface: 10px`; áp dụng cho các khung nội dung, bảng, thẻ mobile, popup/menu, ô nhập và phần thông tin liên quan trong CSS chung/scoped. Các nút bấm, control điều hướng, avatar/chấm tròn và hiệu ứng nền/taskbar giữ cách thể hiện riêng.
+- Tăng phiên bản URL stylesheet để trình duyệt tải CSS mới. Build image frontend Docker thành công và cập nhật frontend trên máy; tunnel trước cập nhật đang bật nên connector được gắn lại vào frontend mới.
+- Smoke UI với fixture GET độc lập tại 1366px và 300px: bốn nút Admin có nền `rgb(230,230,230)`, background-image none, backdrop-filter none, radius 999px; các card và khung được kiểm tra có radius 10px. Bốn nút mở đúng trang, không có tràn ngang hoặc lỗi JavaScript.
+- Đã xem ảnh desktop và mobile, frontend local và public `/health` trả HTTP 200. Bằng chứng ảnh tại `tai_nguyen/ket_qua_kiem_thu/dashboard-neutral*`. Không tạo/sửa hồ sơ thật trong kiểm tra giao diện; nghiệm thu cảm nhận trên điện thoại do người dùng thực hiện.
+
+---
+
+## Công việc số 85 — 14/10/2026
+### Bỏ gạch chân trên nút dạng liên kết
+
+- Xác định quy tắc chung `a:hover` gây underline cho các liên kết `.btn`. Thêm quy tắc `text-decoration: none` cho các trạng thái hover/focus/active/visited của nút, cùng thao tác Xem chi tiết trên thẻ công văn mobile. Giữ viền focus để thao tác bàn phím.
+- Tăng phiên bản CSS sang `20261014-1`, build và cập nhật frontend Docker; connector đang bật được gắn lại sau khi frontend tạo lại.
+- Tái hiện trên bản cũ: computed text-decoration của nút hover là underline. Sau cập nhật, smoke với fixture GET độc lập tại 1366px và 390px xác nhận ba liên kết dạng nút ở Hoạt động ứng dụng không có underline khi hover/focus. Public `/health` HTTP 200.
+
+---
+
+## Công việc số 86 — 14/10/2026
+### Mã cán bộ/giảng viên và đăng nhập bằng email đã xác thực
+
+- Giữ trường `Username` làm mã định danh để tương thích dữ liệu/token cũ; màn hình Admin và đăng nhập đổi nhãn sang mã cán bộ/giảng viên. Admin có thể bỏ trống email khi tạo tài khoản; backend lưu `NULL`.
+- Luồng OTP và đổi mật khẩu lần đầu được giữ; sau xác minh, cho phép đăng nhập bằng email hoặc mã. Email chưa xác thực không được dùng để đăng nhập. Tra cứu và unique index không phân biệt chữ hoa/thường; sửa backfill để chỉ tin cậy email seed `admin`. IdentityService và Gateway chặn API nghiệp vụ khi tài khoản chưa hoàn tất thiết lập.
+- Cập nhật hướng dẫn tài khoản. IdentityService 39/39 test đạt, frontend và Gateway build 0 cảnh báo; cập nhật image Docker local, IdentityService healthy và frontend HTTP 200. Nghiệm thu OTP/email thực tế dành cho người dùng theo TC-AUTH-IDENTIFIER-073.
+- Quan sát DB local: số tài khoản giảm từ 11 xuống 1 (`admin`) trước khi thay container; chưa xác định tác vụ xóa, không tự tạo lại tài khoản kiểm thử.
+
+---
+
+## Công việc số 87 — 14/10/2026
+### Khôi phục mật khẩu qua email và Admin
+
+- Giữ luồng người dùng tự đặt lại bằng OTP gửi tới email đã xác minh; thu hồi phiên cũ khi đổi mật khẩu thành công.
+- Thêm endpoint chỉ Admin và thao tác **Đặt lại mật khẩu** trong danh sách người dùng. Admin nhập/xác nhận mật khẩu tạm. Hệ thống xóa email đã lưu và trạng thái xác minh, bắt buộc đổi mật khẩu ở lần đăng nhập tiếp theo, thu hồi refresh/access token và vô hiệu OTP cũ. Email mới được người dùng nhập và xác minh tại trang thiết lập lần đầu; có thể dùng lại địa chỉ cũ sau khi xác minh.
+- Unit/integration IdentityService 42/42 đạt; Gateway 22/22 đạt và ghi đúng thao tác `AdminResetPassword` (không ghi mật khẩu vào nhật ký); frontend build thành công. Đã cập nhật Docker local, các endpoint sức khỏe và trang đăng nhập trả HTTP 200. Kiểm thử OTP qua hộp thư thật do người dùng thực hiện theo TC-AUTH-ADMIN-RESET-074.
+
+---
+
+## Công việc số 88 — 14/10/2026
+### Sửa phân người dùng vào phòng ban
+
+- Nguyên nhân: biểu mẫu thêm/sửa thiếu lựa chọn phòng ban và không gửi `DepartmentId`; khi sửa tài khoản chưa có email, frontend còn gửi chuỗi rỗng ở email/số điện thoại tới các trường có validation.
+- Thêm lựa chọn phòng ban ở cả hai biểu mẫu, tải danh sách mỗi khi mở và giữ lựa chọn hiện tại khi sửa. Cho phép chọn **Chưa phân phòng ban**, có hướng dẫn khi chưa có đơn vị và thông báo nếu tải danh sách thất bại. Gửi email/số điện thoại trống dưới dạng `null`; gửi số điện thoại khi tạo mới.
+- Backend cập nhật cả ID và tên phòng ban đúng sau khi chuyển; `DepartmentId = null` bỏ liên kết theo hợp đồng DTO. Phòng ban không tồn tại bị từ chối trước khi ghi dữ liệu.
+- IdentityService 43/43 test đạt; frontend build 0 lỗi/cảnh báo. Browser fixture đạt ở 1366px, 390px và 300px: tạo, giữ phân công khi sửa trường khác, chuyển/bỏ phân công, tải danh sách lỗi/rỗng. Các API browser được giả lập, integration dùng InMemory, không thay đổi tài khoản/phòng ban thật để kiểm thử.
+- Đã build và cập nhật Docker local cho IdentityService/frontend; IdentityService healthy. Nghiệm thu với người dùng/phòng ban thực tế dành cho người dùng theo TC-USER-DEPARTMENT-075.
+
+---
+
+## Công việc số 89 — 14/10/2026
+### Thu gọn nội dung taskbar và hiển thị avatar Cá nhân
+
+- Giảm biểu tượng từ 28px xuống 20–24px và chữ từ 12px xuống 9,5–11px theo chiều rộng mỗi tab. Dùng chung cách tính cho nội dung WebGL và CSS dự phòng; giữ chiều cao vùng bấm 56px và hiệu ứng kính của taskbar.
+- Tab Cá nhân của Admin, Lãnh đạo/Ban Giám hiệu, Văn thư/Chuyên viên hiển thị avatar tròn chữ cái tên người dùng, cùng cách nhận diện với avatar sidebar. Dự án chưa có trường ảnh đại diện/upload ảnh; không thêm lưu trữ ảnh trong thay đổi này.
+- Frontend build 0 lỗi/cảnh báo, đã cập nhật Docker local. Kiểm tra browser với API fixture ở 300px, 320px, 390px, 768px: đủ năm tab, không cắt tên/tràn chiều ngang, avatar đúng và chuyển tab không reload. Thử riêng Manager/Clerk ở 300px và CSS fallback; ảnh WebGL 300px/390px đã kiểm tra trực quan. Không ghi dữ liệu thật.
+
+---
+
+## Công việc số 90 — 14/10/2026
+### Hiệu ứng công tắc cho Người dùng/Phòng ban
+
+- Tham khảo `FrontendTemplate/src/components/liquid-toggle.js`; dùng lại `Spring` và `PressMotion` của template cho miếng kính chọn tab. Miếng kính trượt giữa hai vị trí, phồng nhẹ khi nhấn, tăng khúc xạ và trở về trạng thái nghỉ khi thả; giữ nút tab native và nội dung quản lý hiện có.
+- Thêm `liquid-organization-tabs.js`, cập nhật Organization Razor/CSS. Giữ bo góc 10px, vùng bấm tối thiểu 44px, hỗ trợ CSS fallback và thiết lập giảm chuyển động. Chuẩn hóa `aria-selected` về chuỗi `true`/`false`; giải phóng animation/listener/observer khi rời trang.
+- Frontend build 0 lỗi/cảnh báo; Docker frontend local đã cập nhật. Browser fixture ở 300px, 390px, 1366px đạt: thumb đúng vị trí, hiệu ứng nhấn, nội dung chuyển đúng, Enter, Back và rời/quay lại trang không reload hoặc lỗi JavaScript. CSS fallback/giảm chuyển động ở 300px đạt; đã xem ảnh 300px. Không ghi dữ liệu thật.
+
+---
+
+## Công việc số 91 — 14/10/2026
+### Chọn phòng ban theo cấp khi phân người dùng
+
+- Tham khảo bộ lọc Trường/Ban/Khoa/Phòng trong biểu mẫu cấp chứng thư; thay lựa chọn phòng ban phẳng trong Thêm/Sửa người dùng bằng component `DepartmentAssignmentPicker`: Trường → Ban/Khoa/Phòng trực thuộc → Đơn vị cấp dưới. Hỗ trợ thêm các cấp sâu hơn nếu có trong cơ cấu.
+- Lưu đơn vị cụ thể nhất đã chọn: bỏ cấp dưới thì thuộc cha đang chọn, chỉ chọn Trường thì thuộc Trường. Dòng **Sẽ thuộc** hiển thị kết quả trước khi lưu. Đổi cha xóa nhánh con cũ; khi sửa khôi phục đầy đủ đường dẫn đơn vị hiện tại. Chọn Chưa phân phòng ban ở cấp gốc bỏ liên kết, không tự chọn một Trường khi chưa chọn gì.
+- Frontend build 0 lỗi/cảnh báo; đã cập nhật Docker frontend local. Browser fixture tại 1366px, 390px, 300px đạt: tạo, giữ liên kết khi sửa trường khác, phân đơn vị cấp 2/3/4, bỏ cấp dưới về cha, đổi Trường reset nhánh, bỏ liên kết và tải danh sách lỗi/rỗng. Các API được giả lập, không ghi người dùng/phòng ban thật.
+- Cập nhật hướng dẫn tài khoản và TC-USER-DEPARTMENT-HIERARCHY-078. Kiểm thử nghiệp vụ với tài khoản/đơn vị thật vẫn dành cho người dùng.
+
+---
+
+## Công việc số 92 — 14/10/2026
+### Bỏ dấu gạch đôi trong nhãn lựa chọn
+
+- Bỏ dấu `--` ở sáu nhãn: Chưa phân phòng ban, Thuộc đơn vị cha đã chọn, Chọn vai trò, Không có (đơn vị gốc), Chọn loại văn bản và Chọn người nhận.
+- Cập nhật nhãn mong đợi trong browser regression phân phòng ban. Rà soát frontend không còn nhãn lựa chọn dạng `-- ... --`; các giá trị lựa chọn và xử lý dữ liệu được giữ nguyên.
+- Frontend build 0 lỗi/cảnh báo; cập nhật Docker frontend local.
+
+---
+
+## Công việc số 93 — 14/10/2026
+### Thay biểu tượng thùng rác bằng dấu X
+
+- Rà soát giao diện đang dùng: biểu tượng thùng rác nằm trong menu Xóa người dùng. Thay bằng SVG dấu X cùng kiểu với thao tác Thu hồi chứng thư, giữ kích thước và màu hiện tại. Các nút chỉ có chữ Xóa không cần thay biểu tượng.
+- Giữ nguyên luồng xóa và hộp thoại xác nhận. Frontend build 0 lỗi/cảnh báo; cập nhật Docker frontend local.
+
+---
+
+## Công việc số 94 — 14/10/2026
+### Sửa sidebar chọn đồng thời Danh sách công văn và Quét OCR
+
+- Nguyên nhân: NavLink Danh sách công văn khớp tiền tố `/documents`, nên cũng active khi mở `/documents/ocr-scan` và `/documents/create`. Đổi liên kết danh sách sang `NavLinkMatch.All` để chỉ active đúng trang danh sách.
+- Phát hiện menu Quét OCR hiển thị cho Specialist dù trang/API chỉ cho Admin/Clerk. Người dùng chọn giữ quyền hiện tại và ẩn mục này với Chuyên viên. Áp dụng cho sidebar và mobile taskbar; taskbar Specialist còn Tổng quan, Công văn, Tạo mới, Cá nhân. Quyền trang/API được giữ nguyên.
+- Browser fixture tái hiện lỗi chọn hai mục trên Docker trước sửa. Sau cập nhật: Clerk/Specialist ở 1366px và 300px đều đạt chọn duy nhất, chuyển trang/Back không reload. Văn thư mở Quét OCR được; Chuyên viên không thấy menu/tab OCR và URL trực tiếp hiện Không có quyền truy cập, không tải model OCR.
+- Frontend build 0 lỗi/cảnh báo; Docker frontend đã cập nhật, HTTP 200. Kiểm thử dùng fixture API chỉ đọc, không gọi OCR cloud hoặc thay đổi dữ liệu thật; xem TC-UI-SIDEBAR-SELECTION-079.
+
+---
+
+## Công việc số 95 — 14/10/2026
+### Sửa menu loại công văn bị che và nút chọn PDF
+
+- Nguyên nhân menu: card Thông tin công văn có `overflow: hidden`, cắt danh sách lựa chọn. Cho card này overflow visible và đặt stacking trên card PDF để menu mở đầy đủ khi bố cục xếp dọc.
+- Nguyên nhân chọn file: CSS isolation không ẩn được input do component InputFile sinh ra; handler bấm vùng tải lên còn trống. Bọc input bằng phần tử hidden, thêm nút Chọn PDF/Đổi PDF dùng `.btn` và hiệu ứng PressMotion theo template; nối nút/vùng tải lên với hộp chọn file thật qua `documentFiles.pickFile`. Chặn click lan để không mở hộp chọn hai lần.
+- Giữ hiển thị tên/dung lượng file và giới hạn PDF 50MB; bỏ lời nhắc kéo thả vì vùng này chưa xử lý drop. Không thay đổi luồng tạo công văn/upload phía server.
+- Frontend build 0 lỗi/cảnh báo, cập nhật Docker local. Browser fixture Specialist/Clerk tại 1366px, 390px, 300px đạt: bốn loại văn bản đều có thể bấm phía trên các card, input mặc định ẩn, chọn/đổi PDF bằng click và Enter, không tràn ngang/lỗi JavaScript. Chỉ chọn file trong browser, không tạo công văn hoặc upload dữ liệu thật; xem TC-UI-DOCUMENT-CREATE-080.
+
+---
+
+## Công việc số 96 — 14/10/2026
+### Sửa ngày tạo và lỗi tải PDF 413 khi tạo công văn
+
+- Log Nginx local ghi request upload của công văn `77a0b9f8-b81b-4abb-bffd-0c9731909357` trả 413 với body 9.256.620 bytes, chưa tới DocumentService. Nginx chưa đặt giới hạn và đang dùng mặc định 1 MiB ([tài liệu Nginx](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size)).
+- Đặt request upload 64 MiB ở Nginx `/api/`, route công văn YARP và action upload DocumentService, chừa multipart overhead; file vẫn tối đa 50 MiB, file lớn hơn bị API trả 413. Frontend kiểm tra kích thước trước khi tạo/tải, gửi MIME `application/pdf` và giải phóng multipart content.
+- API trước đây không có CreatedAt/UpdatedAt, frontend hiển thị DateTime mặc định. Bổ sung metadata từ lịch sử: CreatedAt là Submit đầu tiên (sự kiện tạo mới), UpdatedAt là sự kiện cuối; truy vấn danh sách tải kèm lịch sử. Thiếu lịch sử thì trả null/hiển thị dấu gạch ngang, không tự đặt ngày hiện tại. Giao diện chuyển UTC sang giờ địa phương.
+- Đồng bộ ngày ban hành thành DateOnly ở frontend/backend. Số hiệu/ngày ban hành không bắt buộc và có thể bổ sung qua Sửa thông tin khi còn Nháp/Trả lại; ngày tạo được lấy tự động. Không sửa dữ liệu công văn cũ hoặc tạo migration.
+- Khi tạo xong nhưng upload lỗi: chỉ một cảnh báo nêu rõ PDF chưa tải lên, chuyển tới công văn vừa tạo để tải lại. Không hiện thêm toast thành công và không để bấm tạo lại gây trùng. Upload tại trang chi tiết bắt lỗi và luôn khôi phục trạng thái thao tác.
+- DocumentService 35/35 test đạt; frontend/Gateway build 0 lỗi/cảnh báo. Browser fixture 1366px/300px đạt 6 trường hợp: bỏ/nhập ngày, số hiệu trống, multipart PDF 9 MiB, hiển thị ngày theo giờ Việt Nam, đọc lại ngày trong biểu mẫu sửa, lỗi 413 chỉ một cảnh báo.
+- Đã build/cập nhật Docker document-service, api-gateway, frontend; Nginx config hợp lệ. Kiểm tra thật qua `localhost:5227`: đọc công văn cũ cho CreatedAt `2026-10-14T09:10:41.100734Z`, trùng lịch sử và danh sách. Gửi PDF giả 9 MiB/đúng 50 MiB tới GUID không tồn tại nhận 404 từ backend (đã vượt qua các proxy); 50 MiB + 1 byte nhận 413. Không tạo/sửa công văn hoặc lưu object MinIO trong kiểm tra này. Nghiệm thu lưu PDF thật dành cho người dùng theo TC-DOCUMENT-CREATE-UPLOAD-081.
+
+---
+
+## Công việc số 97 — 14/10/2026
+### Sắp xếp công văn theo ngày tạo
+
+- Đổi thứ tự mặc định của API danh sách từ ngày ban hành/tiêu đề sang ngày tạo ban đầu giảm dần: công văn mới nhất trước. Dùng Submit đầu tiên như trường CreatedAt; trình duyệt lại không làm công văn cũ lên đầu.
+- Công văn chưa có lịch sử tạo ở cuối; thêm ID làm thứ tự phụ khi ngày tạo bằng nhau để phân trang ổn định. Sắp xếp trước Skip/Take, áp dụng chung desktop/mobile và giữ các bộ lọc hiện có.
+- DocumentService 36/36 test đạt; regression kiểm tra ngày ban hành khác thứ tự ngày tạo, timestamp bằng nhau, phân trang, Submit bổ sung, thiếu lịch sử và tìm kiếm.
+- Đã build/cập nhật Docker document-service. Kiểm tra API thật chỉ đọc: 14 công văn qua 3 trang (5 bản ghi/trang), thứ tự ngày tạo giảm dần đúng và không trùng/mất bản ghi. Không sửa dữ liệu công văn; xem TC-DOCUMENT-CREATION-ORDER-082.
+
+---
+
+## Công việc số 98 — 14/10/2026
+### Thu gọn nút tải PDF ở trang xem công văn
+
+- Thay label chứa InputFile bằng một nút native **Tải lên PDF** dùng kiểu/hiệu ứng `.btn` hiện có. Bọc input trong phần tử hidden để CSS isolation không làm lộ Choose File/No file chosen; nút mở hộp chọn qua `documentFiles.pickFile`.
+- Giữ vai trò/trạng thái cho phép upload, xử lý file 50 MiB và luồng tải lên hiện có; nút bị vô hiệu trong khi thao tác đang chạy.
+- Frontend build 0 lỗi/cảnh báo; Docker frontend đã cập nhật, HTTP 200. Browser fixture Clerk/Specialist tại 1366px/300px đạt: chỉ một nút hiển thị, input native ẩn, click/Enter chọn PDF và upload/đổi PDF, viewer tải lại, không tràn ngang/lỗi JavaScript. Đã xem ảnh nút desktop; không lưu file/dữ liệu thật trong kiểm thử. Xem TC-UI-DETAIL-UPLOAD-BUTTON-083.
+
+---
+
+## Công việc số 99 — 14/10/2026
+### Tự xóa PDF được thay thế và giữ tên file gốc khi tải xuống
+
+- Thêm trường FileName nullable tối đa 255 ký tự vào công văn, DTO và migration `20261014143315_StoreOriginalPdfFileName`. Lưu tên file tải lên, giữ tiếng Việt/khoảng trắng, bỏ đường dẫn do trình duyệt cung cấp; chặn tên trống, ký tự điều khiển hoặc quá dài trước upload. MinIO vẫn dùng tên object UUID để tránh trùng file.
+- Lưu PDF mới trước, cập nhật nguyên tử MinioPath và FileName nếu đường dẫn hiện tại chưa thay đổi, rồi mới xóa object cũ. Nếu hai lượt upload cùng đọc bản cũ, chỉ một lượt đổi được đường dẫn; lượt còn lại dọn object mới của mình và yêu cầu tải lại. Các cập nhật thông tin/OCR/trạng thái không ghi đè trường file để tránh khôi phục đường dẫn đã bị xóa.
+- Upload MinIO hoặc cập nhật database lỗi thì không xóa PDF cũ. Khi database báo lỗi, giữ cả hai object vì chưa chắc giao dịch đã commit hay chưa. Xóa object cũ thử tối đa 3 lần; nếu MinIO vẫn lỗi thì ghi cảnh báo, PDF mới vẫn dùng được. Chưa có hàng đợi dọn rác bền vững hoặc quét/xóa các object mồ côi có sẵn.
+- API tải PDF và nút Tải PDF tại trang chi tiết dùng FileName đã lưu. PDF cũ chưa từng lưu tên gốc vẫn dùng `cong-van-{id}.pdf`; thay PDF sẽ áp dụng tên mới. Không thể suy ra tên gốc từ object UUID cũ.
+- DocumentService 49/49 test đạt, gồm SQLite riêng trong bộ nhớ kiểm tra cập nhật nguyên tử và yêu cầu sửa thông tin đọc bản cũ. Browser fixture tại 1366px/300px đạt: fallback file cũ, tên tiếng Việt/khoảng trắng sau thay file và sau reload.
+- Đã build/cập nhật Docker document-service và frontend; frontend HTTP 200. PostgreSQL xác nhận migration đã áp dụng và FileName là varchar(255). Không thay/xóa PDF hoặc công văn thật trong kiểm thử; người dùng nghiệm thu theo TC-DOCUMENT-FILE-REPLACEMENT-084.
+
+---
+
+## Công việc số 100 — 14/10/2026
+### Bổ sung ảnh công văn và giới hạn OCR 5 trang
+
+- Công văn nhận thêm ảnh PNG, JPG/JPEG, WEBP bên cạnh PDF, tối đa 50 MiB. Biểu mẫu tạo/chi tiết cho chọn file ảnh; kiểm tra định dạng trước upload. Server lưu MIME theo đuôi file được hỗ trợ và trả FileContentType từ object đã lưu, không cần migration thêm. Tải xuống giữ tên gốc, thay file vẫn xóa object cũ theo cơ chế công việc 99.
+- Trang chi tiết dùng img cho ảnh, iframe cho PDF; tạo Blob đúng MIME để xem/tải ảnh, giới hạn chiều rộng và chiều cao theo màn hình. Nút tải xuống đổi tên theo loại file; nút tải lên chung là Tải lên file. Giữ bố cục/template và cập nhật hướng dẫn ở trang kết quả OCR.
+- Bộ đọc đầu vào OCR chung kiểm tra số trang PDF trước render; tối đa 5 trang cho quét công văn MinIO/Kafka, quét upload, xuất Word và xuất Word Gemini. Tệp vượt giới hạn bị từ chối, không tự cắt trang, không chạy Paddle/Gemini. Mỗi ảnh tĩnh là một trang; áp dụng xoay EXIF cho ảnh điện thoại, từ chối ảnh động thay vì âm thầm chỉ nhận khung đầu.
+- Giao diện quét Word hiển thị tối đa 25 MiB và 5 trang. Trang chi tiết hiển thị lý do giới hạn từ OCR API và khôi phục nút thao tác sau lỗi; lỗi HTTP không làm trang bị kẹt ở trạng thái đang xử lý. PDF quá 5 trang vẫn lưu/xem được, cần tách tài liệu để OCR.
+- DocumentService 55/55 test đạt; OCR 10/10 test dùng PDF/ảnh tổng hợp, Paddle/cloud mock. Browser fixture 1366px/300px xác nhận tạo công văn PNG, xem/tải đúng tên ảnh, đổi sang PDF và tải PDF, báo giới hạn ở hai trang OCR. Kiểm tra Docker OCR thật với PDF giả 6 trang nhận HTTP 400 ở process-upload và gemini/export-word-upload, trước gọi cloud. Không gọi Gemini trả phí hoặc thay đổi công văn/MinIO thật trong kiểm thử.
+- Đã build/cập nhật Docker document-service, frontend và ocr-service. Ký số hiện vẫn dùng PDF; bổ sung ảnh ở đây phục vụ lưu/xem/OCR, chưa thêm chuyển ảnh sang PDF để ký. Người dùng nghiệm thu ảnh chụp thật và chất lượng OCR theo TC-DOCUMENT-IMAGES-OCR-LIMIT-085.
+- Hồi quy browser sau cập nhật: chọn/đổi file 6 trường hợp, tạo công văn PDF và lỗi 413 6 trường hợp, tên tải xuống 2 trường hợp đều đạt. Frontend HTTP 200 và OCR health ok.
+
+---
+
+## Công việc số 101 — 14/10/2026
+### Bỏ nút chạy OCR của Chuyên viên và đồng bộ quyền API
+
+- Nút Chạy OCR ở chi tiết trước đây nằm chung khối Draft của Clerk/Specialist. Thêm điều kiện quyền Admin/Clerk và chặn handler khi vai trò không được chạy OCR; Chuyên viên không còn nút này. Giữ các thao tác sửa thông tin, tải file, nộp trình duyệt và quyền xem Kết quả OCR đã có.
+- Phát hiện route `/api/ocr/{**catch-all}` của Gateway chỉ yêu cầu đăng nhập, trong khi route Gemini đã dùng ocrOperator. Đồng bộ cả hai route theo policy chỉ Admin/Clerk và yêu cầu đã xác thực. Trang kết quả trống hướng dẫn liên hệ vai trò được quét, không hướng dẫn Chuyên viên tự chạy.
+- Gateway 28/28 test đạt; regression khởi chạy HTTP host riêng với route config/YARP và policy thật, nhận 403 cho Specialist/Manager/BoardOfDirectors, 401 khi chưa đăng nhập, và cho Admin/Clerk đi qua kiểm tra quyền ở 5 endpoint OCR. Middleware fixture kết thúc request trước proxy, không gọi Paddle/Gemini hoặc dùng database thật.
+- Browser fixture Clerk/Specialist tại 1366px/300px đạt: Chuyên viên không thấy nút Chạy OCR/menu Quét OCR và URL trang quét bị từ chối; Văn thư vẫn có nút quét; cả hai giữ thao tác công văn và xem Kết quả OCR. Đã build/cập nhật Docker frontend và api-gateway, frontend HTTP 200, config container xác nhận ocrOperator. Xem TC-OCR-ROLE-PERMISSION-086.
+
+---
+
+## Công việc số 102 — 14/10/2026
+### Khôi phục cloudflared sau khi Frontend được tạo lại
+
+- Container `digitalsign_ocrproject-cloudflared-1` dừng với mã 255; cấu hình đặt `network_mode: service:frontend` nhưng container trỏ tới ID Frontend cũ đã bị xóa khi frontend được build/recreate. `restart: unless-stopped` chỉ khởi động lại container cũ, không gắn namespace mới. Log tại thời điểm đó báo UDP/7844 không có đường mạng và resolver Docker từ chối DNS; đây là hệ quả namespace cũ, không phải Tunnel token sai.
+- Chạy `docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --no-deps --force-recreate cloudflared` sau khi Frontend mới đã Up. Tunnel chuyển sang Up và đăng ký 4 kết nối QUIC tới Cloudflare (các vùng HKG09/HKG11/HKG13).
+- Khi thay/recreate riêng Frontend bằng `--no-deps`, cần tạo lại riêng cloudflared bằng lệnh trên để nó chia sẻ network namespace hiện hành. Khi cập nhật cả stack, dùng đồng thời hai file Compose như hướng dẫn triển khai. Không đọc/in Tunnel token khi chẩn đoán.
+
+---
+
+## Công việc số 103 — 14/10/2026
+### Chuyển Cloudflare Tunnel sang DNS service của Docker Compose
+
+- Bỏ `network_mode: service:frontend` khỏi overlay tunnel để `cloudflared` không còn phụ thuộc vòng đời network namespace của Frontend. Connector sẽ tham gia mạng Compose và gọi Nginx qua `http://frontend:3000`.
+- Cập nhật hướng dẫn triển khai để Published application dùng origin `http://frontend:3000`; API Gateway vẫn được Nginx gọi nội bộ qua `api-gateway:8080`.
+- Cập nhật Published application trên Cloudflare thành `http://frontend:3000`, giữ nguyên các ingress rule khác và đọc lại API để xác nhận cấu hình.
+- Bỏ phụ thuộc network namespace của Frontend; tạo lại riêng `cloudflared` trên mạng `digitalsign_ocrproject_default`. Log xác nhận connector nhận cấu hình version 2 và đăng ký 4 kết nối QUIC.
+- Kiểm tra domain công khai trả HTTP 200 cho trang chính và `/health`; health local cũng trả `Healthy`. Xác nhận Compose hợp lệ bằng `docker compose ... config --quiet`.

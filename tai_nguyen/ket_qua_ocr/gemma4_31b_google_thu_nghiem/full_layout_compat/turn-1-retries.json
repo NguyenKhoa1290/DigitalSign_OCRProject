@@ -1,0 +1,17 @@
+[
+  {
+    "attempt": 1,
+    "status": 500,
+    "wait_seconds": 2
+  },
+  {
+    "attempt": 2,
+    "status": 429,
+    "wait_seconds": 20.992251505
+  },
+  {
+    "attempt": 3,
+    "status": 500,
+    "wait_seconds": 8
+  }
+]

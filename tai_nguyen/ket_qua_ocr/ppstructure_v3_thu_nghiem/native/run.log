@@ -1,0 +1,53 @@
+Loading PP-StructureV3
+[32mCreating model: ('PP-LCNet_x1_0_doc_ori', None, None)[0m
+[33mChecking connectivity to the model hosters, this may take a while. To bypass this check, set `PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK` to `True`.[0m
+[32mUsing official model (PP-LCNet_x1_0_doc_ori), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-LCNet_x1_0_doc_ori`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  3.43it/s]Fetching 6 files:  50%|█████     | 3/6 [00:00<00:00,  8.31it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.14it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.43it/s]
+/opt/ppstructure/lib/python3.10/site-packages/paddle/utils/cpp_extension/extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+[32mCreating model: ('UVDoc', None, None)[0m
+[32mUsing official model (UVDoc), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/UVDoc`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  3.42it/s]Fetching 6 files: 100%|██████████| 6/6 [00:03<00:00,  1.74it/s]Fetching 6 files: 100%|██████████| 6/6 [00:03<00:00,  1.78it/s]
+[32mCreating model: ('PP-DocLayout_plus-L', None, None)[0m
+[32mUsing official model (PP-DocLayout_plus-L), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-DocLayout_plus-L`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  3.39it/s]Fetching 6 files: 100%|██████████| 6/6 [00:05<00:00,  1.07it/s]Fetching 6 files: 100%|██████████| 6/6 [00:05<00:00,  1.11it/s]
+[32mCreating model: ('PP-LCNet_x1_0_textline_ori', None, None)[0m
+[32mUsing official model (PP-LCNet_x1_0_textline_ori), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-LCNet_x1_0_textline_ori`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.76it/s]Fetching 6 files:  50%|█████     | 3/6 [00:00<00:00,  7.13it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.15it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.40it/s]
+[32mCreating model: ('PP-OCRv3_mobile_det', None, None)[0m
+[32mUsing official model (PP-OCRv3_mobile_det), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-OCRv3_mobile_det`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.81it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.52it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.53it/s]
+[32mCreating model: ('latin_PP-OCRv3_mobile_rec', None, None)[0m
+[32mUsing official model (latin_PP-OCRv3_mobile_rec), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/latin_PP-OCRv3_mobile_rec`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.68it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.29it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.30it/s]
+[32mCreating model: ('PP-LCNet_x1_0_table_cls', None, None)[0m
+[32mUsing official model (PP-LCNet_x1_0_table_cls), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-LCNet_x1_0_table_cls`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.80it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.47it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.48it/s]
+[32mCreating model: ('SLANeXt_wired', None, None)[0m
+[32mUsing official model (SLANeXt_wired), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/SLANeXt_wired`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.84it/s]Fetching 6 files:  83%|████████▎ | 5/6 [00:00<00:00, 13.19it/s]Fetching 6 files: 100%|██████████| 6/6 [00:08<00:00,  1.40s/it]
+[32mCreating model: ('SLANet_plus', None, None)[0m
+[32mUsing official model (SLANet_plus), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/SLANet_plus`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.77it/s]Fetching 6 files:  67%|██████▋   | 4/6 [00:00<00:00, 10.45it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.00it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.39it/s]
+[32mCreating model: ('RT-DETR-L_wired_table_cell_det', None, None)[0m
+[32mUsing official model (RT-DETR-L_wired_table_cell_det), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/RT-DETR-L_wired_table_cell_det`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.72it/s]Fetching 6 files: 100%|██████████| 6/6 [00:05<00:00,  1.03it/s]Fetching 6 files: 100%|██████████| 6/6 [00:05<00:00,  1.06it/s]
+[32mCreating model: ('RT-DETR-L_wireless_table_cell_det', None, None)[0m
+[32mUsing official model (RT-DETR-L_wireless_table_cell_det), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/RT-DETR-L_wireless_table_cell_det`.[0m
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.90it/s]Fetching 6 files:  50%|█████     | 3/6 [00:00<00:00,  6.92it/s]Fetching 6 files: 100%|██████████| 6/6 [00:05<00:00,  1.10s/it]Fetching 6 files: 100%|██████████| 6/6 [00:05<00:00,  1.07it/s]
+[32mCreating model: ('PP-LCNet_x1_0_doc_ori', None, None)[0m
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_doc_ori`.[0m
+[32mCreating model: ('PP-LCNet_x1_0_textline_ori', None, None)[0m
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_textline_ori`.[0m
+[32mCreating model: ('PP-OCRv3_mobile_det', None, None)[0m
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-OCRv3_mobile_det`.[0m
+[32mCreating model: ('latin_PP-OCRv3_mobile_rec', None, None)[0m
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/latin_PP-OCRv3_mobile_rec`.[0m
+Export page 1
+Connecting to https://paddle-model-ecology.bj.bcebos.com/paddlex/PaddleX3.0/fonts/PingFang-SC-Regular.ttf ...
+Downloading PingFang-SC-Regular.ttf ...
+[                                                  ] 0.04%[                                                  ] 1.24%[=                                                 ] 3.64%[====                                              ] 9.07%[==========                                        ] 21.47%[=======================                           ] 46.70%[==================================                ] 68.24%[========================================          ] 80.24%[==================================================] 100.00%[==================================================] 100.00%
+Connecting to https://paddle-model-ecology.bj.bcebos.com/paddlex/PaddleX3.0/fonts/latin.ttf ...
+Downloading latin.ttf ...
+[===                                               ] 7.45%[==================================================] 100.00%
+{"input": "ppstructure-input.jpg", "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52", "versions": {"paddleocr": "3.7.0", "paddlepaddle": "3.3.1", "paddlex": "3.7.2"}, "options": {"device": "cpu", "cpu_threads": 4, "enable_mkldnn": false, "lang": "vi", "ocr_version": "PP-OCRv3", "use_doc_orientation_classify": true, "use_doc_unwarping": true, "use_textline_orientation": true, "use_table_recognition": true, "use_formula_recognition": false, "use_chart_recognition": false, "use_seal_recognition": false, "use_region_detection": false}, "llm_used": false, "manual_content_edits": false, "status": "complete", "initialization_seconds": 57.87, "pages": 1, "inference_and_export_seconds": 15.48, "word_files": ["page-1/ppstructure-input.docx"], "total_seconds": 73.36}

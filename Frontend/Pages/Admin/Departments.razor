@@ -184,7 +184,7 @@ else
     {
         get
         {
-            var options = new List<SelectOption> { new("", "-- Không có (đơn vị gốc) --") };
+            var options = new List<SelectOption> { new("", "Không có (đơn vị gốc)") };
             if (_departments == null) return options;
 
             var excluded = _editingDept != null ? GetDescendantIds(_editingDept) : new HashSet<Guid>();

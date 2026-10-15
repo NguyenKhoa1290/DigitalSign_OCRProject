@@ -1,0 +1,60 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "\n"
+          },
+          {
+            "text": "",
+            "thought": true
+          },
+          {
+            "functionCall": {
+              "name": "finish_document",
+              "args": {
+                "iteration": 3
+              },
+              "id": "call_454507"
+            },
+            "thoughtSignature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "finishMessage": "Model generated function call(s)."
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 7910,
+    "candidatesTokenCount": 15,
+    "totalTokenCount": 7925,
+    "cachedContentTokenCount": 5345,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 6620
+      },
+      {
+        "modality": "IMAGE",
+        "tokenCount": 1290
+      }
+    ],
+    "cacheTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 4474
+      },
+      {
+        "modality": "IMAGE",
+        "tokenCount": 871
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemma-4-31b-it",
+  "responseId": "MOnMasmcFZ2N1e8P1Y-x0A8"
+}

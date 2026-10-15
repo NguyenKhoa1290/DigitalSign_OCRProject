@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "S9Gj0MaxsVAm5KC8uQxBuUcdKufMXan3",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"align\":\"center\",\"bold\":{\"true\":false},\"font_size\":10,\"text\":\"(Tham khảo cách trình bày - trang 23- của Quy định thực hiện ĐATN của sinh viên khoa CNTT). Sinh viên dưới sự hướng dẫn của GVHD đưa ra kế hoạch dự kiến thực hiện đề tài tốt nghiệp. Chậm nhất sau 10 ngày giao ĐATN, phải nộp Bảng kế hoạch dự kiến về Văn phòng Khoa CNTT, M504.\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

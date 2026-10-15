@@ -1,0 +1,44 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": "\n",
+    "_google_content": {
+      "parts": [
+        {
+          "text": "\n"
+        },
+        {
+          "text": "",
+          "thought": true
+        },
+        {
+          "functionCall": {
+            "name": "finish_document",
+            "args": {
+              "iteration": 3
+            },
+            "id": "call_454507"
+          },
+          "thoughtSignature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+        }
+      ],
+      "role": "model"
+    },
+    "tool_calls": [
+      {
+        "id": "call_454507",
+        "type": "function",
+        "function": {
+          "name": "finish_document",
+          "arguments": "{\"iteration\": 3}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "STOP",
+  "usage": {
+    "prompt_tokens": 7910,
+    "completion_tokens": 15,
+    "total_tokens": 7925
+  }
+}

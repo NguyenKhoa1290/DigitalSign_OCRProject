@@ -5,7 +5,8 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject NavigationManager NavManager
 @inject ILocalStorageService LocalStorage
-@implements IDisposable
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 @if (!_ready)
 {
@@ -13,11 +14,12 @@
 }
 else
 {
-    <div class="organization-tabs" role="tablist" aria-label="Quản lý tổ chức">
-        <button id="organization-users-tab" type="button" role="tab" aria-selected="@(_selected == "users")"
+    <div class="organization-tabs" @ref="_tabs" role="tablist" aria-label="Quản lý tổ chức">
+        <glass-surface class="organization-selector" radius="10" aria-hidden="true"></glass-surface>
+        <button id="organization-users-tab" type="button" role="tab" aria-selected="@(_selected == "users" ? "true" : "false")"
                 aria-controls="organization-panel" class="@(_selected == "users" ? "selected" : "")"
                 @onclick="@(() => OpenSection("users"))">Người dùng</button>
-        <button id="organization-departments-tab" type="button" role="tab" aria-selected="@(_selected == "departments")"
+        <button id="organization-departments-tab" type="button" role="tab" aria-selected="@(_selected == "departments" ? "true" : "false")"
                 aria-controls="organization-panel" class="@(_selected == "departments" ? "selected" : "")"
                 @onclick="@(() => OpenSection("departments"))">Phòng ban</button>
     </div>
@@ -37,11 +39,25 @@ else
     private const string StorageKey = "organization.active-section";
     private string _selected = "users";
     private bool _ready;
+    private ElementReference _tabs;
+    private IJSObjectReference? _switchModule;
+    private IJSObjectReference? _switchMotion;
 
     protected override async Task OnInitializedAsync()
     {
         NavManager.LocationChanged += OnLocationChanged;
         await SyncSectionAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_ready) return;
+        if (_switchModule is null)
+            _switchModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/liquid-organization-tabs.js");
+        if (_switchMotion is null)
+            _switchMotion = await _switchModule.InvokeAsync<IJSObjectReference>("createOrganizationSwitch", _tabs, _selected);
+        else
+            await _switchMotion.InvokeVoidAsync("setSelected", _selected);
     }
 
     private async Task SyncSectionAsync()
@@ -72,5 +88,14 @@ else
         });
     }
 
-    public void Dispose() => NavManager.LocationChanged -= OnLocationChanged;
+    public async ValueTask DisposeAsync()
+    {
+        NavManager.LocationChanged -= OnLocationChanged;
+        if (_switchMotion is not null)
+        {
+            await _switchMotion.InvokeVoidAsync("dispose");
+            await _switchMotion.DisposeAsync();
+        }
+        if (_switchModule is not null) await _switchModule.DisposeAsync();
+    }
 }

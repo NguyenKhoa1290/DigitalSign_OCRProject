@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
 using IdentityService.Core.DTOs.Auth;
+using IdentityService.Core.Entities;
 using IdentityService.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -76,6 +77,50 @@ public class AuthControllerIntegrationTests : IClassFixture<CustomWebApplication
         var request = new { Username = "", Password = "" };
         var response = await client.PostAsJsonAsync("/api/auth/login", request);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task FirstLoginToken_ShouldOnlyAccessOnboardingEndpoints()
+    {
+        var client = CreateClient();
+        var user = new AppUser
+        {
+            Id = Guid.NewGuid(),
+            Username = $"GV{Guid.NewGuid():N}"[..20],
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TemporaryPass123!", workFactor: 4),
+            FullName = "Giảng viên mới",
+            MustChangePassword = true,
+            IsActive = true
+        };
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.AppUsers.Add(user);
+            await db.SaveChangesAsync();
+        }
+
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequestDto
+        {
+            Username = user.Username, Password = "TemporaryPass123!"
+        });
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var login = await loginResponse.Content.ReadFromJsonAsync<LoginResponseDto>(JsonOptions);
+        login!.MustChangePassword.Should().BeTrue();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", login.AccessToken);
+
+        var protectedResponse = await client.GetAsync("/api/users/me");
+        protectedResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        var validationResponse = await client.PostAsJsonAsync("/api/auth/validate-token",
+            new ValidateTokenRequestDto { Token = login.AccessToken });
+        var validation = await validationResponse.Content.ReadFromJsonAsync<ValidateTokenResponseDto>(JsonOptions);
+        validation!.IsValid.Should().BeTrue();
+        validation.MustChangePassword.Should().BeTrue();
+
+        var onboardingResponse = await client.PostAsJsonAsync("/api/auth/send-email-verification",
+            new { Email = "invalid" });
+        onboardingResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]

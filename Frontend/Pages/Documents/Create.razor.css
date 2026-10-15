@@ -11,6 +11,13 @@
     gap: 16px;
 }
 
+/* Let the type menu extend outside this card and cover the upload card below. */
+.create-information-card {
+    position: relative;
+    z-index: 1;
+    overflow: visible;
+}
+
 .create-actions {
     display: flex;
     justify-content: flex-end;
@@ -24,10 +31,16 @@
 
 .file-emphasis {
     color: var(--color-primary);
+    overflow-wrap: anywhere;
 }
 
-.file-input {
+.file-input-wrapper {
     display: none;
+}
+
+.pdf-picker-button {
+    margin: 14px 0 8px;
+    max-width: 100%;
 }
 
 .file-ready {
@@ -37,7 +50,7 @@
     padding: 10px 12px;
     margin-top: 12px;
     border: 1px solid #a7f3d0;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-surface);
     background: var(--color-success-light);
 }
 

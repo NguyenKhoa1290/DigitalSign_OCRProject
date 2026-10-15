@@ -32,9 +32,9 @@
                @bind="_searchQuery" @bind:event="oninput" @bind:after="OnSearchChanged" />
     </div>
     <CustomSelect CssClass="filter-select" AriaLabel="Lọc theo trạng thái"
-                  @bind-Value="_statusFilter" Options="StatusFilterOptions" AfterValueChanged="LoadDocuments" />
+                  @bind-Value="_statusFilter" Options="StatusFilterOptions" AfterValueChanged="OnFilterChanged" />
     <CustomSelect CssClass="filter-select" AriaLabel="Lọc theo loại văn bản"
-                  @bind-Value="_typeFilter" Options="TypeFilterOptions" AfterValueChanged="LoadDocuments" />
+                  @bind-Value="_typeFilter" Options="TypeFilterOptions" AfterValueChanged="OnFilterChanged" />
 </div>
 
 @if (_isLoading)
@@ -83,14 +83,14 @@ else
                         <td>
                             @if (!string.IsNullOrEmpty(doc.DocumentTypeName))
                             {
-                                <span class="badge badge-indigo">@doc.DocumentTypeName</span>
+                                <span class="badge badge-indigo">@doc.DocumentTypeDisplayName</span>
                             }
                             else { <span class="empty-value">—</span> }
                         </td>
                         <td><StatusBadge Status="@doc.Status" /></td>
                         <td>@(doc.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                         <td>@(doc.CreatedByName ?? "—")</td>
-                        <td>@doc.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(doc.CreatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
                     </tr>
                 }
             </tbody>
@@ -108,13 +108,13 @@ else
                         <StatusBadge Status="@doc.Status" />
                         @if (!string.IsNullOrEmpty(doc.DocumentTypeName))
                         {
-                            <span class="badge badge-indigo">@doc.DocumentTypeName</span>
+                            <span class="badge badge-indigo">@doc.DocumentTypeDisplayName</span>
                         }
                     </div>
                     <dl class="document-mobile-details">
                         <div><dt>Ngày ban hành</dt><dd>@(doc.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div>
                         <div><dt>Người tạo</dt><dd>@(doc.CreatedByName ?? "—")</dd></div>
-                        <div><dt>Ngày tạo</dt><dd>@doc.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        <div><dt>Ngày tạo</dt><dd>@(doc.CreatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</dd></div>
                     </dl>
                     <a class="document-mobile-open" href="@($"/documents/{doc.Id}")">Xem chi tiết <span aria-hidden="true">→</span></a>
                 </article>
@@ -170,7 +170,7 @@ else
         {
             var options = new List<SelectOption> { new("", "Tất cả loại") };
             if (_documentTypes != null)
-                options.AddRange(_documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.Name)));
+                options.AddRange(_documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.DisplayName)));
             return options;
         }
     }
@@ -197,6 +197,12 @@ else
             Toast.ShowError($"Lỗi tải danh sách: {ex.Message}");
         }
         _isLoading = false;
+    }
+
+    private async Task OnFilterChanged()
+    {
+        _currentPage = 1;
+        await LoadDocuments();
     }
 
     private async Task OnSearchChanged()

@@ -150,8 +150,8 @@ public class DocumentsController : ControllerBase
         Response.Headers.CacheControl = "no-store";
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         return download
-            ? File(file.Content, "application/pdf", file.FileName, enableRangeProcessing: true)
-            : File(file.Content, "application/pdf", enableRangeProcessing: true);
+            ? File(file.Content, file.ContentType, file.FileName, enableRangeProcessing: true)
+            : File(file.Content, file.ContentType, enableRangeProcessing: true);
     }
 
     /// <summary>
@@ -174,12 +174,18 @@ public class DocumentsController : ControllerBase
     /// POST /api/documents/{id}/upload - Văn thư upload file PDF lên MinIO
     /// </summary>
     [HttpPost("{id:guid}/upload")]
+    [RequestSizeLimit(64L * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 64L * 1024 * 1024)]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
     [ProducesResponseType(400)]
     public async Task<IActionResult> UploadFile(Guid id, IFormFile file)
     {
         if (file is null || file.Length == 0)
             return BadRequest(ApiResponse<object>.Fail("Vui lòng chọn file để upload."));
+
+        if (file.Length > 50L * 1024 * 1024)
+            return StatusCode(StatusCodes.Status413PayloadTooLarge,
+                ApiResponse<object>.Fail("File vượt quá giới hạn 50 MB."));
 
         var userId = GetCurrentUserId();
 

@@ -7,9 +7,9 @@ namespace IdentityService.Core.DTOs.Auth;
 /// </summary>
 public class LoginRequestDto
 {
-    /// <summary>Tên đăng nhập của người dùng.</summary>
-    [Required(ErrorMessage = "Tên đăng nhập không được để trống.")]
-    [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên đăng nhập phải từ 3 đến 50 ký tự.")]
+    /// <summary>Mã cán bộ/giảng viên hoặc email đã xác thực.</summary>
+    [Required(ErrorMessage = "Vui lòng nhập mã cán bộ/giảng viên hoặc email.")]
+    [StringLength(100, MinimumLength = 3, ErrorMessage = "Thông tin đăng nhập phải từ 3 đến 100 ký tự.")]
     public string Username { get; set; } = string.Empty;
 
     /// <summary>Mật khẩu của người dùng (plain-text, sẽ được hash khi xử lý).</summary>

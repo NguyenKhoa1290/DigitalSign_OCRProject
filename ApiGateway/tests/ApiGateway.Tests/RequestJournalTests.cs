@@ -32,6 +32,7 @@ public class RequestJournalTests
     [InlineData("DELETE","/api/users/id/roles/id","RemoveRole")]
     [InlineData("POST","/api/signatures/personal-sign","PersonalSign")]
     [InlineData("POST","/api/auth/login","Login")]
+    [InlineData("POST","/api/users/id/reset-password","AdminResetPassword")]
     [InlineData("POST","/api/ocr/process","ProcessOCR")]
     [InlineData("POST","/api/documents/id/upload","UploadDocument")]
     [InlineData("POST","/api/documents/id/submit","Submit")]

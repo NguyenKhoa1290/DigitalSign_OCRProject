@@ -1,7 +1,7 @@
 /* Copyright 2025 Kyant. Apache-2.0. Modified: Kotlin/Compose component ported
  * to a dependency-free custom element with WebGL2 and Pointer Events.
  */
-import { GlassRenderer } from './glass-renderer.js';
+import { GlassRenderer, taskbarContentMetrics } from './glass-renderer.js';
 import { Spring, clamp } from './spring.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from './settings.js';
 import { taskbarIconSvg } from './taskbar-icons.js';
@@ -11,7 +11,7 @@ const MAX_COUNT = 6;
 const tabButton = i => `<button type="button" role="tab" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}" data-index="${i}"><span class="content"><span class="icon">${taskbarIconSvg('home')}</span><span>Tab ${i + 1}</span></span></button>`;
 const accentItem = i => `<div class="accent-item"><span class="icon">${taskbarIconSvg('home')}</span><span>Tab ${i + 1}</span></div>`;
 const styles = `
-  :host { display: block; width: 100%; height: 64px; font: 12px Inter, Arial, Helvetica, sans-serif; }
+  :host { display: block; width: 100%; height: 64px; font: 11px Inter, Arial, Helvetica, sans-serif; }
   * { box-sizing: border-box; }
   .taskbar { position: relative; isolation: isolate; width: 100%; height: 64px; touch-action: none;
     user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -25,15 +25,17 @@ const styles = `
     position: absolute; inset: 4px; margin: 0; }
   .tabs { z-index: 2; }
   button, .accent-item { display: flex; flex-direction: column; justify-content: center; align-items: center;
-    gap: 2px; min-width: 0; height: 56px; padding: 0; font: inherit; line-height: 14px; }
+    gap: 2px; min-width: 0; height: 56px; padding: 0; font: inherit;
+    font-size: var(--label-size,11px); line-height: var(--label-line-height,13px); }
   button { color: #000; background: none; border: 0; border-radius: 999px; cursor: pointer;
     touch-action: none; outline: none; }
   button .content { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
   .content > span:last-child, .accent-item > span:last-child { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .taskbar[data-count="6"] button, .taskbar[data-count="6"] .accent-item { font-size: 10px; }
-  .taskbar[data-count="6"] svg { width: 24px; height: 24px; }
-  @media (max-width: 360px) { .taskbar[data-count="6"] button, .taskbar[data-count="6"] .accent-item { font-size: 9px; } }
-  svg { display: block; flex: none; width: 28px; height: 28px; }
+  svg { display: block; flex: none; width: var(--icon-size,24px); height: var(--icon-size,24px); }
+  .avatar { display: flex; align-items: center; justify-content: center;
+    width: var(--icon-size,24px); height: var(--icon-size,24px); border-radius: 50%;
+    background: #0093dd; color: #fff; font-size: calc(var(--icon-size,24px) * .52);
+    font-weight: 600; line-height: 1; }
   button:focus-visible { outline: 2px solid #0088ff; outline-offset: 3px; }
   .taskbar[data-input="pointer"] button:focus-visible { outline: none; }
   .accent { color: #0088ff; pointer-events: none; clip-path: inset(0 var(--clip-right) 0 var(--clip-left) round var(--selector-radius,28px)); }
@@ -54,7 +56,7 @@ const styles = `
 `;
 
 export class FlightTaskbar extends HTMLElement {
-  static observedAttributes = ['selected-index', 'theme', 'dir', 'labels', 'icons', 'blue', 'live-backdrop'];
+  static observedAttributes = ['selected-index', 'theme', 'dir', 'labels', 'icons', 'avatar-initial', 'blue', 'live-backdrop'];
 
   constructor() {
     super();
@@ -159,7 +161,7 @@ export class FlightTaskbar extends HTMLElement {
     } else if (name === 'labels') {
       if (this.isConnected) this.syncTabCount();
       this.updateLabels();
-    } else if (name === 'icons') {
+    } else if (name === 'icons' || name === 'avatar-initial') {
       this.updateIcons();
     } else if (this.isConnected) this.refresh();
   }
@@ -190,9 +192,9 @@ export class FlightTaskbar extends HTMLElement {
     const labels = (this.getAttribute('labels') || '').split('|').map(label => label.trim()).filter(Boolean);
     this._labels = Array.from({ length: this.count }, (_, index) => labels[index] || `Tab ${index + 1}`);
     this.buttons?.forEach((button, index) => {
-      button.querySelector('.content span:last-child').textContent = this._labels[index];
+      button.querySelector('.content > span:last-child').textContent = this._labels[index];
     });
-    this.shadowRoot?.querySelectorAll('.accent-item span:last-child').forEach((label, index) => {
+    this.shadowRoot?.querySelectorAll('.accent-item > span:last-child').forEach((label, index) => {
       label.textContent = this._labels[index];
     });
     this.renderer?.setLabels(this._labels);
@@ -202,9 +204,20 @@ export class FlightTaskbar extends HTMLElement {
     const icons = (this.getAttribute('icons') || '').split('|').map(icon => icon.trim()).filter(Boolean);
     this._icons = Array.from({ length: this.count }, (_, index) => icons[index] || 'home');
     this.shadowRoot?.querySelectorAll('.icon').forEach((icon, index) => {
-      icon.innerHTML = taskbarIconSvg(this._icons[index % this.count]);
+      if (this._icons[index % this.count] === 'user' && this.avatarInitial) {
+        const avatar = document.createElement('span');
+        avatar.className = 'avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        avatar.textContent = this.avatarInitial;
+        icon.replaceChildren(avatar);
+      } else icon.innerHTML = taskbarIconSvg(this._icons[index % this.count]);
     });
     this.renderer?.setIcons(this._icons);
+    this.renderer?.setAvatarInitial(this.avatarInitial);
+  }
+
+  get avatarInitial() {
+    return Array.from((this.getAttribute('avatar-initial') || '').trim())[0]?.toLocaleUpperCase() || '';
   }
 
   get backdrop() { return this._backdrop || null; }
@@ -252,6 +265,7 @@ export class FlightTaskbar extends HTMLElement {
       this.renderer.setTabCount(this.count);
       this.renderer.setLabels(this._labels);
       this.renderer.setIcons(this._icons);
+      this.renderer.setAvatarInitial(this.avatarInitial);
       this.dataset.renderer = 'webgl2';
     } catch (error) {
       this.renderer = null;
@@ -271,6 +285,10 @@ export class FlightTaskbar extends HTMLElement {
     this.blue = this.hasAttribute('blue');
     this.dataset.dark = String(this.dark);
     this.nav.style.setProperty('--tab-width', `${this.tabWidth}px`);
+    const metrics = taskbarContentMetrics(this.rect.width, this.count);
+    this.nav.style.setProperty('--icon-size', `${metrics.iconSize}px`);
+    this.nav.style.setProperty('--label-size', `${metrics.fontSize}px`);
+    this.nav.style.setProperty('--label-line-height', `${metrics.lineHeight}px`);
     this.applySurfaceSettings();
     if (this.renderer && this.dataset.renderer === 'webgl2') {
       try {

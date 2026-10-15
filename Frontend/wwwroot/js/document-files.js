@@ -1,5 +1,10 @@
 window.documentFiles = {
-    createUrl: bytes => URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
+    pickFile: id => {
+        const input = document.getElementById(id);
+        if (input?.type === "file") input.click();
+    },
+    createUrl: (bytes, type = "application/pdf") => URL.createObjectURL(new Blob([bytes], { type })),
+    createDownloadUrl: (bytes, type) => URL.createObjectURL(new Blob([bytes], { type })),
     releaseUrl: url => { if (url) URL.revokeObjectURL(url); },
     download: (url, fileName) => {
         const link = document.createElement("a");

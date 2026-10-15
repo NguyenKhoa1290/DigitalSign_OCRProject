@@ -19,10 +19,19 @@ public class AppDbContext : DbContext
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<RevokedAccessToken> RevokedAccessTokens => Set<RevokedAccessToken>();
+    public DbSet<GeminiApiConfig> GeminiApiConfigs => Set<GeminiApiConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<GeminiApiConfig>(entity =>
+        {
+            entity.ToTable("GeminiApiConfigs");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ProtectedApiKey).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+        });
 
         // ── AppUser ──────────────────────────────────────────────────────────
         modelBuilder.Entity<AppUser>(entity =>

@@ -1,0 +1,9 @@
+{
+  "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
+  "model": "gemma4-12b-qat-uncensored-hauhaucs-balanced",
+  "paddle_lines": 30,
+  "elapsed_seconds": 307.99,
+  "uncertain_fields": [
+    "The red stamp in the top left corner contains text that is slightly overlapping with 'TRƯỜNG ĐẠI KIẾN TRÚC HÀ NỘI'."
+  ]
+}

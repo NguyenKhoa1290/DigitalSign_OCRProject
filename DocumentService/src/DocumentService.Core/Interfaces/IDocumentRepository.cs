@@ -10,6 +10,7 @@ public interface IDocumentRepository
     Task<(IEnumerable<Document> Documents, int Total)> GetAllAsync(DocumentQueryParams query);
     Task<Document> CreateAsync(Document document);
     Task<Document> UpdateAsync(Document document);
+    Task<bool> ReplaceFileAsync(Guid id, string expectedPath, string newPath, string fileName);
     Task<bool> DeleteAsync(Guid id);
     Task<bool> ExistsAsync(Guid id);
     Task<DocumentStatisticsDto> GetStatisticsAsync(Guid userId, DateTime todayStartUtc, DateTime tomorrowStartUtc);

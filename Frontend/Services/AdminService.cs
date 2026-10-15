@@ -36,8 +36,9 @@ public class AdminService
         {
             Username     = dto.Username,
             FullName     = dto.FullName,
-            Email        = dto.Email,
+            Email        = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim(),
             Password     = dto.Password,
+            PhoneNumber  = dto.PhoneNumber,
             DepartmentId = dto.DepartmentId,
             RoleIds      = roleId.HasValue
                 ? new List<Guid> { roleId.Value }
@@ -48,6 +49,8 @@ public class AdminService
     }
     public async Task<UserDto?> UpdateUserAsync(Guid id, UpdateUserDto dto) => await _api.PutAsync<UserDto>($"api/users/{id}", dto);
     public async Task<bool> DeleteUserAsync(Guid id) { try { await _api.DeleteAsync($"api/users/{id}"); return true; } catch { return false; } }
+    public async Task<bool> ResetUserPasswordAsync(Guid id, string temporaryPassword, string confirmPassword)
+        => await _api.PostAsync<bool>($"api/users/{id}/reset-password", new { TemporaryPassword = temporaryPassword, ConfirmPassword = confirmPassword }) == true;
 
     // ── Departments ── (IdentityService: GET/POST/PUT/DELETE api/departments)
     // Flat list — dùng cho dropdown chọn phòng ban
@@ -91,6 +94,27 @@ public class AdminService
 
     // ── Roles ── (IdentityService: GET api/roles)
     public async Task<List<RoleDto>?> GetRolesAsync() => await _api.GetAsync<List<RoleDto>>("api/roles");
+
+    public Task<GeminiSettingsStatus?> GetGeminiSettingsAsync()
+        => _api.GetAsync<GeminiSettingsStatus>("api/admin/gemini-settings");
+
+    public Task<GeminiSettingsSaveResult?> SaveGeminiApiKeyAsync(string apiKey)
+        => _api.PutAsync<GeminiSettingsSaveResult>("api/admin/gemini-settings", new { apiKey });
+
+    public Task<bool> RemoveGeminiApiKeyAsync()
+        => _api.DeleteWithResultAsync("api/admin/gemini-settings");
+}
+
+public class GeminiSettingsStatus
+{
+    public bool Configured { get; set; }
+    public string? MaskedKey { get; set; }
+    public DateTime? UpdatedAtUtc { get; set; }
+}
+
+public sealed class GeminiSettingsSaveResult : GeminiSettingsStatus
+{
+    public List<string> Models { get; set; } = new();
 }
 
 public class DashboardStats

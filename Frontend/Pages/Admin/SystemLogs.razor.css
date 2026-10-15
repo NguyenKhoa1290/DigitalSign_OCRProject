@@ -9,7 +9,7 @@
     margin-bottom: 20px;
     padding: 18px;
     border: 1px solid rgba(48, 78, 138, 0.2);
-    border-radius: 16px;
+    border-radius: var(--radius-surface);
     background: rgba(247, 252, 255, 0.84);
 }
 
@@ -19,7 +19,7 @@
     width: 42px;
     height: 42px;
     place-items: center;
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     background: rgba(48, 78, 138, 0.1);
     color: #304e8a;
 }
@@ -45,7 +45,7 @@
 .monitoring-card {
     padding: 22px;
     border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 20px;
+    border-radius: var(--radius-surface);
     background: rgba(247, 252, 255, 0.82);
     box-shadow: var(--shadow-md);
 }
@@ -67,7 +67,7 @@
     gap: 10px;
     padding: 12px;
     border: 1px solid var(--color-border-light);
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     background: rgba(255, 255, 255, 0.55);
     font-size: 13px;
 }
@@ -82,7 +82,7 @@
 .monitoring-badge,
 .monitoring-tags span {
     padding: 4px 8px;
-    border-radius: 999px;
+    border-radius: var(--radius-surface);
     background: rgba(48, 78, 138, 0.09);
     color: #304e8a;
     font-size: 11px;

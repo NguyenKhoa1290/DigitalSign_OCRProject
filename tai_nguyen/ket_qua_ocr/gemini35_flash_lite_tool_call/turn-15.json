@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_857417",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"text\":\"BẢNG KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỒ ÁN TỐT NGHIỆP\\\\nĐỢT 1, NĂM HỌC 2026 – 2027\",\"align\":\"center\",\"space_before_pt\":10,\"bold\":true,\"font_size\":11,\"space_after_pt\":10}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EmAKXgFpFH0T8oJyYg1Bz3yLpYOddUORv322Vqck1pBZKsJ0sGnf4vwbpg0VR5z9dE+q99MtExrJ4sb5LaIid4CikcmqOIKFog54F4Vvk8B0hLyiuGqyKFMBKZ60EAsW+nQ="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 105,
+    "prompt_tokens": 5678,
+    "prompt_tokens_details": {
+      "cached_tokens": 1975
+    },
+    "total_tokens": 5783
+  }
+}

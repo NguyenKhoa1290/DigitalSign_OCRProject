@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "hvEKDELaZ9Sj5v77yBgz4HGIKLDsx9ZC",
+        "type": "function",
+        "function": {
+          "name": "add_table",
+          "arguments": "{\"headers\":[\"TT\", \"Nội dung thực hiện\", \"Thời gian (tuần)\", \"Kết quả dự kiến\"],\"blank_rows\":8}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

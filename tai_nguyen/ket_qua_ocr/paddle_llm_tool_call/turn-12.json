@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "8hxMiehJYEjhovGzTZJ7KPTLMUJcjN6V",
+        "type": "function",
+        "function": {
+          "name": "clear_draft",
+          "arguments": "{}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

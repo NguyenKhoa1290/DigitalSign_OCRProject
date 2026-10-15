@@ -42,4 +42,7 @@ public interface IAuthService
     /// OTP hết hạn sau 15 phút hoặc sau khi dùng 1 lần.
     /// </summary>
     Task ResetPasswordAsync(ResetPasswordDto dto);
+
+    /// <summary>Admin cấp mật khẩu tạm; lần đăng nhập tiếp theo phải xác minh lại email.</summary>
+    Task AdminResetPasswordAsync(Guid userId, AdminResetPasswordDto dto);
 }

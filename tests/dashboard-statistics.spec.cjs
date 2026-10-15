@@ -127,8 +127,8 @@ async function main() {
   await expectCard('Tổng văn bản',updated.totalDocuments);
   await expectCard('Chờ xử lý',updated.pendingDocuments);
   await expectCard('Chứng thư số hoạt động',certificatesBefore.activeCertificates);
-  await fs.mkdir(path.join(__dirname,'artifacts'),{recursive:true});
-  await page.screenshot({path:path.join(__dirname,'artifacts','dashboard-stats-1366.png')});
+  await fs.mkdir(path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu'),{recursive:true});
+  await page.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu','dashboard-stats-1366.png')});
   pass('Admin browser login and exact live values');
   await page.route('**/api/signatures/certificates/stats',r=>r.fulfill({status:503,contentType:'application/json',body:'{}'}));
   await page.getByRole('button',{name:'Làm mới số liệu',exact:true}).click();
@@ -150,7 +150,7 @@ async function main() {
   pass('Partial source failures show dashes; refresh recovers real counts');
   await page.setViewportSize({width:450,height:500});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.screenshot({path:path.join(__dirname,'artifacts','dashboard-stats-450.png')});
+  await page.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu','dashboard-stats-450.png')});
   pass('Admin mobile layout without horizontal overflow');
   await context.close();
   const personalCards = {
@@ -193,8 +193,8 @@ async function cleanup() {
 main().catch(async e=>{
   console.error(e.stack); process.exitCode=1;
   if(browser) {
-    let index=0; await fs.mkdir(path.join(__dirname,'artifacts'),{recursive:true});
+    let index=0; await fs.mkdir(path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu'),{recursive:true});
     for(const context of browser.contexts()) for(const page of context.pages())
-      await page.screenshot({path:path.join(__dirname,'artifacts',`dashboard-failure-${index++}.png`)});
+      await page.screenshot({path:path.join(__dirname,'..','tai_nguyen','ket_qua_kiem_thu',`dashboard-failure-${index++}.png`)});
   }
 }).finally(async()=>{try{await cleanup();}catch(e){console.error('Cleanup failed: '+e.message);process.exitCode=1;}});

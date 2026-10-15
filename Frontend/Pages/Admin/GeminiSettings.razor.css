@@ -1,0 +1,39 @@
+.gemini-settings-card {
+    max-width: 820px;
+}
+
+.gemini-settings-status {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 22px;
+    padding: 16px 18px;
+    border: 1px solid rgba(50, 90, 130, .18);
+    border-radius: var(--radius-surface);
+    background: rgba(240, 248, 255, .78);
+}
+
+.gemini-settings-status.is-configured strong { color: #167345; }
+.gemini-settings-status.is-missing strong { color: #9a5b00; }
+.gemini-settings-status span,
+.form-hint { color: var(--color-text-secondary); }
+.form-hint { display: block; margin-top: 7px; }
+
+.gemini-settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.gemini-model-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(50, 90, 130, .15);
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+    .gemini-settings-actions > button { width: 100%; }
+}

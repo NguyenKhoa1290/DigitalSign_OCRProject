@@ -58,6 +58,12 @@ public class ApiService
         return SmartDeserialize<T>(await response.Content.ReadAsStringAsync());
     }
 
+    public Task<HttpResponseMessage> PostResponseAsync(string url, object body)
+    {
+        var json = JsonSerializer.Serialize(body);
+        return SendWithRefreshAsync(HttpMethod.Post, url, () => JsonContent(json));
+    }
+
     public async Task<T?> PutAsync<T>(string url, object? body = null)
     {
         var json = body == null ? null : JsonSerializer.Serialize(body);

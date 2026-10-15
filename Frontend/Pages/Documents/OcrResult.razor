@@ -50,7 +50,7 @@ else
                 </svg>
             </div>
             <p class="empty-state-title">Chưa có dữ liệu OCR</p>
-            <p class="empty-state-desc">Hãy upload PDF và chờ Kafka/OCRService xử lý, hoặc chạy OCR thủ công từ trang chi tiết công văn.</p>
+            <p class="empty-state-desc">Văn thư hoặc Admin có thể quét PDF/ảnh tại trang Quét OCR. Mỗi lượt tối đa 5 trang.</p>
         </div>
     }
     else
@@ -137,7 +137,7 @@ else
                             </div>
                             <div>
                                 <div class="detail-label">Loại văn bản</div>
-                                <div class="detail-value">@(_document.DocumentTypeName ?? "—")</div>
+                                <div class="detail-value">@(_document.DocumentTypeDisplayName ?? "—")</div>
                             </div>
                             <div>
                                 <div class="detail-label">MinIO path</div>
@@ -145,7 +145,7 @@ else
                             </div>
                             <div>
                                 <div class="detail-label">Cập nhật lần cuối</div>
-                                <div class="detail-value">@_document.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                <div class="detail-value">@(_document.UpdatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</div>
                             </div>
                         </div>
                     </div>

@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_124665",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"bold\":true,\"align\":\"center\",\"space_after_pt\":4,\"font_size\":10,\"text\":\"Đề xuất kế hoạch dự kiến thực hiện đề tài tốt nghiệp\"}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EmAKXgFpFH0TgW48n3dhLyL0Uv+BlRRrwpda5H7Cwypug5EFrND2lxiqlMs3RKy6ufCR7ICBUg9SC3mKK2JNUouDgrB4/PWNJm8g2QpWlBzu9VPpILHSNuzMBmLaquYwAJs="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 53,
+    "prompt_tokens": 6192,
+    "prompt_tokens_details": {
+      "cached_tokens": 3931
+    },
+    "total_tokens": 6245
+  }
+}

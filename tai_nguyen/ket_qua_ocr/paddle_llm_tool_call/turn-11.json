@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "rokoBsVdCJ3pxpo6VdUdhTgAxn38ji3W",
+        "type": "function",
+        "function": {
+          "name": "render_document",
+          "arguments": "{}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

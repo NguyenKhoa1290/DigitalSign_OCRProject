@@ -6,7 +6,6 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run
-    network_mode: service:frontend
     env_file:
       - .env.tunnel
     depends_on:

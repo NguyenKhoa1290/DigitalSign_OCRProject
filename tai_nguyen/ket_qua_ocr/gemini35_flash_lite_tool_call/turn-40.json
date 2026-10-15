@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_1723505",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"font_size\":10,\"space_after_pt\":8,\"text\":\"Thời gian thực hiện: 15 tuần (105 ngày) - Từ 05/10/2026 đến 18/01/2027\",\"align\":\"left\"}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EmAKXgFpFH0TB5NIMlW/3ApTGzzcbvV25IXF2bcnh1ldp2HxjXejwJlZm244ZuGHt7a+93/51EFkxZJZ5b9/hgh3KOEdXv6mBXdT+y3/22GruFmkhPhom4doOM/v0LPHdcE="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 76,
+    "prompt_tokens": 8984,
+    "prompt_tokens_details": {
+      "cached_tokens": 5834
+    },
+    "total_tokens": 9060
+  }
+}

@@ -1,0 +1,139 @@
+@page "/admin/gemini-settings"
+@attribute [Authorize(Roles = "Admin")]
+@inject AdminService AdminService
+@inject IToastService Toast
+
+<PageTitle>Cấu hình Gemini - HAU Admin</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Cấu hình Gemini</h1>
+        <p class="page-subtitle">Quản lý Google AI Studio API key dùng cho chức năng dựng Word từ bản quét.</p>
+    </div>
+    <a href="/" class="btn btn-outline">Quay lại Dashboard</a>
+</div>
+
+<div class="card gemini-settings-card">
+    <div class="card-header"><span class="card-title">Google AI Studio</span></div>
+    <div class="card-body">
+        @if (_loading)
+        {
+            <LoadingSpinner Message="Đang tải cấu hình..." />
+        }
+        else
+        {
+            <div class="gemini-settings-status @(_status?.Configured == true ? "is-configured" : "is-missing")">
+                @if (_status?.Configured == true)
+                {
+                    <strong>Đã cấu hình</strong>
+                    <span>Khóa đang lưu: @_status.MaskedKey</span>
+                    @if (_status.UpdatedAtUtc.HasValue)
+                    {
+                        <span>Cập nhật: @_status.UpdatedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                    }
+                }
+                else
+                {
+                    <strong>Chưa có API key</strong>
+                    <span>Nhập khóa để Văn thư có thể chọn model Gemini khi xử lý bản quét.</span>
+                }
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="gemini-api-key">API key mới</label>
+                <input id="gemini-api-key" class="form-control" type="password" autocomplete="new-password"
+                       placeholder="@( _status?.Configured == true ? "Để trống nếu không muốn thay khóa" : "Nhập API key từ Google AI Studio")"
+                       @bind="_apiKey" @bind:event="oninput" />
+                <small class="form-hint">Khóa được kiểm tra với Google trước khi lưu. Giao diện chỉ hiển thị trạng thái và một phần cuối của khóa.</small>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_message))
+            {
+                <div class="alert @(_isError ? "alert-danger" : "alert-success")" role="status">@_message</div>
+            }
+
+            <div class="gemini-settings-actions">
+                <button class="btn btn-primary" @onclick="Save" disabled="@(_saving || string.IsNullOrWhiteSpace(_apiKey))">
+                    @(_saving ? "Đang kiểm tra và lưu..." : "Kiểm tra và lưu API key")
+                </button>
+                @if (_status?.Configured == true)
+                {
+                    <button class="btn btn-outline-danger" @onclick="Remove" disabled="@_saving">Xóa cấu hình</button>
+                }
+            </div>
+
+            @if (_models.Count > 0)
+            {
+                <div class="gemini-model-list">
+                    <strong>Model Gemini khả dụng (@_models.Count)</strong>
+                    <div>@string.Join(" · ", _models)</div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private GeminiSettingsStatus? _status;
+    private List<string> _models = new();
+    private string _apiKey = string.Empty;
+    private string? _message;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _status = await AdminService.GetGeminiSettingsAsync();
+        _loading = false;
+    }
+
+    private async Task Save()
+    {
+        _saving = true;
+        _message = null;
+        _isError = false;
+        try
+        {
+            var result = await AdminService.SaveGeminiApiKeyAsync(_apiKey.Trim());
+            if (result is null)
+            {
+                _isError = true;
+                _message = "Không lưu được khóa. Hãy kiểm tra API key, quyền truy cập Gemini và kết nối Google AI Studio.";
+                return;
+            }
+            _status = result;
+            _models = result.Models;
+            _apiKey = string.Empty;
+            _message = "API key hợp lệ và đã lưu an toàn phía máy chủ.";
+            Toast.ShowSuccess(_message);
+        }
+        catch (Exception)
+        {
+            _isError = true;
+            _message = "Không lưu được cấu hình Gemini.";
+        }
+        finally { _saving = false; }
+    }
+
+    private async Task Remove()
+    {
+        _saving = true;
+        try
+        {
+            if (await AdminService.RemoveGeminiApiKeyAsync())
+            {
+                _status = new GeminiSettingsStatus();
+                _models.Clear();
+                _message = "Đã xóa API key Gemini.";
+                Toast.ShowSuccess(_message);
+            }
+            else
+            {
+                _isError = true;
+                _message = "Không xóa được API key Gemini.";
+            }
+        }
+        finally { _saving = false; }
+    }
+}

@@ -1,0 +1,75 @@
+{
+  "tool_calls": 60,
+  "successes": 51,
+  "errors": [
+    {
+      "turn": 12,
+      "name": "render_document",
+      "error": "Invalid layout number 300.0; expected 0.01..100"
+    },
+    {
+      "turn": 25,
+      "name": "render_document",
+      "error": "Traceback (most recent call last):\n  File \"/tmp/render_docx.py\", line 16, in <module>\n    from pdf2image import convert_from_path, pdfinfo_from_path\nModuleNotFoundError: No module named 'pdf2image'\n"
+    },
+    {
+      "turn": 26,
+      "name": "finish_document",
+      "error": "View the successfully rendered iteration in a subsequent turn before finishing"
+    },
+    {
+      "turn": 27,
+      "name": "render_document",
+      "error": "Traceback (most recent call last):\n  File \"/tmp/render_docx.py\", line 16, in <module>\n    from pdf2image import convert_from_path, pdfinfo_from_path\nModuleNotFoundError: No module named 'pdf2image'\n"
+    },
+    {
+      "turn": 28,
+      "name": "finish_document",
+      "error": "View the successfully rendered iteration in a subsequent turn before finishing"
+    },
+    {
+      "turn": 29,
+      "name": "finish_document",
+      "error": "View the successfully rendered iteration in a subsequent turn before finishing"
+    },
+    {
+      "turn": 30,
+      "name": "finish_document",
+      "error": "View the successfully rendered iteration in a subsequent turn before finishing"
+    },
+    {
+      "turn": 31,
+      "name": "finish_document",
+      "error": "View the successfully rendered iteration in a subsequent turn before finishing"
+    },
+    {
+      "turn": 32,
+      "name": "finish_document",
+      "error": "View the successfully rendered iteration in a subsequent turn before finishing"
+    }
+  ],
+  "render_attempts": 6,
+  "successful_renders": 3,
+  "clear_draft": 3,
+  "usage_sum": {
+    "prompt_tokens": 471190,
+    "completion_tokens": 3751,
+    "total_tokens": 474941
+  },
+  "final_tables": [
+    {
+      "columns": 2,
+      "rows": 1
+    },
+    {
+      "columns": 4,
+      "rows": 7
+    },
+    {
+      "columns": 2,
+      "rows": 1
+    }
+  ],
+  "images": 0,
+  "final_matches_selected": true
+}

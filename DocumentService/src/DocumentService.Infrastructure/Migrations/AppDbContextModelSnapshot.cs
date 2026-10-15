@@ -35,6 +35,10 @@ namespace DocumentService.Infrastructure.Migrations
                     b.Property<Guid>("DocTypeId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
                     b.Property<DateOnly?>("IssuedDate")
                         .HasColumnType("date");
 

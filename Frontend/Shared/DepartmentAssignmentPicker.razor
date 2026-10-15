@@ -1,0 +1,97 @@
+<div class="department-assignment-grid">
+    @for (var index = 0; index < Math.Max(3, _selectedPath.Count + 1); index++)
+    {
+        var level = index;
+        var choices = ChoicesAt(level).ToList();
+        if (level > 2 && choices.Count == 0) break;
+        var selected = level < _selectedPath.Count ? _selectedPath[level].ToString() : "";
+        var id = $"user-department-level-{level}";
+        <div class="form-group" @key="level">
+            <label class="form-label" for="@id">@LevelLabel(level)</label>
+            <CustomSelect Id="@id" Value="@selected"
+                          ValueChanged="value => SelectLevel(level, value)"
+                          Options="BuildOptions(choices, level)"
+                          MaxOptionsHeight="160"
+                          Disabled="@(level > 0 && choices.Count == 0)" />
+        </div>
+    }
+</div>
+@if (Departments.Count == 0)
+{
+    <div class="department-assignment-hint">Chưa có phòng ban. Tạo phòng ban tại mục Phòng ban trước khi phân người dùng.</div>
+}
+else
+{
+    <div class="department-assignment-hint">Các ô sau phụ thuộc ô trước. Không chọn cấp dưới thì người dùng thuộc đơn vị cha đang chọn.</div>
+    <div class="department-assignment-summary" aria-live="polite">
+        @if (_selectedPath.Count > 0)
+        {
+            <span>Sẽ thuộc: <strong>@SelectedDepartmentName</strong></span>
+        }
+        else
+        {
+            <span>Chưa phân phòng ban.</span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<DepartmentDto> Departments { get; set; } = Array.Empty<DepartmentDto>();
+    [Parameter] public Guid? Value { get; set; }
+    [Parameter] public EventCallback<Guid?> ValueChanged { get; set; }
+
+    private readonly List<Guid> _selectedPath = new();
+    private IReadOnlyList<DepartmentDto>? _lastDepartments;
+    private Guid? _currentValue;
+    private string SelectedDepartmentName => Departments.FirstOrDefault(department => department.Id == _currentValue)?.DeptName ?? "";
+
+    protected override void OnParametersSet()
+    {
+        if (Value == _currentValue && ReferenceEquals(Departments, _lastDepartments)) return;
+        _lastDepartments = Departments;
+        _currentValue = Value;
+        _selectedPath.Clear();
+        var map = Departments.ToDictionary(department => department.Id);
+        var visited = new HashSet<Guid>();
+        var current = Value;
+        while (current.HasValue && visited.Add(current.Value) && map.TryGetValue(current.Value, out var department))
+        {
+            _selectedPath.Add(department.Id);
+            current = department.ParentId;
+        }
+        _selectedPath.Reverse();
+    }
+
+    private IEnumerable<DepartmentDto> ChoicesAt(int level)
+    {
+        if (level == 0)
+            return Departments.Where(department => department.ParentId == null ||
+                !Departments.Any(parent => parent.Id == department.ParentId));
+        return level <= _selectedPath.Count
+            ? Departments.Where(department => department.ParentId == _selectedPath[level - 1])
+            : Enumerable.Empty<DepartmentDto>();
+    }
+
+    private static string LevelLabel(int level) => level switch
+    {
+        0 => "Trường", 1 => "Ban / Khoa / Phòng trực thuộc", 2 => "Đơn vị cấp dưới",
+        _ => $"Đơn vị cấp dưới (cấp {level + 1})"
+    };
+
+    private static IReadOnlyList<SelectOption> BuildOptions(IEnumerable<DepartmentDto> departments, int level)
+    {
+        var options = new List<SelectOption> { new("", level == 0 ? "Chưa phân phòng ban" : "Thuộc đơn vị cha đã chọn") };
+        options.AddRange(departments.OrderBy(department => department.DeptName)
+            .Select(department => new SelectOption(department.Id.ToString(),
+                string.IsNullOrWhiteSpace(department.DeptCode) ? department.DeptName : $"{department.DeptName} ({department.DeptCode})")));
+        return options;
+    }
+
+    private async Task SelectLevel(int level, string value)
+    {
+        if (_selectedPath.Count > level) _selectedPath.RemoveRange(level, _selectedPath.Count - level);
+        if (Guid.TryParse(value, out var id)) _selectedPath.Add(id);
+        _currentValue = _selectedPath.Count > 0 ? _selectedPath[^1] : (Guid?)null;
+        await ValueChanged.InvokeAsync(_currentValue);
+    }
+}

@@ -1,31 +1,51 @@
 .organization-tabs {
-    display: flex;
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
     padding: 4px;
     margin-bottom: 20px;
-    width: fit-content;
+    width: 260px;
     max-width: 100%;
     border: 1px solid rgba(255, 255, 255, .8);
-    border-radius: 14px;
+    border-radius: var(--radius-surface);
     background: rgba(255, 255, 255, .45);
 }
 
+.organization-selector {
+    position: absolute;
+    z-index: 0;
+    top: 4px;
+    left: 4px;
+    width: calc((100% - 12px) / 2);
+    height: calc(100% - 8px);
+    border-radius: var(--radius-surface);
+    box-shadow: 0 2px 8px rgba(32, 77, 105, .1);
+    pointer-events: none;
+    transform-origin: center;
+}
+
 .organization-tabs button {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
     min-height: 44px;
     padding: 10px 20px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     background: transparent;
     color: var(--text-secondary, #527087);
     font: inherit;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 160ms ease;
 }
 
 .organization-tabs button.selected {
-    background: rgba(255, 255, 255, .85);
     color: #007ab8;
-    box-shadow: 0 2px 8px rgba(32, 77, 105, .1);
 }
 
 .organization-tabs button:focus-visible {
@@ -36,4 +56,8 @@
 @media (max-width: 600px) {
     .organization-tabs { width: 100%; }
     .organization-tabs button { flex: 1; padding-inline: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .organization-tabs button { transition: none; }
 }

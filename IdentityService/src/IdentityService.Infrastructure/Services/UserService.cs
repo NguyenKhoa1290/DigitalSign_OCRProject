@@ -82,16 +82,18 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
     {
+        var username = dto.Username.Trim();
+        var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
         // Validate uniqueness
-        var existingByUsername = await _userRepository.GetByUsernameAsync(dto.Username);
+        var existingByUsername = await _userRepository.GetByUsernameAsync(username);
         if (existingByUsername is not null)
-            throw new UserAlreadyExistsException("username", dto.Username);
+            throw new UserAlreadyExistsException("username", username);
 
-        if (!string.IsNullOrWhiteSpace(dto.Email))
+        if (email is not null)
         {
-            var existingByEmail = await _userRepository.GetByEmailAsync(dto.Email);
+            var existingByEmail = await _userRepository.GetByEmailAsync(email);
             if (existingByEmail is not null)
-                throw new UserAlreadyExistsException("email", dto.Email);
+                throw new UserAlreadyExistsException("email", email);
         }
 
         // Validate department
@@ -116,10 +118,10 @@ public class UserService : IUserService
         var user = new AppUser
         {
             Id                 = Guid.NewGuid(),
-            Username           = dto.Username.Trim(),
+            Username           = username,
             PasswordHash       = passwordHash,
             FullName           = dto.FullName.Trim(),
-            Email              = dto.Email?.Trim(),
+            Email              = email,
             PhoneNumber        = dto.PhoneNumber?.Trim(),
             DepartmentId       = dto.DepartmentId,
             IsActive           = true,
@@ -141,33 +143,36 @@ public class UserService : IUserService
         var user = await _userRepository.GetByIdAsync(id)
             ?? throw new UserNotFoundException($"Không tìm thấy người dùng với Id = {id}.");
 
+        var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
         // Email uniqueness check (only if email is changing)
-        if (!string.IsNullOrWhiteSpace(dto.Email) &&
-            !string.Equals(user.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
+        if (email is not null &&
+            !string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
         {
-            var existing = await _userRepository.GetByEmailAsync(dto.Email);
+            var existing = await _userRepository.GetByEmailAsync(email);
             if (existing is not null)
-                throw new UserAlreadyExistsException("email", dto.Email);
+                throw new UserAlreadyExistsException("email", email);
         }
 
         // Department validation
+        Department? department = null;
         if (dto.DepartmentId.HasValue)
         {
-            var dept = await _departmentRepository.GetByIdAsync(dto.DepartmentId.Value);
-            if (dept is null)
+            department = await _departmentRepository.GetByIdAsync(dto.DepartmentId.Value);
+            if (department is null)
                 throw new DepartmentNotFoundException($"Không tìm thấy phòng/khoa với Id = {dto.DepartmentId.Value}.");
         }
 
         // Apply changes
         if (!string.IsNullOrWhiteSpace(dto.FullName))     user.FullName    = dto.FullName.Trim();
         if (dto.Email is not null &&
-            !string.Equals(user.Email, dto.Email.Trim(), StringComparison.OrdinalIgnoreCase))
+            !string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
         {
-            user.Email = dto.Email.Trim();
+            user.Email = email;
             user.EmailVerifiedAt = null;
         }
         if (dto.PhoneNumber is not null)                  user.PhoneNumber = dto.PhoneNumber.Trim();
-        if (dto.DepartmentId.HasValue)                    user.DepartmentId = dto.DepartmentId;
+        user.DepartmentId = dto.DepartmentId;
+        user.Department = department;
         user.IsActive = dto.IsActive;
 
         var updated = await _userRepository.UpdateAsync(user);

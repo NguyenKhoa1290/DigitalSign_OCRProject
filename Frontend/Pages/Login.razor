@@ -35,8 +35,8 @@
             <DataAnnotationsValidator />
 
             <div class="form-group">
-                <label class="form-label required" for="username">Tên đăng nhập</label>
-                <input id="username" type="text" class="form-control" placeholder="Nhập tên đăng nhập"
+                <label class="form-label required" for="username">Mã cán bộ/giảng viên hoặc email</label>
+                <input id="username" type="text" class="form-control" placeholder="Nhập mã hoặc email đã xác thực"
                        @bind="_model.Username" @bind:event="oninput" disabled="@_isLoading" />
             </div>
 

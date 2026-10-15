@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#9ad7ff" />
+    <meta name="description" content="Thư viện Liquid Glass từ Kotlin gốc: taskbar, button, toggle, slider, dialog, đồng hồ SDF, kính lúp, progressive blur, scroll, playground và Control Center." />
+    <title>Liquid Glass — Component Resources</title>
+    <link rel="preload" href="./src/assets/inter-vietnamese.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="./src/fonts.css" />
+    <link rel="stylesheet" href="./src/demo.css" />
+    <script type="module" src="./src/demo.js"></script>
+  </head>
+  <body>
+    <header class="library-header">
+      <div class="library-brand"><span class="brand-mark" aria-hidden="true">LG</span><div><strong>Liquid Glass</strong><span>Component resources · Kotlin → Web</span></div></div>
+      <a class="download-kit" href="./resources.zip" download="liquid-glass-resources.zip">Tải bộ source <span aria-hidden="true">↓</span></a>
+    </header>
+    <nav class="page-navigation" aria-label="Trang component">
+      <button type="button" data-page="taskbar" aria-current="page">Taskbar <span>01</span></button>
+      <button type="button" data-page="buttons">Nút bấm <span>02</span></button>
+      <button type="button" data-page="switches">Cần gạt & slider <span>03</span></button>
+      <button type="button" data-page="adaptive">Filter tự động <span>04</span></button>
+      <button type="button" data-page="control-center">Control Center <span>05</span></button>
+      <button type="button" data-page="dialog">Dialog <span>06</span></button>
+      <button type="button" data-page="lock-screen">Lock Screen <span>07</span></button>
+      <button type="button" data-page="magnifier">Kính lúp <span>08</span></button>
+      <button type="button" data-page="progressive-blur">Progressive Blur <span>09</span></button>
+      <button type="button" data-page="scroll-container">Scroll <span>10</span></button>
+      <button type="button" data-page="lazy-scroll-container">Lazy Scroll <span>11</span></button>
+      <button type="button" data-page="glass-playground">Playground <span>12</span></button>
+      <button type="button" data-page="home">Catalog <span>13</span></button>
+    </nav>
+    <main class="playground" aria-label="Thư viện component Liquid Glass">
+      <div id="taskbar-page">
+      <section class="stage" aria-label="Xem trước taskbar">
+        <flight-taskbar aria-label="Chọn tab" selected-index="0"></flight-taskbar>
+        <p class="preview-hint">Chọn tab, hoặc giữ và kéo ô kính đang chọn.</p>
+      </section>
+      <section class="controls-panel" aria-labelledby="controls-title">
+        <header class="panel-header">
+          <div>
+            <h1 id="controls-title">Thuộc tính taskbar</h1>
+            <p>Chỉnh thanh trượt để xem thay đổi ngay.</p>
+          </div>
+          <button class="reset-button" id="reset-settings" type="button">Mặc định</button>
+        </header>
+        <div class="preview-options">
+          <div class="backdrop-option">
+            <span>Nền xem thử</span>
+            <div class="segmented" role="group" aria-label="Nền xem thử">
+              <button type="button" data-background="gradient" aria-pressed="true">Gradient</button>
+              <button type="button" data-background="stripes" aria-pressed="false">Sọc</button>
+            </div>
+          </div>
+          <button type="button" class="preset-button" id="playground-preset">Thông số playground gốc</button>
+        </div>
+        <div id="glass-controls"></div>
+        <label class="depth-toggle">
+          <input type="checkbox" id="depth-effect" data-requires-webgl />
+          <span>Khúc xạ chiều sâu</span>
+        </label>
+        <p class="fallback-note" id="fallback-note" role="status" hidden>Đang dùng CSS: khúc xạ, tách màu và chiều sâu cần WebGL2.</p>
+        <details class="advanced-controls">
+          <summary>Ánh sáng & chuyển động <span>9 thuộc tính</span></summary>
+          <div id="advanced-controls"></div>
+        </details>
+        <div class="config-export">
+          <div>
+            <strong>Tải cấu hình cho AI</strong>
+            <p>Xuất thông số taskbar hiện tại thành file JSON để dùng lại trong prompt hoặc dự án khác.</p>
+          </div>
+          <button class="config-download" id="download-config" type="button">Tải config về</button>
+        </div>
+        <p class="config-export-status" id="config-export-status" role="status" aria-live="polite"></p>
+        <footer class="panel-footer">Nền sọc giúp nhìn rõ độ mờ và khúc xạ. “Mặc định” khôi phục thông số taskbar.</footer>
+      </section>
+      <section class="taskbar-resource-note"><a href="./resources/kotlin/LiquidBottomTabs.kt" target="_blank" rel="noopener">Xem Kotlin gốc</a><a href="./resources.zip" download>Tải source component</a></section>
+      </div>
+      <section class="resource-page" id="resource-page" hidden aria-labelledby="resource-title"></section>
+    </main>
+    <noscript>Bật JavaScript để sử dụng thanh taskbar.</noscript>
+  </body>
+</html>

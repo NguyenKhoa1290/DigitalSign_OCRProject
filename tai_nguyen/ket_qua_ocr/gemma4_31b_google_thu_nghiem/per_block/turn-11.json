@@ -1,0 +1,27 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_677452",
+        "type": "function",
+        "function": {
+          "name": "add_table",
+          "arguments": "{\"headers\":[\"TT\",\"Nội dung thực hiện\",\"Thời gian\\\\n(tuần)\",\"Kết quả dự kiến\"],\"column_widths\":[50,300,100,200],\"blank_rows\":10}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 68,
+    "prompt_tokens": 4284,
+    "total_tokens": 4352
+  }
+}

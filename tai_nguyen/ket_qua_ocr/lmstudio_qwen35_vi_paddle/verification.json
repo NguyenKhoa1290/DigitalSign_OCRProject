@@ -1,0 +1,109 @@
+{
+  "review_date": "2026-10-13",
+  "generation_requests": 2,
+  "retries": 0,
+  "manual_content_edits": false,
+  "requests": [
+    {
+      "request": "request-1",
+      "model": "qwen/qwen3.5-9b",
+      "http_status": 200,
+      "generation_seconds": 346.56,
+      "model_tables": [
+        {
+          "headers": [
+            "TT",
+            "Nội dung thực hiện",
+            "Thời gian (tuan)",
+            "Kết quả dự kiến"
+          ],
+          "columns": 4,
+          "column_width_count": 4,
+          "rows_array_count": 10,
+          "cell_counts_per_row": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "blank_rows": 0,
+          "body_rows_requested": 10,
+          "invalid_row_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      ],
+      "paddle_total_rows": [
+        8
+      ],
+      "layout_sha256": "11870404b6ed0e93cc04033bfdb7faa55be55e9ecef0d56277183550d038898b",
+      "word_files": 0
+    },
+    {
+      "request": "request-2",
+      "model": "qwen/qwen3.5-9b",
+      "http_status": 200,
+      "generation_seconds": 380.88,
+      "model_tables": [
+        {
+          "headers": [
+            "TT",
+            "Nội dung thực hiện",
+            "Thời gian (tuan)",
+            "Kết quả dự kiến"
+          ],
+          "columns": 4,
+          "column_width_count": 4,
+          "rows_array_count": 10,
+          "cell_counts_per_row": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "blank_rows": 0,
+          "body_rows_requested": 10,
+          "invalid_row_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      ],
+      "paddle_total_rows": [
+        8
+      ],
+      "layout_sha256": "11870404b6ed0e93cc04033bfdb7faa55be55e9ecef0d56277183550d038898b",
+      "word_files": 0
+    }
+  ],
+  "identical_layout": true
+}

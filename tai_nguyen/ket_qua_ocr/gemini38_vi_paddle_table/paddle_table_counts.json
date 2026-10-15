@@ -1,0 +1,215 @@
+[
+  {
+    "variant": "native",
+    "source_sha256": "d9c1f1447f3b91a96cc4609053b1f5c13bb807e61d5792f68826c44ecf64a173",
+    "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
+    "tables": [
+      {
+        "table_index": 0,
+        "total_html_rows": 8,
+        "cell_counts_per_row": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "parsed_rows": [
+          [
+            "TT",
+            "Noi dung thuc hien",
+            "Thoi gian (tuan)",
+            "Két qua du kién"
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "variant": "ocrv5",
+    "source_sha256": "84c458232684287cb35b9cc2236cb14cb956a8d7e239469c2a7c333c531eb54a",
+    "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
+    "tables": [
+      {
+        "table_index": 0,
+        "total_html_rows": 8,
+        "cell_counts_per_row": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "parsed_rows": [
+          [
+            "TT",
+            "Ni dung thc hin",
+            "Thi gian un)",
+            "Kt qu d kin"
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "variant": "ocrv6",
+    "source_sha256": "2ca60ff078786a0016c367d937eb8c5f527e98b8990494a88a448704b2327452",
+    "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
+    "tables": [
+      {
+        "table_index": 0,
+        "total_html_rows": 8,
+        "cell_counts_per_row": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "parsed_rows": [
+          [
+            "TT",
+            "Nși dung thųc hin",
+            "Thòi gian (tuàn)",
+            "Két quá d kién"
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ],
+          [
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      }
+    ]
+  }
+]

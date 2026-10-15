@@ -6,4 +6,5 @@ public interface IRevokedAccessTokenRepository
 {
     Task AddAsync(RevokedAccessToken token);
     Task<bool> IsRevokedAsync(string jti);
+    Task RevokeAllForUserAsync(Guid userId);
 }

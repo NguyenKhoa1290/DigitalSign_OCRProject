@@ -26,13 +26,13 @@ public class UserRepository : IUserRepository
         => await _context.AppUsers
             .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
             .Include(u => u.Department)
-            .FirstOrDefaultAsync(u => u.Username == username);
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.Trim().ToLower());
 
     public async Task<AppUser?> GetByEmailAsync(string email)
         => await _context.AppUsers
             .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
             .Include(u => u.Department)
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == email.Trim().ToLower());
 
     public async Task<(IEnumerable<AppUser> Users, int Total)> GetAllAsync(
         int page,

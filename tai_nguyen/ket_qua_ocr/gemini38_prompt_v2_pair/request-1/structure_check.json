@@ -1,0 +1,24 @@
+{
+  "tables": [
+    {
+      "rows": 1,
+      "columns": 2
+    },
+    {
+      "rows": 1,
+      "columns": 3
+    },
+    {
+      "rows": 11,
+      "columns": 4
+    },
+    {
+      "rows": 1,
+      "columns": 2
+    }
+  ],
+  "embedded_media": 0,
+  "literal_newline_escape": false,
+  "contains_page_246": true,
+  "word_sha256": "6ecf5a3e23655efd880a8267555f348f46a546420b87b8b7a2976722d11d7288"
+}

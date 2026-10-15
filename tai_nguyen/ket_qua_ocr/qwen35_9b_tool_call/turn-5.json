@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "NZDzd3eCuzFZ69TWBqzVA5M7Lcv4W1ew",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"text\":\"Giảng viên hướng dẫn: TS. Trần Trung\",\"align\":\"center\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

@@ -28,7 +28,7 @@
     justify-content: center;
     padding: 32px;
     border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 24px;
+    border-radius: var(--radius-surface);
     background: rgba(247, 252, 255, 0.82);
     box-shadow: var(--shadow-lg);
     text-align: center;
@@ -40,7 +40,7 @@
     height: 64px;
     margin-bottom: 16px;
     place-items: center;
-    border-radius: 18px;
+    border-radius: var(--radius-surface);
     background: rgba(48, 78, 138, 0.1);
     color: #304e8a;
 }
@@ -68,7 +68,7 @@
 
 .notification-types span {
     padding: 6px 10px;
-    border-radius: 999px;
+    border-radius: var(--radius-surface);
     background: rgba(48, 78, 138, 0.09);
     color: #304e8a;
     font-size: 11px;
@@ -83,6 +83,6 @@
     .notification-empty {
         min-height: 280px;
         padding: 24px 18px;
-        border-radius: 20px;
+        border-radius: var(--radius-surface);
     }
 }

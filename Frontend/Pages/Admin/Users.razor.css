@@ -88,13 +88,13 @@
 
 .user-action-menu {
     position: fixed;
-    top: clamp(8px, calc(var(--action-y) + 8px), calc(100dvh - 132px));
-    left: clamp(8px, calc(var(--action-x) - 150px), calc(100vw - 176px));
+    top: clamp(8px, calc(var(--action-y) + 8px), calc(100dvh - 176px));
+    left: clamp(8px, calc(var(--action-x) - 170px), calc(100vw - 196px));
     z-index: 15001;
-    width: 168px;
+    width: 188px;
     padding: 7px;
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     background: var(--color-surface);
     box-shadow: var(--shadow-xl);
 }
@@ -142,6 +142,17 @@
     color: var(--color-danger);
 }
 
+.user-reset-modal {
+    max-width: min(440px, calc(100vw - 24px));
+}
+
+.user-reset-note {
+    margin: 0 0 16px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
 .user-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -186,7 +197,7 @@
     .user-mobile-card {
         padding: 14px;
         border: 1px solid rgba(255, 255, 255, 0.9);
-        border-radius: 14px;
+        border-radius: var(--radius-surface);
         background: rgba(247, 252, 255, 0.88);
         box-shadow: var(--shadow-sm);
         -webkit-touch-callout: none;
@@ -258,7 +269,7 @@
         left: 10px;
         width: auto;
         padding: 10px;
-        border-radius: 16px;
+        border-radius: var(--radius-surface);
     }
 
     .user-action-name {

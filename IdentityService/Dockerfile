@@ -40,7 +40,7 @@ RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 COPY --from=build /app/publish .
 
 # Set ownership
-RUN chown -R appuser:appgroup /app
+RUN mkdir -p /app/dp-keys && chown -R appuser:appgroup /app
 
 USER appuser
 

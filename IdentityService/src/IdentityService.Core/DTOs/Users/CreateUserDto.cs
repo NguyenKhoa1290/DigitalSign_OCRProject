@@ -7,10 +7,10 @@ namespace IdentityService.Core.DTOs.Users;
 /// </summary>
 public class CreateUserDto
 {
-    /// <summary>Tên đăng nhập duy nhất, từ 3 đến 50 ký tự.</summary>
-    [Required(ErrorMessage = "Tên đăng nhập không được để trống.")]
-    [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên đăng nhập phải từ 3 đến 50 ký tự.")]
-    [RegularExpression(@"^[a-zA-Z0-9_.-]+$", ErrorMessage = "Tên đăng nhập chỉ được chứa chữ cái, số, dấu gạch dưới, dấu chấm và dấu gạch ngang.")]
+    /// <summary>Mã cán bộ/giảng viên duy nhất, từ 3 đến 50 ký tự.</summary>
+    [Required(ErrorMessage = "Mã cán bộ/giảng viên không được để trống.")]
+    [StringLength(50, MinimumLength = 3, ErrorMessage = "Mã cán bộ/giảng viên phải từ 3 đến 50 ký tự.")]
+    [RegularExpression(@"^[a-zA-Z0-9_.-]+$", ErrorMessage = "Mã cán bộ/giảng viên chỉ được chứa chữ cái, số, dấu gạch dưới, dấu chấm và dấu gạch ngang.")]
     public string Username { get; set; } = string.Empty;
 
     /// <summary>Mật khẩu plain-text, sẽ được hash trước khi lưu.</summary>

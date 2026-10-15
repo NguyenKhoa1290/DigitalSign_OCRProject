@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_515383",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"italic\":true,\"align\":\"right\",\"text\":\"Hà Nội, ngày 05 tháng 10 năm 2026\"}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EiYKJGUyNDgzMGE3LTVjZDYtNDJmZS05OThiLWVlNTM5ZTcyYjljMw=="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 19,
+    "prompt_tokens": 4379,
+    "prompt_tokens_details": {
+      "cached_tokens": 3387
+    },
+    "total_tokens": 4398
+  }
+}

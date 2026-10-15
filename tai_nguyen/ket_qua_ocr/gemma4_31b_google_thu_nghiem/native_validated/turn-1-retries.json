@@ -1,0 +1,10 @@
+[
+  {
+    "status": 500,
+    "wait_seconds": 2
+  },
+  {
+    "status": 500,
+    "wait_seconds": 4
+  }
+]

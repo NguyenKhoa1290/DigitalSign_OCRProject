@@ -6,7 +6,11 @@ public class DocumentDto
     public string? DocNumber { get; set; }
     public string Title { get; set; } = string.Empty;
     public DateOnly? IssuedDate { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public string MinioPath { get; set; } = string.Empty;
+    public string? FileName { get; set; }
+    public string FileContentType { get; set; } = "application/pdf";
     public string? OcrDataRaw { get; set; }
     public string Status { get; set; } = string.Empty;
     public string StatusDisplay { get; set; } = string.Empty;

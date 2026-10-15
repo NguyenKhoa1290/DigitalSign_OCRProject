@@ -1,0 +1,34 @@
+{
+  "input": "ppstructure-input.jpg",
+  "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
+  "versions": {
+    "paddleocr": "3.7.0",
+    "paddlepaddle": "3.3.1",
+    "paddlex": "3.7.2"
+  },
+  "options": {
+    "device": "cpu",
+    "cpu_threads": 4,
+    "enable_mkldnn": false,
+    "lang": "vi",
+    "ocr_version": "PP-OCRv5",
+    "use_doc_orientation_classify": true,
+    "use_doc_unwarping": true,
+    "use_textline_orientation": true,
+    "use_table_recognition": true,
+    "use_formula_recognition": false,
+    "use_chart_recognition": false,
+    "use_seal_recognition": false,
+    "use_region_detection": false
+  },
+  "llm_used": false,
+  "manual_content_edits": false,
+  "status": "complete",
+  "initialization_seconds": 16.39,
+  "pages": 1,
+  "inference_and_export_seconds": 35.12,
+  "word_files": [
+    "page-1/ppstructure-input.docx"
+  ],
+  "total_seconds": 51.53
+}

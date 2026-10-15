@@ -95,6 +95,7 @@ Lưu ý tích hợp:
 
 - `Document`: metadata văn bản, `DocNumber`, `Title`, `IssuedDate`, `MinioPath`, `OcrDataRaw`, `Status`, `DocTypeId`.
 - `DocumentType`: loại văn bản.
+- Danh mục hiện có `CongVanDen`, `CongVanDi`, `ToTrinh`, `QuyetDinh`. Ngày 13/10/2026 đã sửa frontend gửi `docTypeId` đúng hợp đồng API, đổi bộ lọc quay về trang 1 và hiển thị tên tiếng Việt tại danh sách/tạo/sửa/chi tiết/OCR. Tờ trình và Quyết định là lựa chọn trong “Loại văn bản”, không có tab riêng; tài khoản Clerk/Specialist tạo được qua `/documents/create`. Kiểm thử kỹ thuật desktop/mobile và API thật đạt (11 công văn đến, 0 bản ghi ở ba loại còn lại tại thời điểm kiểm tra). Luồng xử lý đến/đi vẫn dùng chung workflow, chưa xác nhận hoàn thiện hai quy trình nghiệp vụ theo báo cáo.
 - `DocumentProcess`: lịch sử xử lý văn bản.
 - `DocumentStatus`: `Draft`, `PendingDeptReview`, `DeptSigned`, `PendingDirectorSign`, `DirectorSigned`, `Published`, `Rejected`.
 - `DocumentAction`: `Submit`, `DeptSign`, `SubmitDirector`, `DirectorSign`, `Reject`, `Publish`, `Assign`, `UpdateOCR`, `Update`.
@@ -352,3 +353,24 @@ Theo yêu cầu ngày 05/10/2026, kiểm thử thực tế/nghiệm thu do ngư�
 - Compose bind port host vào `127.0.0.1`; Frontend/Gateway được tunnel truy cập bằng hostname nội bộ Docker.
 - Tunnel token được lưu riêng trong `.env.tunnel` bị Git bỏ qua. Connector đã kết nối Cloudflare; domain gốc, health và cấu hình runtime trả HTTP 200, còn API có bảo vệ trả HTTP 401 khi chưa đăng nhập. Đây là xác minh hạ tầng; nghiệm thu nghiệp vụ vẫn do người dùng thực hiện.
 - Frontend hỗ trợ viewport rộng từ 300px; bản public đã nhận stylesheet mới. Kiểm tra hiển thị trên điện thoại thật vẫn chờ người dùng xác nhận.
+
+## 9. Kế hoạch tiếp theo — cập nhật 12/10/2026
+
+[Kế hoạch triển khai tiếp theo](8_ke_hoach_trien_khai.md) là nguồn theo dõi thứ tự công việc mới. Các kết quả lịch sử ở trên không phải lần nghiệm thu mới.
+
+- UI mobile/taskbar và tổ chức tài nguyên: xem Công việc số 54–56 trong nhật ký; giữ chức năng đã triển khai.
+- PaddleOCR + LLM tái tạo Word: mới ở mức thử nghiệm; ba model local chưa đạt bố cục ảnh mẫu. Qwen hết 32 lượt mà chưa chọn bản cuối. Endpoint Word nháp hiện có chưa tích hợp bộ xuất bố cục/tool calling thử nghiệm.
+- Quyết định mới nhất: người dùng chốt **PaddleOCR/PP-StructureV3 + Gemini 3.8 Flash với prompt tiếng Việt** theo lượt 062. Paddle cung cấp chữ/cấu trúc bảng/tọa độ ô, Gemini đọc ảnh cùng evidence để dựng Word nháp. Các quyết định/thử nghiệm chỉ ảnh trước được giữ làm lịch sử, không đổi kết quả kiểm thử.
+- Luồng được chọn: ảnh + Paddle evidence → Gemini → layout JSON → DOCX editable local → văn thư kiểm tra/chỉnh sửa. Runner vẫn cho phép chỉ ảnh để đối chiếu; phương án tích hợp ưu tiên có cấu trúc Paddle. Lượt 059 chỉ ảnh xuất được nhưng sai số hàng; lượt 062 có cấu trúc Paddle đúng 7 hàng thân/4 cột, còn khác typography/ghi chú và chưa đánh giá đa tài liệu.
+- Lượt 062: prompt tiếng Việt kèm 32 dòng OCR và HTML/cell boxes Paddle đã lưu, bản 1 có đúng 7 hàng thân/4 cột, bản 2 gặp 503. Paddle thực tế đếm 8 hàng tổng gồm header. Giữ Paddle như nguồn cấu trúc bổ trợ hữu ích, chưa kết luận tác động riêng hoặc ổn định đa tài liệu.
+- Lượt local 063, kiểm tra 13/10: Qwen 3.5 9B đang nạp trong LM Studio nhận cùng prompt tiếng Việt/evidence bảng, cả hai request trả rows gồm 10 mảng rỗng thiếu ô; chưa tạo Word. Giữ lựa chọn Paddle + Gemini và báo cáo đã bàn giao, không thay provider theo thử nghiệm local chưa đạt.
+- Đã thêm mục 2.7 vào [bản báo cáo cập nhật](../tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_OCR.docx), gồm quyết định, quy trình, kết quả và giới hạn/phần tích hợp cần làm; bản gốc giữ nguyên. Xem hướng dẫn cập nhật mục lục trong [README báo cáo](../tai_nguyen/bao_cao/README.md).
+- Bước tiếp theo: tích hợp Gemini đọc ảnh kèm cấu trúc Paddle khi có vào endpoint/Word nháp và chỉnh sửa/phiên bản → rà soát hai luồng công văn và nghiệm thu → xác minh CD local, sau đó VPS. Paddle trong luồng OCR/Kafka hiện hữu vẫn chạy; chưa xóa dependency hoặc đổi service.
+- PP-StructureV3 đã thử riêng với OCRv3/v5/v6: nhận đúng bảng 4 cột/7 hàng trống, chữ và bố cục Word chưa đạt. Xem [kết quả](../tai_nguyen/ket_qua_ocr/ppstructure_v3_thu_nghiem/README.md), Công việc 62 và testcase 053; không nâng cấp service chính trong lần thử này. Container renderer LLM cũ đã xóa.
+- Người dùng đã chọn Google AI Studio/Gemini 3.5 Flash Lite. Thử nghiệm hoàn tất chọn Word một trang, đầu trang/chữ ký song song và đọc chữ rõ hơn trên mẫu; còn thiếu hàng bảng/số trang, chưa đạt toàn bộ yêu cầu. Xem [kết quả Gemini](../tai_nguyen/ket_qua_ocr/gemini35_flash_lite_tool_call/README.md), Công việc 63 và testcase 054. Chưa tích hợp provider vào endpoint ứng dụng; bước tiếp theo đánh giá kết hợp cấu trúc Paddle với Gemini.
+- Thử thêm [Google Gemma 4 31B](../tai_nguyen/ket_qua_ocr/gemma4_31b_google_thu_nghiem/README.md), Công việc 64/testcase 055: native API hoàn tất chọn Word một trang nhưng 10 hàng thân/literal escape còn sai; nhiều lỗi 500/503/quota và lỗi adapter đã ghi riêng. Chưa đổi lựa chọn provider ứng dụng.
+- CI/CD đã có workflow; chưa xác nhận toàn bộ Actions/CD thành công trong lần cập nhật này. VPS chưa được xác nhận triển khai. Đánh giá tài nguyên và phương án tách OCR trước khi chuyển máy.
+
+- Ngày 13/10: đã tích hợp trang Quét OCR cho Văn thư/Admin, tải PDF/ảnh, chọn model Gemini khả dụng từ Google, tạo Word nháp bằng ảnh + dòng PaddleOCR + Gemini. Chỉ có Gemini cloud; chưa đưa PP-Structure vào endpoint sản phẩm. Khóa được Admin cấu hình, mã hóa server-side và cấp cho OCR bằng service-token; Data Protection keys có named volume.
+- Ngày 13/10: thêm script khởi động Windows/Linux dùng cả compose tunnel overlay và tự recreate cloudflared; xác nhận public health 200 (testcase 067). Docker Desktop cần tự khởi động khi đăng nhập để restart policy chạy sau khi bật máy.
+- Build và smoke test local hoàn tất (testcase 065). Chưa nhập API key/chưa gọi Google/chưa đánh giá Word; Văn thư cần thử với tài liệu thật và sửa kết quả trước khi dùng. Xem Công việc số 78 trong [nhật ký](3_nhat_ky.md).

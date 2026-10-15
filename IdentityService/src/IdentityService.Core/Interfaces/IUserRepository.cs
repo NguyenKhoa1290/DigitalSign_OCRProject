@@ -14,7 +14,7 @@ public interface IUserRepository
     Task<AppUser?> GetByUsernameAsync(string username);
 
     /// <summary>Tìm người dùng theo địa chỉ email.</summary>
-    /// <param name="email">Địa chỉ email.</param>
+    /// <param name="email">Địa chỉ email, không phân biệt chữ hoa/chữ thường.</param>
     /// <returns>AppUser nếu tồn tại, null nếu không tìm thấy.</returns>
     Task<AppUser?> GetByEmailAsync(string email);
 

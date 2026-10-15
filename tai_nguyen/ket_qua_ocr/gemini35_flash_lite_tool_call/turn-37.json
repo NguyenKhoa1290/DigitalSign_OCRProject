@@ -1,0 +1,30 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_95350",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"font_size\":10,\"space_after_pt\":4,\"align\":\"left\",\"text\":\"Họ và tên sinh viên: Nguyễn Đăng Khoa\\\\t\\\\tLớp: 22CN2\\\\t\\\\tNgành: CNTT\"}"
+        },
+        "extra_content": {
+          "google": {
+            "thought_signature": "EmAKXgFpFH0T8VDpaptBT5jHwVaI1zoQ3q8iJA0jDYgeZH/sjp5Pv9/wEgdCp+lCWdRQD9UCxfPPYI8mCEfLQcEPEvMBLi/R7ugVHQUgoG2sBeKQWtRVu9FbgsrBvpcxUuU="
+          }
+        }
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 69,
+    "prompt_tokens": 8703,
+    "prompt_tokens_details": {
+      "cached_tokens": 5843
+    },
+    "total_tokens": 8772
+  }
+}

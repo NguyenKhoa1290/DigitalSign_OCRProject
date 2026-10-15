@@ -39,6 +39,8 @@ public static class RequestJournal
             "login"=>"Login", "logout"=>"Logout", "change-password"=>"ChangePassword",
             "reset-password"=>"ResetPassword", "forgot-password"=>"RequestPasswordReset", _=>"Authentication"
         };
+        if(method=="POST" && path.StartsWith("/api/users/",StringComparison.Ordinal) && operation=="reset-password")
+            return "AdminResetPassword";
         if(path.StartsWith("/api/signatures/")) return operation switch
         {
             "personal-sign"=>"PersonalSign", "legal-seal"=>"LegalSeal", "issue"=>"IssueCertificate", _=>"RevokeCertificate"

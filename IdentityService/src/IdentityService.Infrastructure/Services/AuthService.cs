@@ -51,14 +51,19 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
     {
-        var user = await _userRepository.GetByUsernameAsync(request.Username)
-            ?? throw new InvalidCredentialsException("Tên đăng nhập hoặc mật khẩu không đúng.");
+        var identifier = request.Username.Trim();
+        var isEmailLogin = identifier.Contains('@');
+        var user = isEmailLogin
+            ? await _userRepository.GetByEmailAsync(identifier)
+            : await _userRepository.GetByUsernameAsync(identifier);
+        if (user is null || (isEmailLogin && user.EmailVerifiedAt is null))
+            throw new InvalidCredentialsException("Mã cán bộ/giảng viên, email hoặc mật khẩu không đúng.");
 
         if (!user.IsActive)
             throw new AccountLockedException($"Tài khoản '{user.Username}' đã bị khoá, vui lòng liên hệ Quản trị viên.");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new InvalidCredentialsException("Tên đăng nhập hoặc mật khẩu không đúng.");
+            throw new InvalidCredentialsException("Mã cán bộ/giảng viên, email hoặc mật khẩu không đúng.");
 
         var roles        = user.UserRoles.Select(ur => ur.Role.RoleName).ToList();
         var accessToken  = _tokenService.GenerateAccessToken(user, roles);
@@ -156,12 +161,20 @@ public class AuthService : IAuthService
             if (!string.IsNullOrWhiteSpace(jti) && await _revokedAccessTokenRepository.IsRevokedAsync(jti))
                 return new ValidateTokenResponseDto { IsValid = false, Roles = new List<string>() };
 
+            if (!Guid.TryParse(userId, out var parsedUserId))
+                return new ValidateTokenResponseDto { IsValid = false, Roles = new List<string>() };
+
+            var user = await _userRepository.GetByIdAsync(parsedUserId);
+            if (user is null || !user.IsActive)
+                return new ValidateTokenResponseDto { IsValid = false, Roles = new List<string>() };
+
             return new ValidateTokenResponseDto
             {
                 IsValid   = true,
-                UserId    = userId is not null ? Guid.Parse(userId) : null,
+                UserId    = parsedUserId,
                 Username  = username,
                 Roles     = roles,
+                MustChangePassword = user.MustChangePassword,
                 ExpiresAt = jwt.ValidTo
             };
         }
@@ -345,6 +358,32 @@ public class AuthService : IAuthService
 
         // Vô hiệu hoá tất cả OTP của user này
         await _resetRepository.InvalidateAllAsync(user.Id);
+        await _revokedAccessTokenRepository.RevokeAllForUserAsync(user.Id);
+        await _refreshTokenRepository.RevokeAllForUserAsync(user.Id);
+    }
+
+    public async Task AdminResetPasswordAsync(Guid userId, AdminResetPasswordDto dto)
+    {
+        if (dto.TemporaryPassword != dto.ConfirmPassword)
+            throw new IdentityServiceException("Mật khẩu tạm và xác nhận không khớp.", 400);
+
+        var user = await _userRepository.GetByIdAsync(userId)
+            ?? throw new UserNotFoundException(userId);
+
+        if (BCrypt.Net.BCrypt.Verify(dto.TemporaryPassword, user.PasswordHash))
+            throw new IdentityServiceException("Mật khẩu tạm không được trùng mật khẩu hiện tại.", 400);
+
+        // Thu hồi phiên và OTP cũ trước khi tài khoản nhận mật khẩu tạm.
+        await _revokedAccessTokenRepository.RevokeAllForUserAsync(userId);
+        await _refreshTokenRepository.RevokeAllForUserAsync(userId);
+        await _resetRepository.InvalidateAllAsync(userId);
+        await _emailVerificationRepository.InvalidateAllAsync(userId);
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.TemporaryPassword, workFactor: 12);
+        user.MustChangePassword = true;
+        user.Email = null;
+        user.EmailVerifiedAt = null;
+        await _userRepository.UpdateAsync(user);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -124,6 +124,23 @@ public class UserServiceTests
     }
 
     [Fact]
+    public async Task CreateUserAsync_WithoutEmail_ShouldStoreNullAndRequireFirstLogin()
+    {
+        var request = new CreateUserDto
+        {
+            Username = "GV001", Password = "StrongPass@123", FullName = "Giảng viên thử nghiệm", Email = "  "
+        };
+        _userRepositoryMock.Setup(r => r.CreateAsync(It.IsAny<AppUser>()))
+            .ReturnsAsync((AppUser user) => user);
+
+        await _userService.CreateUserAsync(request);
+
+        _userRepositoryMock.Verify(r => r.CreateAsync(It.Is<AppUser>(user =>
+            user.Username == "GV001" && user.Email == null && user.MustChangePassword)), Times.Once);
+        _userRepositoryMock.Verify(r => r.GetByEmailAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CreateUserAsync_WithDuplicateUsername_ShouldThrowUserAlreadyExistsException()
     {
         // Arrange

@@ -2,6 +2,13 @@
 
 Microservice OCR cho hệ thống HAU DigitalSign OCR.
 
+## Định dạng và giới hạn đầu vào
+
+- Nhận PDF hoặc ảnh tĩnh PNG, JPG/JPEG, WEBP; mỗi ảnh là một trang. Ảnh điện thoại được xoay theo EXIF trước khi OCR.
+- Mỗi lượt tối đa **5 trang** cho các route process, process-upload, export-word-upload và gemini/export-word-upload, cũng như xử lý qua Kafka. PDF vượt giới hạn trả HTTP 400 trước khi render/chạy PaddleOCR/gọi Gemini; không tự cắt bớt trang. Cần tách PDF trước khi quét.
+- Xuất Word qua Gemini tối đa 25 MiB/tệp. Lưu file công văn tại DocumentService vẫn tối đa 50 MiB; PDF nhiều hơn 5 trang có thể lưu/xem nhưng không chạy OCR cả tệp.
+- Kiểm thử đầu vào: `PYTHONPATH=OCRService python OCRService/tests/test_document_inputs.py -v` trong môi trường có dependencies và Poppler. OCR/cloud dùng mock, không gọi Gemini trả phí.
+
 ## Stack
 
 - Python 3.10+
@@ -189,3 +196,18 @@ Payload kỳ vọng:
 | `title` | Trích yếu/nội dung chính |
 | `issuing_org` | Cơ quan ban hành |
 | `ocr_data_raw` | JSON raw gồm pages, lines, confidence và extracted fields |
+
+## Dựng Word nháp bằng PaddleOCR và Gemini
+
+Văn thư/Admin mở `/documents/ocr-scan`, chọn model Gemini khả dụng, tải PDF hoặc ảnh và tải về DOCX nháp để rà soát. PDF tối đa 10 trang; tệp tối đa 25 MB. Nếu Google báo hết quota hoặc model quá tải, chọn model khác trong danh sách rồi gửi lại.
+
+Admin cấu hình hoặc xóa API key tại `/admin/gemini-settings`. Key được kiểm tra với Google, mã hóa bằng ASP.NET Data Protection và không gửi xuống trình duyệt. OCRService lấy key qua endpoint nội bộ IdentityService bằng `SERVICE_TOKEN`; IdentityService cần giữ Data Protection key ring bền vững ở `DataProtection:KeysPath` (Docker Compose mount volume `hau_identity_keys`).
+
+Các route qua API Gateway:
+
+| Method | Route | Vai trò |
+|---|---|---|
+| `GET` | `/api/ocr/gemini/models` | Admin, Văn thư |
+| `POST` | `/api/ocr/gemini/export-word-upload?model_id={id}` | Admin, Văn thư |
+
+Endpoint nhận field multipart `file`. PaddleOCR hiện cung cấp các dòng OCR và tọa độ; Gemini đọc ảnh cùng bằng chứng này để trả layout JSON, sau đó OCRService tạo DOCX có thể sửa. PP-Structure chưa được tích hợp vào endpoint này. Đây là bản nháp, cần Văn thư kiểm tra; việc build/smoke test không xác nhận chất lượng nội dung hoặc bố cục trên mọi tài liệu.

@@ -38,7 +38,7 @@ public class AuthService
             var response = await _httpClient.PostAsJsonAsync("api/auth/login", request);
 
             if (!response.IsSuccessStatusCode)
-                return (false, false, "Tên đăng nhập hoặc mật khẩu không đúng");
+                return (false, false, "Mã cán bộ/giảng viên, email hoặc mật khẩu không đúng");
 
             // Backend trả về LoginResponseDto trực tiếp (không có wrapper ApiResponse)
             var login = await response.Content.ReadFromJsonAsync<LoginResponse>();

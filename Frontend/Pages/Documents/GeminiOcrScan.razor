@@ -1,0 +1,172 @@
+@page "/documents/ocr-scan"
+@attribute [Authorize(Roles = "Admin,Clerk")]
+@inject ApiService Api
+@inject IJSRuntime JS
+
+<PageTitle>Quét OCR và xuất Word</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Quét OCR và xuất Word</h1>
+        <p class="page-subtitle">PaddleOCR trích xuất văn bản, Gemini dựng bố cục để Văn thư rà soát và chỉnh sửa.</p>
+    </div>
+    <a href="/documents" class="btn btn-outline">Danh sách công văn</a>
+</div>
+
+<section class="card gemini-scan-card">
+    <div class="card-header"><span class="card-title">Tạo bản Word có thể chỉnh sửa</span></div>
+    <div class="card-body">
+        @if (_loading)
+        {
+            <LoadingSpinner Message="Đang tải model Gemini..." />
+        }
+        else if (_models.Count == 0)
+        {
+            <div class="alert alert-warning">Chưa tải được danh sách model. Admin cần cấu hình API key tại <a href="/admin/gemini-settings">Cấu hình Gemini</a>.</div>
+            <button class="btn btn-outline" @onclick="LoadModels">Thử tải lại</button>
+        }
+        else
+        {
+            <div class="gemini-scan-form">
+                <div class="form-group">
+                    <label class="form-label" for="gemini-model">Model Gemini</label>
+                    <select id="gemini-model" class="form-control" @bind="_modelId">
+                        @foreach (var model in _models)
+                        {
+                            <option value="@model.Id">@model.DisplayName (@model.Id)</option>
+                        }
+                    </select>
+                    <small class="form-hint">Nếu model đang quá tải hoặc hết hạn mức, chọn model khác rồi gửi lại.</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="ocr-file">Tài liệu đầu vào</label>
+                    <InputFile id="ocr-file" OnChange="SelectFile" accept=".pdf,.png,.jpg,.jpeg,.webp" />
+                    <small class="form-hint">PDF, PNG, JPG/JPEG hoặc WEBP; tối đa 25 MB và 5 trang mỗi lượt OCR. Mỗi ảnh tính là 1 trang.</small>
+                    @if (_file is not null)
+                    {
+                        <span class="gemini-selected-file">@_file.Name (@($"{_file.Size / 1024.0:N0} KB"))</span>
+                    }
+                </div>
+                <button class="btn btn-primary" @onclick="ExportWord" disabled="@(_working || _file is null || string.IsNullOrWhiteSpace(_modelId))">
+                    @(_working ? "Đang xử lý tài liệu..." : "Tạo và tải Word")
+                </button>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="alert @(_isError ? "alert-danger" : "alert-success")" role="status">@_message</div>
+        }
+        <p class="gemini-scan-note">Tài liệu sẽ được gửi tới Google AI Studio để dựng bố cục. Kết quả là bản nháp cần được Văn thư kiểm tra trước khi sử dụng.</p>
+    </div>
+</section>
+
+@code {
+    private const long MaxFileSize = 25 * 1024 * 1024;
+    private List<GeminiModelOption> _models = new();
+    private IBrowserFile? _file;
+    private string? _modelId;
+    private string? _message;
+    private bool _loading = true;
+    private bool _working;
+    private bool _isError;
+
+    protected override Task OnInitializedAsync() => LoadModels();
+
+    private async Task LoadModels()
+    {
+        _loading = true;
+        _message = null;
+        try
+        {
+            _models = await Api.GetAsync<List<GeminiModelOption>>("api/ocr/gemini/models") ?? new();
+            if (_models.All(model => model.Id != _modelId))
+                _modelId = (_models.FirstOrDefault(model => model.Id.Contains("3.8-flash", StringComparison.OrdinalIgnoreCase))
+                    ?? _models.FirstOrDefault(model => model.Id.Contains("flash", StringComparison.OrdinalIgnoreCase))
+                    ?? _models.FirstOrDefault())?.Id;
+        }
+        catch
+        {
+            _models = new();
+        }
+        finally { _loading = false; }
+    }
+
+    private void SelectFile(InputFileChangeEventArgs args)
+    {
+        _file = null;
+        _message = null;
+        if (DocumentFileFormats.GetContentType(args.File.Name) is null)
+        {
+            _isError = true;
+            _message = "Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.";
+        }
+        else _file = args.File;
+    }
+
+    private async Task ExportWord()
+    {
+        if (_file is null || string.IsNullOrWhiteSpace(_modelId)) return;
+        if (_file.Size > MaxFileSize)
+        {
+            _isError = true;
+            _message = "Tệp vượt quá giới hạn 25 MB.";
+            return;
+        }
+
+        _working = true;
+        _message = null;
+        try
+        {
+            using var form = new MultipartFormDataContent();
+            await using var stream = _file.OpenReadStream(MaxFileSize);
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(_file.ContentType) ? "application/octet-stream" : _file.ContentType);
+            form.Add(fileContent, "file", _file.Name);
+            using var response = await Api.PostFormAsync(
+                $"api/ocr/gemini/export-word-upload?model_id={Uri.EscapeDataString(_modelId)}", form);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _isError = true;
+                _message = await ReadError(response);
+                return;
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            var url = await JS.InvokeAsync<string>("documentFiles.createDownloadUrl", bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            await JS.InvokeVoidAsync("documentFiles.download", url, "ban-nhap-ocr-gemini.docx");
+            await JS.InvokeVoidAsync("documentFiles.releaseUrl", url);
+            _isError = false;
+            _message = "Đã tạo bản Word. Hãy rà soát nội dung và bố cục trước khi dùng.";
+        }
+        catch (Exception)
+        {
+            _isError = true;
+            _message = "Không xử lý được tệp. Hãy thử lại hoặc chọn model Gemini khác.";
+        }
+        finally { _working = false; }
+    }
+
+    private static async Task<string> ReadError(HttpResponseMessage response)
+    {
+        try
+        {
+            using var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            if (body.RootElement.TryGetProperty("detail", out var detail) && detail.ValueKind == System.Text.Json.JsonValueKind.String)
+                return detail.GetString() ?? "Không xử lý được tài liệu.";
+        }
+        catch { }
+        return response.StatusCode == System.Net.HttpStatusCode.TooManyRequests
+            ? "Model đang hết hạn mức. Chọn model khác rồi thử lại."
+            : "Không xử lý được tài liệu. Hãy thử lại hoặc chọn model Gemini khác.";
+    }
+
+    private sealed class GeminiModelOption
+    {
+        public string Id { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
+}

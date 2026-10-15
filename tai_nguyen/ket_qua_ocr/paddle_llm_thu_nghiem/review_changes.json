@@ -1,0 +1,54 @@
+[
+  {
+    "field": "blocks[0].organization",
+    "before": "TRƯỜNG ĐẠI KIẾN TRÚC HÀ NỘI\nKHOA CÔNG NGHỆ THÔNG TIN",
+    "after": "TRƯỜNG ĐH KIẾN TRÚC HÀ NỘI / KHOA CÔNG NGHỆ THÔNG TIN",
+    "reason": "Đối chiếu chữ in ở đầu ảnh"
+  },
+  {
+    "field": "blocks[2].title",
+    "before": "ĐỀ XUẤT KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỂ TỐT NGHIỆP\nĐỘT 1, NĂM HỌC 2026 - 2027",
+    "after": "BẢNG KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỒ ÁN TỐT NGHIỆP / ĐỢT 1, NĂM HỌC 2026 – 2027",
+    "reason": "Đối chiếu tiêu đề bị dấu đỏ che một phần"
+  },
+  {
+    "field": "blocks[4].project",
+    "before": "Tên đề tài: - Nghiên cứu các kỹ thuật xử lý chữ số và nhận diện ký tự quang học OCR hiện đại ứng dụng trong phát triển hệ thống thông tin hỗ trợ quản lý công văn đi và đến của trường Đại học Kiến trúc Hà Nội",
+    "after": "Tên đề tài: Nghiên cứu các kỹ thuật xử lý chữ ký số và nhận diện ký tự quang học OCR hiện đại ứng dụng trong phát triển hệ thống thông tin hỗ trợ quản lý công văn đi và đến của trường Đại học Kiến trúc Hà Nội",
+    "reason": "Ảnh có cụm chữ ký số; không có dấu gạch sau nhãn"
+  },
+  {
+    "field": "blocks[8].instructions",
+    "before": "(Tham khảo cách trình bày - trang 23 của Quy định thực hiện ĐTN của sinh viên khoa CNTT). Sinh viên dưới sự hướng dẫn của GVHD đưa ra kế hoạch dự kiến thực hiện đề tài tốt nghiệp. Nhất sau 10 ngày đầu ĐTN, phải nộp Bảng đề xuất kế hoạch dự kiến về Văn phòng Khoa CNTT, M504.",
+    "after": "(Tham khảo cách trình bày - trang 23- của Quy định thực hiện ĐATN của sinh viên khoa CNTT).\nSinh viên dưới sự hướng dẫn của GVHD đưa ra kế hoạch dự kiến thực hiện đề tài tốt nghiệp. Chậm nhất sau 10 ngày giao ĐATN, phải nộp Bảng kế hoạch dự kiến này về Văn phòng Khoa CNTT, M504.",
+    "reason": "Đối chiếu ảnh vùng ghi chú, sửa ĐTN thành ĐATN và khôi phục câu bị đọc sai"
+  },
+  {
+    "field": "blocks[9].blank_rows",
+    "before": 8,
+    "after": 7,
+    "reason": "Đếm trực tiếp 7 hàng thân bảng trống trong ảnh"
+  },
+  {
+    "field": "blocks[9].column_widths",
+    "before": [
+      0.1,
+      0.5,
+      0.2,
+      0.2
+    ],
+    "after": [
+      0.07,
+      0.45,
+      0.1,
+      0.38
+    ],
+    "reason": "Tỷ lệ cột đối chiếu ảnh, cột thời gian hẹp và kết quả rộng"
+  },
+  {
+    "field": "formatting",
+    "before": "Mặc định LLM",
+    "after": "Căn giữa đầu trang/chữ ký, số trang ở trên, tên sinh viên một dòng, bảng 4 cột tỷ lệ gần ảnh, ngày tách riêng",
+    "reason": "Hiệu chỉnh định dạng theo ảnh; giữ mọi ô trống"
+  }
+]

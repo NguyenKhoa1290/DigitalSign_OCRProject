@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 400,
+    "message": "* GenerateContentRequest.tools[0].function_declarations[1].parameters.properties[layout].properties[blocks].items.properties[rows].items.items: missing field.\n",
+    "status": "INVALID_ARGUMENT"
+  }
+}

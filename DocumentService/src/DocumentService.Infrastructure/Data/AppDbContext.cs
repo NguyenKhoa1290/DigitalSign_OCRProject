@@ -33,6 +33,9 @@ public class AppDbContext : DbContext
             e.Property(x => x.MinioPath)
              .IsRequired();
 
+            e.Property(x => x.FileName)
+             .HasMaxLength(255);
+
             e.Property(x => x.Status)
              .IsRequired()
              .HasMaxLength(50);

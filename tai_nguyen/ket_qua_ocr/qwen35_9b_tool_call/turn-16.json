@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": "The page number \"246\" was added to the bottom right, but it should be at the top right. I will clear the draft and rebuild the document correctly.\n\n",
+    "tool_calls": [
+      {
+        "id": "92RadwPnNmCe71JYF21ffLJFErmGQLFy",
+        "type": "function",
+        "function": {
+          "name": "clear_draft",
+          "arguments": "{}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

@@ -1,0 +1,131 @@
+{
+  "font_name": "Times New Roman",
+  "font_size": 12,
+  "blocks": [
+    {
+      "type": "columns",
+      "widths": [
+        3,
+        3
+      ],
+      "columns": [
+        [
+          {
+            "text": "TRƯỜNG ĐH KIẾN TRÚC HÀ NỘI\nKHOA CÔNG NGHỆ THÔNG TIN",
+            "align": "center",
+            "font_size": 10
+          }
+        ],
+        [
+          {
+            "text": "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc",
+            "align": "center",
+            "font_size": 10
+          }
+        ]
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "BẢNG KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỒ ÁN TỐT NGHIỆP\nĐỢT 1, NĂM HỌC 2026 – 2027",
+      "font_size": 11,
+      "align": "center",
+      "space_after_pt": 10,
+      "space_before_pt": 10,
+      "bold": true
+    },
+    {
+      "type": "paragraph",
+      "align": "left",
+      "font_size": 10,
+      "text": "Họ và tên sinh viên: Nguyễn Đăng Khoa            Lớp: 22CN2            Ngành: CNTT",
+      "space_after_pt": 4
+    },
+    {
+      "type": "paragraph",
+      "align": "left",
+      "space_after_pt": 4,
+      "text": "Tên đề tài: Nghiên cứu các kỹ thuật xử lý chữ ký số và nhận diện ký tự quang học OCR hiện đại ứng dụng trong phát triển hệ thống thông tin hỗ trợ quản lý công văn đi và đến của trường Đại học Kiến trúc Hà Nội",
+      "font_size": 10
+    },
+    {
+      "type": "paragraph",
+      "text": "Giảng viên hướng dẫn: TS. Trần Trung",
+      "font_size": 10,
+      "align": "left",
+      "space_after_pt": 4
+    },
+    {
+      "type": "paragraph",
+      "text": "Thời gian thực hiện: 15 tuần (105 ngày) - Từ 05/10/2026 đến 18/01/2027",
+      "font_size": 10,
+      "space_after_pt": 8,
+      "align": "left"
+    },
+    {
+      "type": "paragraph",
+      "font_size": 10,
+      "align": "center",
+      "bold": true,
+      "text": "Đề xuất kế hoạch dự kiến thực hiện đề tài tốt nghiệp",
+      "space_after_pt": 4
+    },
+    {
+      "type": "paragraph",
+      "align": "left",
+      "text": "(Tham khảo cách trình bày - trang 23- của Quy định thực hiện ĐATN của sinh viên khoa CNTT).\nSinh viên dưới sự hướng dẫn của GVHD đưa ra kế hoạch dự kiến thực hiện đề tài tốt nghiệp. Chậm nhất sau 10 ngày giao ĐATN, phải nộp Bảng kế hoạch dự kiến về Văn phòng Khoa CNTT, M504.",
+      "italic": true,
+      "space_after_pt": 8,
+      "font_size": 9
+    },
+    {
+      "type": "table",
+      "column_widths": [
+        1,
+        5,
+        1.5,
+        3.5
+      ],
+      "row_height_cm": 0.7,
+      "blank_rows": 6,
+      "header_height_cm": 0.8,
+      "headers": [
+        "TT",
+        "Nội dung thực hiện",
+        "Thời gian\n(tuần)",
+        "Kết quả dự kiến"
+      ],
+      "rows": []
+    },
+    {
+      "type": "paragraph",
+      "text": "Hà Nội, ngày 05 tháng 10 năm 2026",
+      "space_before_pt": 8,
+      "font_size": 10,
+      "align": "right"
+    },
+    {
+      "type": "columns",
+      "widths": [
+        3,
+        3
+      ],
+      "columns": [
+        [
+          {
+            "text": "Giảng viên hướng dẫn\n(Ký và ghi rõ họ tên)\n\n\n\nTS. Trần Trung",
+            "align": "center",
+            "font_size": 10
+          }
+        ],
+        [
+          {
+            "text": "Sinh viên thực hiện đề tài\n(Ký và ghi rõ họ tên)\n\n\n\nNguyễn Đăng Khoa",
+            "align": "center",
+            "font_size": 10
+          }
+        ]
+      ]
+    }
+  ]
+}

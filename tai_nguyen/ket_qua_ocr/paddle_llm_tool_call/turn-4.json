@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "3hVr7bsBwPqIMfREawniur6SoNR7Eo7E",
+        "type": "function",
+        "function": {
+          "name": "add_columns",
+          "arguments": "{\"align\":\"left\",\"bold\":{\"true\":false},\"font_size\":11,\"texts\":[\"Họ và tên sinh viên: Nguyễn Đăng Khoa\",\"Lớp: 22CN2\\\\tNgành: CNTT\"],\"widths\":[0.7,0.3]}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

@@ -1,0 +1,11 @@
+[
+  {
+    "turn": 1,
+    "tool_call_id": "call_2807518call_2807521call_2807539call_2807542call_2807550call_2807556call_2807565call_2807568call_2807571call_2807580call_2807605call_2807608call_2807614call_2807619",
+    "name": "add_columnsadd_paragraphadd_paragraphadd_columnsadd_paragraphadd_paragraphadd_paragraphadd_paragraphadd_paragraphadd_paragraphadd_tableadd_paragraphadd_columnsrender_document",
+    "result": {
+      "ok": false,
+      "error": "Extra data: line 1 column 152 (char 151)"
+    }
+  }
+]

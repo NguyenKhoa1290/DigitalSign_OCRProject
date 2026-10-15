@@ -90,6 +90,8 @@ services:
       JwtSettings__Key: ${JWT_SECRET_KEY:-HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!}
       JwtSettings__Issuer: ${JWT_ISSUER:-IdentityService}
       JwtSettings__Audience: ${JWT_AUDIENCE:-HAU-MicroservicesClients}
+      ServiceAuth__OcrServiceToken: ${OCR_SERVICE_TOKEN:-hau-dev-ocr-service-token}
+      DataProtection__KeysPath: /app/dp-keys
       JwtSettings__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
       JwtSettings__RefreshTokenExpiryDays: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:-180}
       EmailSettings__SmtpHost: ${EMAIL_SMTP_HOST:-mailpit}
@@ -107,6 +109,8 @@ services:
         condition: service_started
     ports:
       - "127.0.0.1:5048:8080"
+    volumes:
+      - hau_identity_keys:/app/dp-keys
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -198,6 +202,7 @@ services:
       MINIO_USE_SSL: "false"
       MINIO_BUCKET: documents
       DOCUMENT_SERVICE_URL: http://document-service:8080
+      IDENTITY_SERVICE_URL: http://identity-service:8080
       SERVICE_TOKEN: ${OCR_SERVICE_TOKEN:-hau-dev-ocr-service-token}
       KAFKA_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -269,6 +274,7 @@ services:
 
 volumes:
   hau_postgres_data:
+  hau_identity_keys:
   hau_minio_data:
   hau_kafka_data:
   hau_sign_certs:

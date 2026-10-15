@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "Fdf0t1GurI9PdwLwnRIrN6kj3xJnPovX",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"align\":\"left\",\"bold\":{\"true\":false},\"font_size\":11,\"text\":\"Tên đề tài: Nghiên cứu các kỹ thuật xử lý chữ số và nhận diện ký tự quang học OCR hiện đại ứng dụng trong phát triển hệ thống thông tin hỗ trợ quản lý công văn đi và đến của trường Đại học Kiến trúc Hà Nội.\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

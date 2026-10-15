@@ -43,6 +43,7 @@ public class DocumentRepository : IDocumentRepository
         var q = _context.Documents
             .AsNoTracking()
             .Include(d => d.DocType)
+            .Include(d => d.Processes.OrderBy(process => process.Timestamp))
             .AsQueryable();
 
         // Search theo Title hoặc DocNumber
@@ -74,8 +75,10 @@ public class DocumentRepository : IDocumentRepository
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
         var documents = await q
-            .OrderByDescending(d => d.IssuedDate)
-            .ThenByDescending(d => d.Title)
+            .OrderByDescending(d => d.Processes.Any(process => process.Action == DocumentAction.Submit))
+            .ThenByDescending(d => d.Processes.Where(process => process.Action == DocumentAction.Submit)
+                .Select(process => (DateTime?)process.Timestamp).Min())
+            .ThenBy(d => d.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -94,8 +97,23 @@ public class DocumentRepository : IDocumentRepository
     public async Task<Document> UpdateAsync(Document document)
     {
         _context.Documents.Update(document);
+        // File references are changed only by ReplaceFileAsync. A stale OCR/edit request
+        // must not restore a PDF that has already been replaced and deleted.
+        _context.Entry(document).Property(d => d.MinioPath).IsModified = false;
+        _context.Entry(document).Property(d => d.FileName).IsModified = false;
         await _context.SaveChangesAsync();
         return document;
+    }
+
+    public async Task<bool> ReplaceFileAsync(Guid id, string expectedPath, string newPath, string fileName)
+    {
+        // Compare the stored path so simultaneous uploads cannot delete the wrong PDF.
+        var changed = await _context.Documents
+            .Where(document => document.Id == id && document.MinioPath == expectedPath)
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(document => document.MinioPath, newPath)
+                .SetProperty(document => document.FileName, fileName));
+        return changed == 1;
     }
 
     public async Task<bool> DeleteAsync(Guid id)

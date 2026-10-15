@@ -1,0 +1,184 @@
+{
+  "page": {
+    "width_cm": 21,
+    "height_cm": 29.7,
+    "margin_top_cm": 2.54,
+    "margin_bottom_cm": 2.54,
+    "margin_left_cm": 2.54,
+    "margin_right_cm": 2.54
+  },
+  "font_name": "Times New Roman",
+  "font_size": 12,
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "TRƯỜNG ĐẠI HỌC KIẾN TRÚC HÀ NỘI",
+      "bold": true,
+      "font_size": 14,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "KHOA CÔNG NGHỆ THÔNG TIN",
+      "bold": true,
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
+      "bold": true,
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Độc lập - Tự do - Hạnh phúc",
+      "bold": false,
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "BẢNG KẾ HOẠCH DỰ KIẾN THỰC HIỆN ĐỒ ÁN TỐT NGHIỆP",
+      "bold": true,
+      "font_size": 16,
+      "line_spacing": 1.2,
+      "keep_with_next": true
+    },
+    {
+      "type": "paragraph",
+      "text": "ĐỢT 1, NĂM HỌC 2026 – 2027",
+      "bold": true,
+      "font_size": 14,
+      "line_spacing": 1.2,
+      "keep_with_next": true
+    },
+    {
+      "type": "paragraph",
+      "text": "Họ và tên sinh viên: Nguyễn Đăng Khoa",
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Lớp: 22CN2",
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Ngành: CNTT",
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Tên đề tài: Nghiên cứu các kỹ thuật xử lý chữ ký số và nhận diện ký tự quang học OCR hiện đại ứng dụng trong phát triển hệ thống thông tin hỗ trợ quản lý công văn đi và đến của trường Đại học Kiến trúc Hà Nội",
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Giảng viên hướng dẫn: TS. Trần Trung",
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Thời gian thực hiện: 15 tuần (105 ngày) - Từ 05/10/2026 đến 18/01/2027",
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Đề xuất kế hoạch dự kiến thực hiện đề tài tốt nghiệp",
+      "bold": true,
+      "font_size": 14,
+      "line_spacing": 1.2,
+      "keep_with_next": true
+    },
+    {
+      "type": "paragraph",
+      "text": "(Tham khảo cách trình bày - trang 23 của Quy định thực hiện ĐATN của sinh viên khoa CNTT). Sinh viên dưới sự hướng dẫn của GVHD đưa ra kế hoạch dự kiến thực hiện đề tài tốt nghiệp. Chậm nhất sau 10 ngày giao ĐATN, phải nộp Bảng kế hoạch dự kiến này về Văn phòng Khoa CNTT, M504.",
+      "font_size": 12,
+      "line_spacing": 1.2,
+      "keep_with_next": true
+    },
+    {
+      "type": "table",
+      "headers": [
+        "TT",
+        "Nội dung thực hiện",
+        "Thời gian (tuan)",
+        "Kết quả dự kiến"
+      ],
+      "column_widths": [0.15, 0.45, 0.25, 0.15],
+      "rows": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "blank_rows": 0,
+      "header_height_cm": 0.6,
+      "row_height_cm": 0.5
+    },
+    {
+      "type": "paragraph",
+      "text": "Hà Nội, ngày 05 tháng 10 năm 2026",
+      "font_size": 12,
+      "line_spacing": 1.0,
+      "keep_with_next": true
+    },
+    {
+      "type": "paragraph",
+      "text": "Giảng viên hướng dẫn",
+      "bold": true,
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "(Ký và ghi rõ họ tên)",
+      "font_size": 10,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "TS. Trần Trung",
+      "bold": true,
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Sinh viên thực hiện đề tài",
+      "bold": true,
+      "font_size": 12,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "(Ký và ghi rõ họ tên)",
+      "font_size": 10,
+      "line_spacing": 1.0
+    },
+    {
+      "type": "paragraph",
+      "text": "Nguyễn Đăng Khoa",
+      "bold": true,
+      "font_size": 12,
+      "line_spacing": 1.0
+    }
+  ],
+  "uncertain_fields": [
+    "Số lượng hàng trong bảng được ước lượng là 10 dựa trên không gian trống còn lại, có thể cần điều chỉnh nếu in ra thực tế."
+  ]
+}

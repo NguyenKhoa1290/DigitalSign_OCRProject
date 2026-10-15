@@ -3,13 +3,14 @@
 @inject DocumentService DocumentService
 @inject NavigationManager NavManager
 @inject IToastService Toast
+@inject IJSRuntime JS
 
 <PageTitle>Tạo Công văn mới - HAU</PageTitle>
 
 <div class="page-header">
     <div>
         <h1 class="page-title">Tạo Công văn mới</h1>
-        <p class="page-subtitle">Điền đầy đủ thông tin và tải lên file PDF</p>
+        <p class="page-subtitle">Điền thông tin và đính kèm PDF hoặc ảnh công văn</p>
     </div>
     <div class="page-actions">
         <a href="/documents" class="btn btn-outline">
@@ -22,7 +23,7 @@
 </div>
 
 <div class="create-layout">
-    <div class="card">
+    <div class="card create-information-card">
         <div class="card-header">
             <span class="card-title">Thông tin Công văn</span>
         </div>
@@ -38,12 +39,12 @@
 
                 <div class="create-form-grid">
                     <div class="form-group">
-                        <label class="form-label">Số hiệu văn bản</label>
+                        <label class="form-label">Số hiệu văn bản (có thể bổ sung sau)</label>
                         <input type="text" class="form-control" placeholder="VD: 01/2024/QĐ-HAU"
                                @bind="_model.DocumentNumber" @bind:event="oninput" />
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Ngày ban hành</label>
+                        <label class="form-label">Ngày ban hành (có thể bổ sung sau)</label>
                         <input type="date" class="form-control"
                                @bind="_issuedDate" />
                     </div>
@@ -82,7 +83,7 @@
 
     <div class="card">
         <div class="card-header">
-            <span class="card-title">Tải lên File PDF</span>
+            <span class="card-title">Tải lên PDF hoặc ảnh</span>
         </div>
         <div class="card-body">
             <div class="file-upload-area" @onclick="TriggerFileInput">
@@ -99,12 +100,21 @@
                     }
                     else
                     {
-                        <span>Kéo thả hoặc <strong class="file-emphasis">chọn file</strong></span>
+                        <span>Chọn PDF hoặc ảnh để đính kèm công văn.</span>
                     }
                 </div>
-                <div class="file-upload-hint">Chấp nhận file PDF (tối đa 50MB)</div>
+                <button type="button" class="btn btn-primary pdf-picker-button"
+                        @onclick="TriggerFileInput" @onclick:stopPropagation>
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4" />
+                    </svg>
+                    @(_selectedFile == null ? "Chọn file" : "Đổi file")
+                </button>
+                <div class="file-upload-hint">PDF, PNG, JPG/JPEG hoặc WEBP (tối đa 50 MB). OCR tối đa 5 trang mỗi lượt.</div>
             </div>
-            <InputFile id="fileInput" OnChange="OnFileSelected" accept=".pdf" class="file-input" />
+            <div class="file-input-wrapper" hidden>
+                <InputFile id="fileInput" OnChange="OnFileSelected" accept="@DocumentFileFormats.Accept" />
+            </div>
 
             @if (_selectedFile != null)
             {
@@ -127,13 +137,13 @@
     {
         get
         {
-            var options = new List<SelectOption> { new("", "-- Chọn loại văn bản --") };
+            var options = new List<SelectOption> { new("", "Chọn loại văn bản") };
             if (_documentTypes != null)
-                options.AddRange(_documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.Name)));
+                options.AddRange(_documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.DisplayName)));
             return options;
         }
     }
-    private DateTime? _issuedDate;
+    private DateOnly? _issuedDate;
     private IBrowserFile? _selectedFile;
     private bool _isSubmitting;
     private string? _errorMessage;
@@ -152,6 +162,13 @@
         }
 
         _isSubmitting = true;
+
+        if (_selectedFile?.Size > 52428800)
+        {
+            _errorMessage = "File vượt quá giới hạn 50 MB. Vui lòng chọn file nhỏ hơn.";
+            _isSubmitting = false;
+            return;
+        }
         _errorMessage = null;
 
         _model.DocumentTypeId = selectedType;
@@ -170,9 +187,19 @@
             // Upload file if selected
             if (_selectedFile != null)
             {
-                using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 52428800);
-                if (await DocumentService.UploadFileAsync(created.Id, stream, _selectedFile.Name) is null)
-                    Toast.ShowError("Công văn đã tạo nhưng chưa tải được PDF. Hãy tải lại tại trang chi tiết.");
+                try
+                {
+                    using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 52428800);
+                    if (await DocumentService.UploadFileAsync(created.Id, stream, _selectedFile.Name) is null)
+                        throw new InvalidOperationException("API chưa xác nhận tải file thành công.");
+                }
+                catch (Exception ex)
+                {
+                    var reason = ex is HttpRequestException ? ex.Message : "Không tải được file.";
+                    Toast.ShowWarning($"Công văn đã tạo nhưng file chưa tải lên. {reason} Hãy tải lại tại trang chi tiết.");
+                    NavManager.NavigateTo($"/documents/{created.Id}");
+                    return;
+                }
             }
 
             Toast.ShowSuccess("Tạo công văn thành công!");
@@ -185,6 +212,15 @@
         }
     }
 
-    private void OnFileSelected(InputFileChangeEventArgs e) => _selectedFile = e.File;
-    private void TriggerFileInput() { }
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _selectedFile = null;
+        _errorMessage = null;
+        if (DocumentFileFormats.GetContentType(e.File.Name) is null)
+            _errorMessage = "Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.";
+        else if (e.File.Size > 52428800)
+            _errorMessage = "File vượt quá giới hạn 50 MB.";
+        else _selectedFile = e.File;
+    }
+    private async Task TriggerFileInput() => await JS.InvokeVoidAsync("documentFiles.pickFile", "fileInput");
 }

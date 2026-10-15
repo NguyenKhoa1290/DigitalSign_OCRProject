@@ -1,0 +1,1 @@
+The renderer dependency pdf2image is now installed. Call render_document again, inspect the returned new iteration, and select a successfully rendered iteration using finish_document.

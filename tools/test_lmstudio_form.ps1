@@ -1,5 +1,6 @@
 $ErrorActionPreference = 'Stop'
-$imagePath = Resolve-Path "$PSScriptRoot\..\tests\artifacts\ke-hoach-thuc-te.jpg"
+$resourceRoot = Join-Path $PSScriptRoot '..\tai_nguyen'
+$imagePath = Resolve-Path (Join-Path $resourceRoot 'mau_cong_van\ke-hoach-thuc-te.jpg')
 $imageBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($imagePath))
 $payload = @{
   model = 'gemma4-12b-qat-uncensored-hauhaucs-balanced'
@@ -15,4 +16,6 @@ $payload = @{
   )
 } | ConvertTo-Json -Depth 10
 $response = Invoke-RestMethod -Uri 'http://127.0.0.1:1234/v1/chat/completions' -Method Post -ContentType 'application/json' -Body $payload -TimeoutSec 180
-$response | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath "$PSScriptRoot\lmstudio_form_result.json" -Encoding UTF8
+$resultDirectory = Join-Path $resourceRoot 'ket_qua_ocr'
+[IO.Directory]::CreateDirectory($resultDirectory) | Out-Null
+$response | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $resultDirectory 'lmstudio_form_result.json') -Encoding UTF8

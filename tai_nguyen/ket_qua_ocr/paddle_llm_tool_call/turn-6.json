@@ -1,0 +1,17 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "J8Wt3MOIL169KjaejAn7AS87ZWFsz5ty",
+        "type": "function",
+        "function": {
+          "name": "add_paragraph",
+          "arguments": "{\"align\":\"left\",\"bold\":{\"true\":false},\"font_size\":11,\"text\":\"Giảng viên hướng dẫn: TS. Trần Trung\\\\nThời gian thực hiện: 15 tuần (105 ngày) - Từ 05/10/2026 đến 18/01/2027\"}"
+        }
+      }
+    ]
+  },
+  "finish_reason": "tool_calls"
+}

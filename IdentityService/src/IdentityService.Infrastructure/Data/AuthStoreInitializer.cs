@@ -18,13 +18,25 @@ public static class AuthStoreInitializer
                 ADD COLUMN IF NOT EXISTS "EmailVerifiedAt" timestamp with time zone NULL;
             """);
 
-        // Dữ liệu cũ đã hoàn tất onboarding được giữ tương thích như email tin cậy.
+        // Chỉ tin cậy email của tài khoản admin seed. Email mới do Admin nhập
+        // hoặc người dùng sửa phải được xác minh bằng OTP trước khi dùng đăng nhập.
         await context.Database.ExecuteSqlRawAsync("""
             UPDATE "AppUsers"
             SET "EmailVerifiedAt" = "CreatedAt"
             WHERE "Email" IS NOT NULL
+              AND "Username" = 'admin'
               AND "MustChangePassword" = false
               AND "EmailVerifiedAt" IS NULL;
+            """);
+
+        // Giữ mã và email duy nhất khi không phân biệt chữ hoa/chữ thường,
+        // kể cả khi hai yêu cầu tạo tài khoản đến đồng thời.
+        await context.Database.ExecuteSqlRawAsync("""
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_AppUsers_Username_Lower"
+                ON "AppUsers" (lower("Username"));
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_AppUsers_Email_Lower"
+                ON "AppUsers" (lower("Email"))
+                WHERE "Email" IS NOT NULL AND btrim("Email") <> '';
             """);
 
         await context.Database.ExecuteSqlRawAsync("""
@@ -91,6 +103,14 @@ public static class AuthStoreInitializer
         await context.Database.ExecuteSqlRawAsync("""
             CREATE INDEX IF NOT EXISTS "IX_EmailVerificationTokens_UserId_IsUsed"
                 ON "EmailVerificationTokens" ("UserId", "IsUsed");
+            """);
+
+        await context.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "GeminiApiConfigs" (
+                "Id" integer PRIMARY KEY CHECK ("Id" = 1),
+                "ProtectedApiKey" text NOT NULL,
+                "UpdatedAtUtc" timestamp with time zone NOT NULL
+            );
             """);
     }
 }

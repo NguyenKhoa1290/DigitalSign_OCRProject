@@ -7,6 +7,7 @@ public class Document
     public string Title { get; set; } = string.Empty;
     public DateOnly? IssuedDate { get; set; }
     public string MinioPath { get; set; } = string.Empty;
+    public string? FileName { get; set; }
     public string? OcrDataRaw { get; set; }          // JSON string từ OCR Service
     public string Status { get; set; } = DocumentStatus.Draft;
     public Guid DocTypeId { get; set; }

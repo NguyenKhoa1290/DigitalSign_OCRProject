@@ -107,6 +107,40 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task LoginAsync_WithVerifiedEmail_ShouldReturnCanonicalUsername()
+    {
+        var user = CreateTestUser();
+        user.EmailVerifiedAt = DateTime.UtcNow;
+        _userRepositoryMock.Setup(r => r.GetByEmailAsync("TEST@HAU.EDU.VN")).ReturnsAsync(user);
+        _tokenServiceMock.Setup(t => t.GenerateAccessToken(user, It.IsAny<IEnumerable<string>>()))
+            .Returns("eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJlbWFpbC1sb2dpbiJ9.signature");
+        _tokenServiceMock.Setup(t => t.GenerateRefreshToken()).Returns("refresh-token-email");
+        _refreshTokenRepositoryMock.Setup(r => r.CreateAsync(It.IsAny<RefreshToken>()))
+            .ReturnsAsync((RefreshToken token) => token);
+
+        var result = await _authService.LoginAsync(new LoginRequestDto
+        {
+            Username = " TEST@HAU.EDU.VN ", Password = "Password123!"
+        });
+
+        result.Username.Should().Be("testuser");
+        _userRepositoryMock.Verify(r => r.GetByUsernameAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WithUnverifiedEmail_ShouldRejectEmailLogin()
+    {
+        var user = CreateTestUser();
+        user.EmailVerifiedAt = null;
+        _userRepositoryMock.Setup(r => r.GetByEmailAsync(user.Email!)).ReturnsAsync(user);
+
+        await _authService.Invoking(service => service.LoginAsync(new LoginRequestDto
+        {
+            Username = user.Email!, Password = "Password123!"
+        })).Should().ThrowAsync<InvalidCredentialsException>();
+    }
+
+    [Fact]
     public async Task LoginAsync_WithNonExistentUser_ShouldThrowInvalidCredentialsException()
     {
         // Arrange
@@ -315,5 +349,53 @@ public class AuthServiceTests
             user.Email!,
             user.FullName,
             It.Is<string>(otp => otp.Length == 6 && otp.All(char.IsDigit))), Times.Once);
+    }
+
+    [Fact]
+    public async Task AdminResetPasswordAsync_ShouldClearEmailAndRequireOnboardingAgain()
+    {
+        var user = CreateTestUser();
+        user.EmailVerifiedAt = DateTime.UtcNow;
+        _userRepositoryMock.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _userRepositoryMock.Setup(r => r.UpdateAsync(user)).ReturnsAsync(user);
+
+        await _authService.AdminResetPasswordAsync(user.Id, new AdminResetPasswordDto
+        {
+            TemporaryPassword = "Temporary456!", ConfirmPassword = "Temporary456!"
+        });
+
+        BCrypt.Net.BCrypt.Verify("Temporary456!", user.PasswordHash).Should().BeTrue();
+        user.Email.Should().BeNull();
+        user.EmailVerifiedAt.Should().BeNull();
+        user.MustChangePassword.Should().BeTrue();
+        _refreshTokenRepositoryMock.Verify(r => r.RevokeAllForUserAsync(user.Id), Times.Once);
+        _revokedAccessTokenRepositoryMock.Verify(r => r.RevokeAllForUserAsync(user.Id), Times.Once);
+        _passwordResetRepositoryMock.Verify(r => r.InvalidateAllAsync(user.Id), Times.Once);
+        _emailVerificationRepositoryMock.Verify(r => r.InvalidateAllAsync(user.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_WithEmailOtp_ShouldKeepVerifiedEmailAndRevokeSessions()
+    {
+        var user = CreateTestUser();
+        user.EmailVerifiedAt = DateTime.UtcNow;
+        _userRepositoryMock.Setup(r => r.GetByEmailAsync(user.Email!)).ReturnsAsync(user);
+        _passwordResetRepositoryMock
+            .Setup(r => r.GetValidTokenAsync(user.Id, It.IsAny<string>()))
+            .ReturnsAsync(new PasswordResetToken { UserId = user.Id, ExpiresAt = DateTime.UtcNow.AddMinutes(5) });
+        _userRepositoryMock.Setup(r => r.UpdateAsync(user)).ReturnsAsync(user);
+
+        await _authService.ResetPasswordAsync(new ResetPasswordDto
+        {
+            Email = user.Email!, Otp = "123456", NewPassword = "ChangedPassword456!",
+            ConfirmPassword = "ChangedPassword456!"
+        });
+
+        BCrypt.Net.BCrypt.Verify("ChangedPassword456!", user.PasswordHash).Should().BeTrue();
+        user.Email.Should().Be("test@hau.edu.vn");
+        user.EmailVerifiedAt.Should().NotBeNull();
+        user.MustChangePassword.Should().BeFalse();
+        _refreshTokenRepositoryMock.Verify(r => r.RevokeAllForUserAsync(user.Id), Times.Once);
+        _revokedAccessTokenRepositoryMock.Verify(r => r.RevokeAllForUserAsync(user.Id), Times.Once);
     }
 }

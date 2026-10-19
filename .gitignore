@@ -9,6 +9,7 @@
 **/tai_lieu/
 **/tiendo/
 **/FlightTaskbarWeb/
+**/backup/
 .env
 .env.*
 !.env.example
@@ -18,3 +19,4 @@
 *.suo
 *.pdb
 *.docx
+backup/

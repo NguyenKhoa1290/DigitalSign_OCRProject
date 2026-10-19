@@ -1,9 +1,0 @@
-{
-  "model": "qwen/qwen3.5-9b",
-  "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
-  "paddle_lines": 30,
-  "native_tool_calls": 32,
-  "selected_iteration": null,
-  "elapsed_seconds": 423.31,
-  "manual_content_edits": false
-}

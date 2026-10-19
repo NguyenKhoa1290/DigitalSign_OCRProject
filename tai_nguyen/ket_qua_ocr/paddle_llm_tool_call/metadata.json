@@ -1,9 +1,0 @@
-{
-  "model": "gemma4-12b-qat-uncensored-hauhaucs-balanced",
-  "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52",
-  "paddle_lines": 30,
-  "native_tool_calls": 24,
-  "selected_iteration": 2,
-  "elapsed_seconds": 402.49,
-  "manual_content_edits": false
-}

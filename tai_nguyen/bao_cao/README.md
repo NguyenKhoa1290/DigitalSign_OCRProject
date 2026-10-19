@@ -1,6 +1,10 @@
 # Báo cáo đồ án cập nhật
 
-File bàn giao mới nhất: `Do_an_tot_nghiep_cap_nhat_luong_cong_van.docx`, cập nhật ngày 13/10/2026 từ bản `Do_an_tot_nghiep_cap_nhat_OCR_1_2_3.docx`. Các bản trước được giữ nguyên.
+**Dọn thư mục ngày 19/10/2026:** các bản Word OCR/1.2.3 trước đó đã chuyển sang [kho báo cáo cũ](../../backup/20261019/bao_cao_cu). Các lượt render trung gian nằm trong `../../backup/20261019/generated/`; tra [manifest](../../backup/20261019/cleanup_manifest.json) để biết vị trí trước/sau. Giữ bản nguồn luồng công văn ngày 13/10 ở đây để tái lập báo cáo cuối; phần lịch sử bên dưới mô tả theo thời điểm thực hiện.
+
+File bàn giao mới nhất ngày **19/10/2026** đã đặt trong `tai_lieu` theo yêu cầu: [Do_an_tot_nghiep_cap_nhat_phan_quyen_xoa.docx](../../tai_lieu/05_bao_cao/Do_an_tot_nghiep_cap_nhat_phan_quyen_xoa.docx). Xem [phạm vi cập nhật và hướng dẫn mục lục](../../tai_lieu/05_bao_cao/README.md). Các bản trong thư mục này giữ làm lịch sử.
+
+Bản nguồn của lần cập nhật mới: `Do_an_tot_nghiep_cap_nhat_luong_cong_van.docx`, cập nhật ngày 13/10/2026 từ bản `Do_an_tot_nghiep_cap_nhat_OCR_1_2_3.docx`. Nội dung dưới đây mô tả lịch sử của bản ngày 13/10, không phải bằng chứng nghiệm thu chức năng xóa mềm mới.
 
 ## Cập nhật nghiệp vụ ngày 13/10/2026
 

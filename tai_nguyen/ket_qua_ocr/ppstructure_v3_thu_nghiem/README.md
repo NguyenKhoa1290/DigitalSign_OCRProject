@@ -22,7 +22,7 @@ Bộ xuất Word gốc gộp đầu trang, nhận chữ dấu đỏ vào tiêu �
 
 ## Chạy lại
 
-Script `tools/test_ppstructure_word.py`, dependencies đầy đủ tại `requirements.freeze.txt`. Môi trường riêng cài `paddlepaddle==3.3.1` và `paddleocr[doc-parser,doc2md]==3.7.0`.
+Script `backup/20261019/tools_ocr/test_ppstructure_word.py`, dependencies đầy đủ tại `requirements.freeze.txt`. Môi trường riêng cài `paddlepaddle==3.3.1` và `paddleocr[doc-parser,doc2md]==3.7.0`.
 
 ```bash
 /opt/ppstructure/bin/python test_ppstructure_word.py --image input.jpg --output-dir output-moi --ocr-version PP-OCRv5

@@ -1,0 +1,14 @@
+{
+  "source": "tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_luong_cong_van.docx",
+  "output": "tai_lieu/05_bao_cao/Do_an_tot_nghiep_cap_nhat_phan_quyen_xoa.docx",
+  "source_sha256": "3d1593580ecf72add29138c8e3d7861d64ddaa89a52c13294ecff25f1a6b4f01",
+  "output_sha256": "b12a13eab2e2a5b0454c2155bd2f27348b05bb2e882fcfce1490326ea82297ea",
+  "source_original_children_preserved_except_extended_matrix": true,
+  "existing_matrix_rows_preserved": true,
+  "other_package_parts_preserved": true,
+  "tables_before": 16,
+  "tables_after": 17,
+  "matrix_added_rows": 3,
+  "added_scenario": "2.1.4.7",
+  "implementation_changed": false
+}

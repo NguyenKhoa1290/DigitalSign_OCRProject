@@ -1,0 +1,53 @@
+{
+  "docx_sha256": "b12a13eab2e2a5b0454c2155bd2f27348b05bb2e882fcfce1490326ea82297ea",
+  "rendered_pages": 95,
+  "affected_pages": [
+    50,
+    56,
+    63,
+    64,
+    85,
+    95
+  ],
+  "render_directory": "tai_nguyen/kiem_tra_bao_cao/phan_quyen_xoa_20261019/render_reviewed",
+  "render_tool": "documents/render_docx.py",
+  "renderer": "existing isolated Docker image hau/ppstructure-trial:base with LibreOffice",
+  "application_tests_run": false,
+  "latest_layout_iteration_changed_pages": [
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70
+  ],
+  "visual_review": "All pages reviewed in overview; changed sections inspected at page resolution; original cover/layout kept from source.",
+  "reviewed_added_content_pages": [
+    50,
+    51,
+    52,
+    54,
+    55,
+    56,
+    57,
+    63,
+    64,
+    85,
+    95
+  ],
+  "visual_review_complete": true
+}

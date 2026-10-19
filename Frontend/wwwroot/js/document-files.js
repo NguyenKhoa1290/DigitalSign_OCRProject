@@ -1,4 +1,7 @@
 window.documentFiles = {
+    scrollToTop: () => {
+        document.querySelector(".page-container")?.scrollTo({ top: 0, behavior: "instant" });
+    },
     pickFile: id => {
         const input = document.getElementById(id);
         if (input?.type === "file") input.click();

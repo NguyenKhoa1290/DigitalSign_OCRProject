@@ -59,7 +59,9 @@ public class DocumentService : IDocumentService
             DocNumber = dto.DocNumber?.Trim(),
             IssuedDate = dto.IssuedDate,
             MinioPath = string.Empty,    // sẽ cập nhật sau khi upload
-            Status = DocumentStatus.Draft
+            Status = DocumentStatus.Draft,
+            CreatedById = userId, CreatedAt = DateTime.UtcNow,
+            DeletionEligibilityConfirmed = true
         };
 
         var created = await _documentRepository.CreateAsync(document);
@@ -69,7 +71,7 @@ public class DocumentService : IDocumentService
         {
             DocId = created.Id,
             FromUserId = userId,
-            Action = DocumentAction.Submit,
+            Action = DocumentAction.Create,
             Comment = "Tạo mới văn bản.",
             Timestamp = DateTime.UtcNow
         });
@@ -140,18 +142,49 @@ public class DocumentService : IDocumentService
         return new PagedResult<DocumentDto>(dtos, total, page, pageSize);
     }
 
-    public async Task DeleteDocumentAsync(Guid id)
+    public Task DeleteDocumentAsync(Guid id, DocumentActor actor, string? reason)
+        => _documentRepository.SetDeletedAsync(id, actor, reason, deleted: true);
+
+    public async Task RestoreDocumentAsync(Guid id, DocumentActor actor, string? reason)
     {
-        var document = await _documentRepository.GetByIdAsync(id)
+        if (!actor.IsAdmin || actor.UserId == Guid.Empty) throw new UnauthorizedDocumentAccessException();
+        if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length > 1000)
+            throw new DocumentServiceException("Nhập lý do khôi phục, tối đa 1000 ký tự.");
+        var document = await _documentRepository.GetIncludingDeletedAsync(id)
             ?? throw new DocumentNotFoundException(id);
+        if (document.IsDeleted)
+        {
+            DocumentDeletionPolicy.RequireEligible(document);
+            if (!string.IsNullOrWhiteSpace(document.MinioPath))
+            {
+                try
+                {
+                    using var file = await _fileStorageService.DownloadFileAsync(GetObjectName(document.MinioPath), BucketName);
+                    if (file is null) throw new IOException("Missing file");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Không xác minh được tệp khi khôi phục {Id}", id);
+                    throw new DocumentConflictException("Không xác minh được tệp đính kèm. Chưa khôi phục công văn.");
+                }
+            }
+        }
+        await _documentRepository.SetDeletedAsync(id, actor, reason, deleted: false);
+    }
 
-        if (document.Status != DocumentStatus.Draft && document.Status != DocumentStatus.Rejected)
-            throw new InvalidWorkflowTransitionException(
-                document.Status,
-                "Delete (chỉ được xóa khi ở trạng thái Draft hoặc Rejected)");
+    public async Task<PagedResult<DocumentDto>> GetDeletedDocumentsAsync(DocumentQueryParams query, DocumentActor actor)
+    {
+        if (!actor.IsAdmin || actor.UserId == Guid.Empty) throw new UnauthorizedDocumentAccessException();
+        var (documents, total) = await _documentRepository.GetDeletedAsync(query);
+        return new(documents.Select(MapToDto).ToList(), total, Math.Max(query.Page, 1), Math.Clamp(query.PageSize, 1, 100));
+    }
 
-        await _documentRepository.DeleteAsync(id);
-        _logger.LogInformation("Đã xóa văn bản ID={Id}", id);
+    public async Task<DocumentDto> ReceiveDocumentAsync(Guid id, DocumentActor actor)
+    {
+        if (actor.UserId == Guid.Empty || !actor.Roles.Any(r => r is "Admin" or "Clerk"))
+            throw new UnauthorizedDocumentAccessException();
+        await _documentRepository.ReceiveAsync(id, actor.UserId);
+        return await GetDocumentByIdAsync(id);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -241,6 +274,9 @@ public class DocumentService : IDocumentService
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
 
+        if (dto.ExpectedVersion.HasValue && dto.ExpectedVersion.Value != document.ConcurrencyVersion)
+            throw new DocumentConflictException("Công văn đã thay đổi sau khi bắt đầu OCR. Kết quả cũ không được ghi vào hồ sơ.");
+
         if (dto.DocNumber is not null)
             document.DocNumber = dto.DocNumber.Trim();
 
@@ -285,6 +321,7 @@ public class DocumentService : IDocumentService
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.PendingDeptReview);
 
         document.Status = DocumentStatus.PendingDeptReview;
+        document.FirstSubmittedAt ??= DateTime.UtcNow;
         var updated = await _documentRepository.UpdateAsync(document);
 
         await _documentProcessRepository.CreateAsync(new DocumentProcess
@@ -495,8 +532,13 @@ public class DocumentService : IDocumentService
         DocNumber = doc.DocNumber,
         Title = doc.Title,
         IssuedDate = doc.IssuedDate,
-        CreatedAt = doc.Processes.Where(process => process.Action == DocumentAction.Submit)
+        CreatedAt = doc.CreatedAt ?? doc.Processes.Where(process => process.Action == DocumentAction.Submit || process.Action == DocumentAction.Create)
             .OrderBy(process => process.Timestamp).Select(process => (DateTime?)process.Timestamp).FirstOrDefault(),
+        CreatedById = doc.CreatedById,
+        ConcurrencyVersion = doc.ConcurrencyVersion,
+        CanDeleteDraft = !doc.IsDeleted && DocumentDeletionPolicy.IsEligible(doc),
+        IsDeleted = doc.IsDeleted, DeletedAt = doc.DeletedAt, DeletedById = doc.DeletedById,
+        DeleteReason = doc.DeleteReason, OfficiallyReceivedAt = doc.OfficiallyReceivedAt,
         UpdatedAt = doc.Processes.Select(process => (DateTime?)process.Timestamp).Max(),
         MinioPath = doc.MinioPath,
         FileName = doc.FileName,

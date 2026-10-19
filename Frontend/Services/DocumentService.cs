@@ -22,6 +22,41 @@ public class DocumentService
     public async Task<DocumentDto?> GetDocumentAsync(Guid id)
         => await _api.GetAsync<DocumentDto>($"api/documents/{id}");
 
+    public Task<PagedResult<DocumentDto>?> GetDeletedDocumentsAsync(int page = 1, string? search = null)
+        => _api.GetAsync<PagedResult<DocumentDto>>($"api/documents/deleted?page={page}&pageSize=15&search={Uri.EscapeDataString(search ?? "")}");
+
+    public async Task DeleteDraftAsync(Guid id, string? reason)
+    {
+        using var response = await _api.DeleteResponseAsync($"api/documents/{id}", new { reason });
+        await EnsureDocumentActionAsync(response);
+    }
+
+    public async Task RestoreDraftAsync(Guid id, string reason)
+    {
+        using var response = await _api.PostResponseAsync($"api/documents/{id}/restore", new { reason });
+        await EnsureDocumentActionAsync(response);
+    }
+
+    public async Task ReceiveDocumentAsync(Guid id)
+    {
+        using var response = await _api.PostResponseAsync($"api/documents/{id}/receive", new { });
+        await EnsureDocumentActionAsync(response);
+    }
+
+    private static async Task EnsureDocumentActionAsync(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var message = "Không thực hiện được thao tác. Hãy tải lại công văn.";
+        try
+        {
+            using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            if (json.RootElement.TryGetProperty("message", out var value) && value.ValueKind == System.Text.Json.JsonValueKind.String)
+                message = value.GetString() ?? message;
+        }
+        catch (System.Text.Json.JsonException) { }
+        throw new HttpRequestException(message, null, response.StatusCode);
+    }
+
     public async Task<DocumentDto?> CreateDocumentAsync(CreateDocumentDto dto)
         => await _api.PostAsync<DocumentDto>("api/documents", new
         {

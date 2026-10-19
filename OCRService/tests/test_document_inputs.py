@@ -73,11 +73,32 @@ class DocumentInputsTests(unittest.TestCase):
 
     def test_stored_document_over_limit_does_not_ocr_or_update_database(self):
         with patch.object(ocr_processor.minio_service, "download_file", return_value=pdf(6)), \
+             patch.object(ocr_processor.document_service, "require_active_document", new_callable=AsyncMock, return_value="fixture-version"), \
              patch.object(ocr_processor, "get_engine") as engine, \
              patch.object(ocr_processor.document_service, "update_ocr_result", new_callable=AsyncMock) as update:
             response = self.client.post("/api/ocr/process", json={"doc_id": "fixture", "minio_path": "documents/input.pdf"})
             self.assertEqual(response.status_code, 400, response.text)
             engine.assert_not_called(); update.assert_not_awaited()
+
+    def test_deleted_document_is_rejected_before_minio_or_ocr(self):
+        with patch.object(ocr_processor.document_service, "require_active_document", new_callable=AsyncMock,
+                          side_effect=ocr_processor.document_service.DocumentUnavailableError("Đã xóa", 404)), \
+             patch.object(ocr_processor.minio_service, "download_file") as download, \
+             patch.object(ocr_processor, "get_engine") as engine:
+            response = self.client.post("/api/ocr/process", json={"doc_id": "fixture", "minio_path": "input.pdf"})
+            self.assertEqual(response.status_code, 404, response.text)
+            download.assert_not_called(); engine.assert_not_called()
+
+    def test_callback_failure_returns_conflict_and_includes_original_version(self):
+        engine = Mock(); engine.extract_lines.return_value = []
+        with patch.object(ocr_processor.document_service, "require_active_document", new_callable=AsyncMock, return_value="original-version"), \
+             patch.object(ocr_processor.minio_service, "download_file", return_value=picture()), \
+             patch.object(ocr_processor, "get_engine", return_value=engine), \
+             patch.object(ocr_processor.document_service, "update_ocr_result", new_callable=AsyncMock, return_value=False) as update, \
+             patch.object(ocr_processor, "get_settings", return_value=Mock(service_token="fixture")):
+            response = self.client.post("/api/ocr/process", json={"doc_id": "fixture", "minio_path": "input.png"})
+            self.assertEqual(response.status_code, 409, response.text)
+            self.assertEqual(update.call_args.args[1]["expectedVersion"], "original-version")
 
     def test_paddle_upload_recognizes_exactly_five_pages_or_one_image(self):
         engine = Mock(); engine.extract_lines.return_value = []

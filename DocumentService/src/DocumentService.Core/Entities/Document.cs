@@ -11,6 +11,19 @@ public class Document
     public string? OcrDataRaw { get; set; }          // JSON string từ OCR Service
     public string Status { get; set; } = DocumentStatus.Draft;
     public Guid DocTypeId { get; set; }
+    public Guid? CreatedById { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    // Legacy rows remain blocked until their origin and workflow are reconciled.
+    public bool DeletionEligibilityConfirmed { get; set; }
+    public DateTime? FirstSubmittedAt { get; set; }
+    public DateTime? FirstAssignedAt { get; set; }
+    public DateTime? OfficiallyReceivedAt { get; set; }
+    public DateTime? SigningStartedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public Guid? DeletedById { get; set; }
+    public string? DeleteReason { get; set; }
+    public Guid ConcurrencyVersion { get; set; } = Guid.NewGuid();
 
     // Navigation
     public DocumentType? DocType { get; set; }

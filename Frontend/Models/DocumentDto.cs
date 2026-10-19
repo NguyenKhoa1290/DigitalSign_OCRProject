@@ -16,6 +16,12 @@ public class DocumentDto
     public DateTime? UpdatedAt { get; set; }
     public string? CreatedByName { get; set; }
     public Guid? CreatedById { get; set; }
+    public bool CanDeleteDraft { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public Guid? DeletedById { get; set; }
+    public string? DeleteReason { get; set; }
+    public DateTime? OfficiallyReceivedAt { get; set; }
     public string? DepartmentName { get; set; }
     public Guid? DepartmentId { get; set; }
     public string? MinioPath { get; set; }

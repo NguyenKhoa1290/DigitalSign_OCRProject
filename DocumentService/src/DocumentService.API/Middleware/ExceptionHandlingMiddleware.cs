@@ -35,6 +35,8 @@ public class ExceptionHandlingMiddleware
         var (statusCode, message) = exception switch
         {
             DocumentNotFoundException           => (HttpStatusCode.NotFound,           exception.Message),
+            DocumentConflictException           => (HttpStatusCode.Conflict,           exception.Message),
+            Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException => (HttpStatusCode.Conflict, "Công văn đã thay đổi. Hãy tải lại và thử lại."),
             InvalidWorkflowTransitionException  => (HttpStatusCode.UnprocessableEntity, exception.Message),
             UnauthorizedDocumentAccessException => (HttpStatusCode.Forbidden,           exception.Message),
             DocumentServiceException            => (HttpStatusCode.BadRequest,          exception.Message),

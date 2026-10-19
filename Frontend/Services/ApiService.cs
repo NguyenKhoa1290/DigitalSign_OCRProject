@@ -64,6 +64,12 @@ public class ApiService
         return SendWithRefreshAsync(HttpMethod.Post, url, () => JsonContent(json));
     }
 
+    public Task<HttpResponseMessage> DeleteResponseAsync(string url, object body)
+    {
+        var json = JsonSerializer.Serialize(body);
+        return SendWithRefreshAsync(HttpMethod.Delete, url, () => JsonContent(json));
+    }
+
     public async Task<T?> PutAsync<T>(string url, object? body = null)
     {
         var json = body == null ? null : JsonSerializer.Serialize(body);

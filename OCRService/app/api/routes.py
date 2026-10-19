@@ -11,6 +11,7 @@ import httpx
 
 from app.services import ocr_processor
 from app.services import gemini_service
+from app.services.document_service import DocumentUnavailableError
 from app.services.layout_exporter import create_layout_docx
 from app.services.document_input import load_document_images, DocumentInputError
 
@@ -50,6 +51,8 @@ async def process_ocr(request: OcrRequest):
             token=request.token,
         )
         return OcrResponse(**result, message="OCR hoàn tất thành công.")
+    except DocumentUnavailableError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
     except DocumentInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as e:

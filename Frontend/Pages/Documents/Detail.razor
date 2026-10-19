@@ -5,6 +5,7 @@
 @inject NavigationManager NavManager
 @inject IToastService Toast
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @implements IAsyncDisposable
 
 <PageTitle>@(_document?.Title ?? "Chi tiết Công văn") - HAU</PageTitle>
@@ -45,6 +46,17 @@ else
 
     <!-- Action Buttons by Role/Status -->
     <div class="document-actions">
+        @if (CanDeleteDraft)
+        {
+            <button class="btn btn-danger" @onclick="OpenDeleteDialog" disabled="@_isActionLoading">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M6 18L18 6" /></svg>
+                Xóa bản nháp
+            </button>
+        }
+        @if (_canReceive && _document.DocTypeName == "CongVanDen" && _document.Status == "Draft" && _document.OfficiallyReceivedAt == null)
+        {
+            <button class="btn btn-outline" @onclick='() => ShowActionModal("receive")' disabled="@_isActionLoading">Tiếp nhận chính thức</button>
+        }
         @if (CanEdit)
         {
             <button class="btn btn-outline" @onclick="OpenEditModal" disabled="@_isActionLoading">Sửa thông tin</button>
@@ -295,6 +307,8 @@ else
 }
 
 <!-- Action Modal -->
+<DocumentDeletionDialog IsVisible="_showDeleteDialog" DocumentTitle="@(_document?.Title ?? "")" RequireReason="_isAdmin"
+                        Busy="_isActionLoading" Error="@_deleteError" OnConfirm="DeleteDraft" OnCancel="CloseDeleteDialog" />
 @if (_showEditModal)
 {
     <div class="modal-overlay">
@@ -400,6 +414,11 @@ else
     private DocumentDto? _document;
     private bool _isLoading = true;
     private bool _isActionLoading;
+    private bool _showDeleteDialog, _isAdmin, _hasDeleteRole, _canReceive;
+    private Guid _actorId;
+    private string? _deleteError;
+    private bool CanDeleteDraft => _document?.CanDeleteDraft == true && _hasDeleteRole
+        && (_isAdmin || _document.CreatedById == _actorId);
     private string? _role;
     private string? _fileUrl;
     private string? _fileError;
@@ -424,6 +443,11 @@ else
     protected override async Task OnParametersSetAsync()
     {
         _role = await AuthService.GetRoleAsync();
+        var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        _isAdmin = user.IsInRole("Admin");
+        _hasDeleteRole = _isAdmin || user.IsInRole("Clerk") || user.IsInRole("Specialist");
+        _canReceive = _isAdmin || user.IsInRole("Clerk");
+        Guid.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value, out _actorId);
         await LoadDocument();
     }
 
@@ -545,6 +569,13 @@ else
     private async Task ExecuteAction()
     {
         _isActionLoading = true;
+        if (_currentAction == "receive")
+        {
+            try { await DocumentService.ReceiveDocumentAsync(Id); Toast.ShowSuccess("Đã tiếp nhận chính thức công văn đến."); }
+            catch (HttpRequestException ex) { Toast.ShowError(ex.Message); }
+            finally { _showActionModal = false; _isActionLoading = false; await LoadDocument(); }
+            return;
+        }
         bool success = false;
 
         success = _currentAction switch
@@ -622,6 +653,7 @@ else
 
     private string GetActionModalTitle() => _currentAction switch
     {
+        "receive" => "Tiếp nhận chính thức công văn đến (sau bước này không được xóa)",
         "submit" => "Nộp trình duyệt",
         "dept-sign" => "Ký nháy",
         "submit-director" => "Trình BGH ký",
@@ -639,6 +671,10 @@ else
 
     private static string GetActionLabel(string action) => action switch
     {
+        "Create" => "Tạo mới",
+        "Receive" => "Tiếp nhận chính thức",
+        "SoftDelete" => "Xóa bản nháp",
+        "Restore" => "Khôi phục bản nháp",
         "Submit" => "Nộp trình duyệt",
         "DeptSign" => "Ký nháy",
         "SubmitDirector" => "Trình BGH ký",
@@ -651,4 +687,26 @@ else
         "Upload" => "Tải lên file",
         _ => action
     };
+
+    private void OpenDeleteDialog() { _deleteError = null; _showDeleteDialog = true; }
+    private void CloseDeleteDialog() { if (!_isActionLoading) _showDeleteDialog = false; }
+    private async Task DeleteDraft(string reason)
+    {
+        if (_isActionLoading || !CanDeleteDraft) return;
+        _isActionLoading = true;
+        try
+        {
+            await DocumentService.DeleteDraftAsync(Id, reason);
+            _showDeleteDialog = false;
+            Toast.ShowSuccess("Đã xóa mềm bản nháp.");
+            NavManager.NavigateTo("/documents");
+        }
+        catch (HttpRequestException ex)
+        {
+            _deleteError = ex.Message;
+            await LoadDocument();
+        }
+        catch { _deleteError = "Không xóa được công văn. Hãy thử lại."; }
+        finally { _isActionLoading = false; }
+    }
 }

@@ -1,5 +1,6 @@
 using DocumentService.Core.Common;
 using DocumentService.Core.DTOs;
+using DocumentService.Core.Entities;
 
 namespace DocumentService.Core.Interfaces;
 
@@ -11,7 +12,10 @@ public interface IDocumentService
     Task<DocumentDto> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto, Guid userId);
     Task<DocumentDto> GetDocumentByIdAsync(Guid id);
     Task<PagedResult<DocumentDto>> GetAllDocumentsAsync(DocumentQueryParams query);
-    Task DeleteDocumentAsync(Guid id);
+    Task DeleteDocumentAsync(Guid id, DocumentActor actor, string? reason);
+    Task RestoreDocumentAsync(Guid id, DocumentActor actor, string? reason);
+    Task<PagedResult<DocumentDto>> GetDeletedDocumentsAsync(DocumentQueryParams query, DocumentActor actor);
+    Task<DocumentDto> ReceiveDocumentAsync(Guid id, DocumentActor actor);
 
     // File
     Task<DocumentFileDto> GetFileAsync(Guid id);

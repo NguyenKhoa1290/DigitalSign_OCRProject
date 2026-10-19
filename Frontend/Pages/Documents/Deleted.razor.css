@@ -1,0 +1,6 @@
+.deleted-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.deleted-title { font-size: 18px; overflow-wrap: anywhere; }
+.deleted-reason, details { overflow-wrap: anywhere; }
+details { margin-bottom: 16px; }
+.card-body { min-width: 0; }
+.filter-bar { flex-wrap: wrap; }

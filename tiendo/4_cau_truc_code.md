@@ -4,6 +4,13 @@
 
 ## 1. Solution
 
+Triển khai ngày 19/10/2026: [xóa mềm và khôi phục bản nháp](../tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_XOA_CONG_VAN.md). Các thay đổi dưới đây đã có trong source; xem Công việc 107 và TC-DOC-DELETE-POLICY-087. Nghiệm thu thực tế chờ người dùng:
+
+- `DocumentsController.Delete`/`IDocumentService.DeleteDocumentAsync`: bổ sung actor từ JWT, kiểm tra role/người tạo/giai đoạn và lý do hỗ trợ Admin; endpoint khôi phục/danh sách đã xóa chỉ Admin.
+- Entity/EF/repository: dữ liệu người tạo/mốc nghiệp vụ/xóa mềm/kiểm soát đồng thời; thay `Remove` bằng đánh dấu trong giao dịch có audit. Kiểm tra các đường đọc/ghi, thống kê, SignService và OCR callback.
+- Frontend danh sách/chi tiết: nút Xóa bản nháp dùng biểu tượng X, xác nhận và xử lý xung đột; quản lý hồ sơ đã xóa/khôi phục dành cho Admin. UI không thay kiểm tra backend.
+- Migration dữ liệu cũ phải phân biệt action Submit dùng khi khởi tạo với trình duyệt thật. Không đủ bằng chứng thì không cấp xóa.
+
 File solution:
 
 ```text

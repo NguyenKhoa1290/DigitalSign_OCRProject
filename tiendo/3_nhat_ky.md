@@ -1767,8 +1767,8 @@ Trong quá trình viết tài liệu phát hiện:
 ### Thử nghiệm ảnh thực tế qua PaddleOCR + LLM và xuất Word theo bố cục
 
 - Chạy thật PaddleOCR 2.9.1 trên ảnh `tai_nguyen/mau_cong_van/ke-hoach-thuc-te.jpg`: 30 dòng có confidence và tọa độ. Gửi cả ảnh và các dòng cho model Gemma 12B tại LM Studio local; không thay thế bằng kết quả JSON cũ.
-- Lượt đầu hết thời gian chờ 240 giây; chuyển sang streaming, lượt sau hoàn tất trong 307,99 giây của script (không gồm lượt Paddle ban đầu). Lưu metadata và toàn bộ dữ liệu thô tại `tai_nguyen/ket_qua_ocr/paddle_llm_thu_nghiem`.
-- Thêm bộ xuất thử nghiệm `layout_exporter.py` và script `tools/test_paddle_llm_word.py`: dựng đoạn văn, cột song song và bảng Word thật từ JSON; không hardcode biểu mẫu. Sửa lỗi các bảng liên tiếp bị renderer gộp làm mất đường viền.
+- Lượt đầu hết thời gian chờ 240 giây; chuyển sang streaming, lượt sau hoàn tất trong 307,99 giây của script (không gồm lượt Paddle ban đầu). Lưu metadata và toàn bộ dữ liệu thô tại `backup/20261019/thu_nghiem_ocr/paddle_llm_thu_nghiem`.
+- Thêm bộ xuất thử nghiệm `layout_exporter.py` và script `backup/20261019/tools_ocr/test_paddle_llm_word.py`: dựng đoạn văn, cột song song và bảng Word thật từ JSON; không hardcode biểu mẫu. Sửa lỗi các bảng liên tiếp bị renderer gộp làm mất đường viền.
 - Bản tự động còn sai tên trường, tiêu đề, cụm chữ ký số, ghi chú, số hàng trống (8 thay vì 7) và tỷ lệ cột. Đã đối chiếu thủ công với ảnh để tạo bản giao; giữ JSON/bản Word tự động nguyên trạng riêng và ghi hiệu chỉnh trong `review_changes.json`. Dấu đỏ chồng lên tiêu đề không được tái tạo.
 - Xuất `ke_hoach_paddle_llm_da_doi_chieu.docx`: một trang A4, bảng 4 cột/7 hàng thân trống, đầu trang và chữ ký song song, văn bản/bảng chỉnh sửa được. Render bằng skill `documents` (`render_docx.py`, LibreOffice, Times New Roman) và kiểm tra hình ảnh. Bản tự động và bản đã đối chiếu đều có bản render lưu riêng.
 - Chỉ thử nghiệm local; endpoint xuất Word hiện tại chưa tích hợp bộ xuất mới. Không coi bản đã hiệu chỉnh là độ chính xác của pipeline tự động.
@@ -1780,7 +1780,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 - Chạy lại Paddle trên ảnh thực tế: 30 dòng; gửi ảnh và bằng chứng OCR cho Gemma 12B tại LM Studio local, không dùng bản đã sửa tay.
 - Thử schema toàn bộ layout gặp cấu trúc không hợp lệ; chuyển sang tool thêm đoạn, cột và bảng. Model thực hiện 24 native tool calls trong 402,49 giây, hai lần render, tự gọi `clear_draft` rồi chọn bản thứ hai bằng `finish_document`. Có ID/arguments và finish reason `tool_calls` trong log API.
-- Lưu nguyên file `tai_nguyen/ket_qua_ocr/paddle_llm_tool_call/ke_hoach_model_tool_call.docx`, dữ liệu Paddle, toàn bộ response/tool events, metadata, hai bản trung gian và render PNG/PDF. Không hiệu chỉnh nội dung hoặc định dạng sau khi model chọn; file cuối trùng SHA-256 với bản thứ hai.
+- Lưu nguyên file `backup/20261019/thu_nghiem_ocr/paddle_llm_tool_call/ke_hoach_model_tool_call.docx`, dữ liệu Paddle, toàn bộ response/tool events, metadata, hai bản trung gian và render PNG/PDF. Không hiệu chỉnh nội dung hoặc định dạng sau khi model chọn; file cuối trùng SHA-256 với bản thứ hai.
 - Kiểm tra render một trang, văn bản và bảng sửa được, không nhúng ảnh. Chưa đạt độ giống ảnh: sai tiêu đề, thiếu “ký”, thiếu ngày ký, ký tự xuống dòng bị escape, bảng 16 hàng trống thay vì 7. Model gửi cả tám rows rỗng và blank_rows=8; bộ xuất cộng hai phần.
 - Lỗi in đậm còn liên quan adapter: model trả object thay cho boolean, bộ xuất dùng bool(object) nên nhận thành true. Cần kiểm tra kiểu tham số trước khi tích hợp; không coi tool thực thi thành công là nội dung đúng. Chi tiết tại README của thư mục kết quả. Chưa triển khai endpoint production.
 
@@ -1802,10 +1802,10 @@ Trong quá trình viết tài liệu phát hiện:
 
 - Xác nhận LM Studio cung cấp `qwen/qwen3.5-9b`. Dùng cùng ảnh, 30 dòng Paddle đã lưu, prompt, tools và bộ xuất như lượt Gemma 4; không sửa nội dung thủ công.
 - 423,31 giây, 32 native tool calls; một phóng to ảnh, ba render, hai clear draft. Không có lỗi tool/renderer nhưng model chưa gọi finish_document khi hết giới hạn 32 lượt; metadata ghi selected_iteration=null. Runner thoát lỗi, không xuất nhầm bản trung gian thành file cuối.
-- Giữ toàn bộ response, tool_events, metadata, bằng chứng OCR, ba bản Word/render tại `tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call`. Bản đã render gần nhất là `iteration-3/document.docx`, chưa được model chọn. Sau đó model đã clear draft và bắt đầu dựng lại.
+- Giữ toàn bộ response, tool_events, metadata, bằng chứng OCR, ba bản Word/render tại `backup/20261019/thu_nghiem_ocr/qwen35_9b_tool_call`. Bản đã render gần nhất là `iteration-3/document.docx`, chưa được model chọn. Sau đó model đã clear draft và bắt đầu dựng lại.
 - Kiểm tra bản thứ ba: một trang, văn bản/bảng thật; có tiêu đề, năm học, chữ ký số, ngày và hai tên ký. Bố cục chưa đạt: đầu trang gộp bằng tab, thân căn giữa, bảng cột đều với 8 hàng trống thay vì 7, khu vực ký thành hai dòng ba cột, số trang đưa xuống cuối. Không chỉnh lại kết quả. Chưa tích hợp production; README kết quả nêu rõ giới hạn của phép thử.
 - Kết luận giai đoạn thử local: cả Gemma 12B, Gemma 4 E4B và Qwen 3.5 9B đều chưa đáp ứng yêu cầu tái tạo bố cục ảnh mẫu. Không đánh dấu tính năng xuất Word theo ảnh là hoàn thành; các thời gian ghi nhận chỉ là từng lượt thử, không phải benchmark nhiều lần.
-- Bằng chứng Qwen: [metadata](../tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call/metadata.json), [log tool](../tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call/tool_events.json), [Word trung gian gần nhất](../tai_nguyen/ket_qua_ocr/qwen35_9b_tool_call/iteration-3/document.docx). Hướng tiếp theo theo trao đổi: đánh giá model cloud với cùng testcase nếu người dùng chuyển sang cloud; chưa chọn model, gọi API cloud hoặc gửi ảnh ra ngoài.
+- Bằng chứng Qwen: [metadata](../backup/20261019/thu_nghiem_ocr/qwen35_9b_tool_call/metadata.json), [log tool](../backup/20261019/thu_nghiem_ocr/qwen35_9b_tool_call/tool_events.json), [Word trung gian gần nhất](../backup/20261019/thu_nghiem_ocr/qwen35_9b_tool_call/iteration-3/document.docx). Hướng tiếp theo theo trao đổi: đánh giá model cloud với cùng testcase nếu người dùng chuyển sang cloud; chưa chọn model, gọi API cloud hoặc gửi ảnh ra ngoài.
 
 ---
 
@@ -1824,7 +1824,7 @@ Trong quá trình viết tài liệu phát hiện:
 ### Thử PP-StructureV3 xuất Word không dùng LLM, dọn renderer cũ
 
 - Xóa container thử `hau-ocr-render` theo yêu cầu; dùng thư viện OS/LibreOffice đã cài làm base cho container Paddle riêng `hau_ppstructure_trial`. Không xóa image OCR dùng chung hoặc đổi service OCR đang chạy.
-- Tạo virtualenv riêng PaddleOCR 3.7.0/PaddlePaddle 3.3.1/PaddleX 3.7.2; thêm `tools/test_ppstructure_word.py`. Chạy ảnh công văn mẫu với UVDoc, nhận diện tiếng Việt, layout và bảng; xuất Word trực tiếp bằng save_to_word, không LLM hoặc sửa tay.
+- Tạo virtualenv riêng PaddleOCR 3.7.0/PaddlePaddle 3.3.1/PaddleX 3.7.2; thêm `backup/20261019/tools_ocr/test_ppstructure_word.py`. Chạy ảnh công văn mẫu với UVDoc, nhận diện tiếng Việt, layout và bảng; xuất Word trực tiếp bằng save_to_word, không LLM hoặc sửa tay.
 - Ba lượt: OCRv3 tổng 73,36 giây (xử lý/xuất 15,48), OCRv5 tổng 51,53 (35,12), override OCRv6 medium tổng 50,78 (31,67). Có tải model/font, không coi thời gian một lượt là benchmark. JSON giữ tên model thực tế.
 - Cả ba bản Word render một trang, bảng 4 cột/7 hàng thân trống đúng ảnh, văn bản/bảng sửa được, không nhúng ảnh. Chữ tiếng Việt vẫn sai dấu/thiếu chữ; đầu trang gộp, chữ ký xếp dọc, cột bảng đều và số trang đưa xuống footer. Chưa đạt tái tạo giống ảnh.
 - Lưu Word/JSON/HTML/Markdown, ảnh nhận diện/render, cấu hình, dependencies, log và metadata tại `tai_nguyen/ket_qua_ocr/ppstructure_v3_thu_nghiem`. Kiểm tra cấu trúc/ảnh render cả ba, py_compile script; ghi testcase `TC-OCR-PPSTRUCTURE-053`. Container Paddle mới dừng sau thử, giữ cache cho lần sau.
@@ -1840,7 +1840,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Sửa thiếu pdf2image trong virtualenv để renderer chạy. Có các lượt bị lỗi hạ tầng/widths; lưu và phân biệt với kết quả model. Giới hạn free-tier 15 request gây chờ; nới tối đa 64 lượt sau khôi phục, model chọn iteration 6 ở lượt 60.
 - 60 tool calls, 51 thành công/9 lỗi, 6 render yêu cầu/3 thành công, 3 clear draft. Thời gian metadata 427,54 giây có quota/khôi phục, không phải benchmark thuần inference. Usage trong response lưu tổng 474941 token, chưa tính tiền.
 - Word cuối một trang, chữ/bảng thật, đầu trang/chữ ký song song, hết escape xuống dòng; file trùng hash bản model chọn. Chưa đạt giống ảnh: 6 hàng thân trống thay vì 7, thiếu số 246, ghi chú thiếu “này”, typography/tỷ lệ khác. Giữ nguyên file, không sửa tay.
-- Kết quả tại `tai_nguyen/ket_qua_ocr/gemini35_flash_lite_tool_call`, testcase 054. Cập nhật kế hoạch theo provider đã chọn; chưa tích hợp Gemini vào endpoint hoặc deploy stack. Dừng môi trường thử sau khi lưu kết quả.
+- Kết quả tại `backup/20261019/thu_nghiem_ocr/gemini35_flash_lite_tool_call`, testcase 054. Cập nhật kế hoạch theo provider đã chọn; chưa tích hợp Gemini vào endpoint hoặc deploy stack. Dừng môi trường thử sau khi lưu kết quả.
 
 ---
 
@@ -1851,7 +1851,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Lượt từng khối ghi 21 calls, một render lỗi widths, nhiều API 500/429. Chuyển sang tool toàn layout để giảm request; compatibility vẫn 500. Native API ban đầu HTTP 400 do schema array thiếu items; sửa schema rõ ràng. Sửa echo functionResponse.id theo tài liệu Google, kiểm tra fixture đạt; lưu các lượt bị lỗi riêng.
 - Native lượt cuối replay nguyên call đầu đã lưu, model tự xem render, dựng lại và chọn iteration 3. Có 4 calls thực thi gồm một replay/3 call mới; metadata 353,31 giây có retry và render, chưa gồm các lượt trước, không so benchmark với Gemini.
 - Word model chọn một trang, chữ/bảng thật, có số 246 và ghi chú đầy đủ hơn; bảng 10 hàng thân thay vì 7, literal backslash-n còn trong header/title/chữ ký, typography/tỷ lệ khác ảnh. Đã xem render, kiểm tra hash/file model chọn; không sửa nội dung.
-- Kết quả tại `tai_nguyen/ket_qua_ocr/gemma4_31b_google_thu_nghiem`, testcase 055. Chưa đạt tái tạo giống ảnh hoặc xác nhận thay thế Gemini; chưa đổi endpoint ứng dụng/deploy. Quét output không có khóa, xóa khóa tạm, dừng container thử.
+- Kết quả tại `backup/20261019/thu_nghiem_ocr/gemma4_31b_google_thu_nghiem`, testcase 055. Chưa đạt tái tạo giống ảnh hoặc xác nhận thay thế Gemini; chưa đổi endpoint ứng dụng/deploy. Quét output không có khóa, xóa khóa tạm, dừng container thử.
 
 ---
 
@@ -1860,7 +1860,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 - Xác nhận model qua API listing/tài liệu Google. Viết `tools/test_gemini_single_shot_word.py`: prompt số hóa chuyên biệt, schema đầy đủ, một POST native generateContent, không retry/tool loop/sửa tay; Word và render chạy local nếu nhận layout hợp lệ.
 - Gửi cùng ảnh và bằng chứng Paddle đã lưu, thinking medium/temperature 0. Request duy nhất nhận HTTP 503 UNAVAILABLE sau 3,40 giây, thông báo nhu cầu sử dụng cao. Chưa có Word; chưa đánh giá được chất lượng model.
-- Lưu prompt/schema/config/evidence/response/metadata tại `tai_nguyen/ket_qua_ocr/gemini38_flash_single_shot`. Kiểm tra cú pháp script đạt; quét output không có khóa, xóa khóa tạm và dừng container thử. Không đổi endpoint/deploy.
+- Lưu prompt/schema/config/evidence/response/metadata tại `backup/20261019/thu_nghiem_ocr/gemini38_flash_single_shot`. Kiểm tra cú pháp script đạt; quét output không có khóa, xóa khóa tạm và dừng container thử. Không đổi endpoint/deploy.
 - Testcase 056 ghi lỗi dịch vụ, không kết luận model thất bại về độ chính xác. Giữ giới hạn một request theo yêu cầu người dùng.
 
 ---
@@ -1871,7 +1871,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Xác nhận tên model còn trong API listing; tài liệu Google ghi tự định tuyến 3.7 sang 3.8. Thông báo trước khi chạy; response thực tế xác nhận modelVersion=gemini-3.8-flash.
 - Dùng cùng ảnh/Paddle/prompt/schema, một POST duy nhất, HTTP 200. Sinh 52,93 giây; tổng gồm Word/render 54,49 giây; usage 9472 tokens. Không retry/tool loop/sửa tay. Script đặt tên Word theo model yêu cầu thay vì hardcode 3.8.
 - Word một trang, văn bản/bảng editable, số 246 và vùng đầu trang/chữ ký rõ, không literal escape. Đã xem render và đối chiếu ảnh: bảng 8 hàng thân thay vì 7, typography/spacing/in đậm còn khác; chưa đạt giống ảnh toàn bộ.
-- Lưu tại `tai_nguyen/ket_qua_ocr/gemini37_flash_single_shot`, testcase 057. Kiểm tra cú pháp, cấu trúc Word/hash và quét khóa; xóa khóa tạm, dừng container. Chưa tích hợp endpoint/deploy hoặc chốt đổi model.
+- Lưu tại `backup/20261019/thu_nghiem_ocr/gemini37_flash_single_shot`, testcase 057. Kiểm tra cú pháp, cấu trúc Word/hash và quét khóa; xóa khóa tạm, dừng container. Chưa tích hợp endpoint/deploy hoặc chốt đổi model.
 
 ---
 
@@ -1889,7 +1889,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 - Theo yêu cầu người dùng, chạy runner không có --paddle-json: chỉ ảnh/prompt/schema, không chạy Paddle hoặc gửi OCR/Word/layout cũ. Model gemini-3.8-flash, cùng cấu hình medium/temperature 0, một POST không retry.
 - HTTP 503 UNAVAILABLE sau 2,41 giây, Google thông báo nhu cầu sử dụng cao. Chưa có Word/render; chưa đánh giá được chất lượng image-only hoặc khả năng thay thế Paddle.
-- Lưu `tai_nguyen/ket_qua_ocr/gemini38_image_only`, testcase 058; metadata input_mode=image_only, không có paddle_evidence.json. Quét output không có khóa, xóa khóa tạm và dừng container. Không đổi endpoint/deploy.
+- Lưu `backup/20261019/thu_nghiem_ocr/gemini38_image_only`, testcase 058; metadata input_mode=image_only, không có paddle_evidence.json. Quét output không có khóa, xóa khóa tạm và dừng container. Không đổi endpoint/deploy.
 
 ---
 
@@ -1899,7 +1899,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Người dùng yêu cầu thử lại lượt không Paddle sau 503. Một request mới, chỉ ảnh/prompt/schema, không OCR/Word/layout cũ; không retry/tool loop/sửa tay.
 - gemini-3.8-flash HTTP 200/STOP, sinh 26,96 giây/tổng 28,51 giây gồm Word/render; usage 6073 tokens. Word editable một trang, không ảnh nhúng/literal escape, giữ số 246 và các vùng chính.
 - Đã xem render và kiểm tra cấu trúc/hash: bảng 4 cột/10 hàng thân thay vì 7, typography/in đậm/vị trí chữ ký khác nguồn. Chứng minh xuất Word không cần Paddle trên mẫu này, chưa chứng minh chất lượng tương đương hoặc đúng toàn bộ ảnh.
-- Lưu `tai_nguyen/ket_qua_ocr/gemini38_image_only_retry1`, testcase 059. Xóa khóa tạm, quét output, dừng container thử; chưa thay endpoint/deploy. Giữ nguyên lượt 058 lỗi dịch vụ và lượt 057 có Paddle.
+- Lưu `backup/20261019/thu_nghiem_ocr/gemini38_image_only_retry1`, testcase 059. Xóa khóa tạm, quét output, dừng container thử; chưa thay endpoint/deploy. Giữ nguyên lượt 058 lỗi dịch vụ và lượt 057 có Paddle.
 
 ---
 
@@ -1908,7 +1908,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 - Theo yêu cầu người dùng, bổ sung protocol grid vào runner: đếm separator/dải hàng hai chiều, tách header, bỏ đường nền/baseline/bóng, kiểm tra tổng rows+blank_rows. Chốt số hàng trước căn trang, không tăng/giảm để lấp chiều cao; không hardcode số hàng đúng của mẫu.
 - Thêm prompt_version/hash metadata. Cùng ảnh/model/schema/config, chỉ ảnh không Paddle, một POST nhận HTTP 503 UNAVAILABLE sau 4,87 giây. Không retry, chưa có Word để đánh giá cải thiện.
-- Lưu `tai_nguyen/ket_qua_ocr/gemini38_image_only_prompt_v2`, testcase 060. py_compile đạt, quét output/xóa khóa tạm/dừng container; không đổi endpoint/deploy hoặc sửa Word cũ.
+- Lưu `backup/20261019/thu_nghiem_ocr/gemini38_image_only_prompt_v2`, testcase 060. py_compile đạt, quét output/xóa khóa tạm/dừng container; không đổi endpoint/deploy hoặc sửa Word cũ.
 
 ---
 
@@ -1917,7 +1917,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 - Người dùng yêu cầu gửi hai lần: đúng hai POST độc lập cùng ảnh/prompt/schema/config, không Paddle; không dùng bản đầu cho bản sau hoặc sửa tay.
 - Cả hai HTTP 200/STOP và Word editable một trang, số 246, không ảnh nhúng/literal escape. Request 1 sinh 33,05 giây, bảng 10 hàng thân; request 2 sinh 35,45 giây, bảng 8 hàng thân. Nguồn có 7 hàng: chưa đạt, prompt chưa đảm bảo chính xác/ổn định.
-- Đã xem cả hai render và kiểm tra hash/cấu trúc, lưu `tai_nguyen/ket_qua_ocr/gemini38_prompt_v2_pair`, testcase 061. Quét output/xóa khóa tạm/dừng container; chưa đổi endpoint/deploy. Không kết luận hai lần gọi luôn khắc phục 503.
+- Đã xem cả hai render và kiểm tra hash/cấu trúc, lưu `backup/20261019/thu_nghiem_ocr/gemini38_prompt_v2_pair`, testcase 061. Quét output/xóa khóa tạm/dừng container; chưa đổi endpoint/deploy. Không kết luận hai lần gọi luôn khắc phục 503.
 
 ---
 
@@ -1945,7 +1945,7 @@ Trong quá trình viết tài liệu phát hiện:
 ### Chốt phương án kết hợp và bổ sung báo cáo đồ án
 
 - Người dùng chốt Paddle cấu trúc + Gemini tiếng Việt theo lượt 062. Ghi phương án chính: ảnh/Paddle evidence → Gemini 3.8 Flash → JSON → DOCX editable local → văn thư đối chiếu/sửa, chưa coi tích hợp ứng dụng đã hoàn tất.
-- Tạo `tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_OCR.docx` từ bản gốc, thêm mục 2.7.1–2.7.4: cơ sở lựa chọn, quy trình, kết quả/giới hạn và phạm vi triển khai. Có nguồn Paddle/Google chính thức và evidence testcase 062; không bịa độ chính xác hoặc bỏ lỗi API/định dạng còn tồn tại.
+- Tạo `backup/20261019/bao_cao_cu/Do_an_tot_nghiep_cap_nhat_OCR.docx` từ bản gốc, thêm mục 2.7.1–2.7.4: cơ sở lựa chọn, quy trình, kết quả/giới hạn và phạm vi triển khai. Có nguồn Paddle/Google chính thức và evidence testcase 062; không bịa độ chính xác hoặc bỏ lỗi API/định dạng còn tồn tại.
 - Script chèn OOXML, verification chứng minh nội dung gốc và các phần gói DOCX khác giữ nguyên; bản gốc không ghi đè. Render 87 trang, xem tổng quan và ba trang mới 85–87; chỉnh giãn cách/ngắt trang để sạch phần bổ sung. Mục lục cũ cần Update entire table trong Word, đã ghi hướng dẫn.
 - py_compile đạt, dừng container thử; không gọi cloud mới, thay endpoint hoặc deploy. Cập nhật trạng thái/kế hoạch theo phương án người dùng đã chốt.
 
@@ -1956,7 +1956,7 @@ Trong quá trình viết tài liệu phát hiện:
 
 - Theo yêu cầu người dùng, đổi mục 1.2.3 thành “PaddleOCR và mô hình ngôn ngữ lớn”, sửa ba đoạn làm rõ Paddle/PP-Structure cung cấp chữ/cấu trúc bảng, Gemini đọc ảnh/evidence và xuất JSON, Word nháp cần văn thư xác nhận; dẫn đến phần thử nghiệm/phạm vi 2.7.
 - Đổi tên mục trong mục lục, giữ cấu trúc/định dạng cũ. Verification xác nhận chỉ bốn đoạn mục 1.2.3 và nhãn mục lục thay đổi; các đoạn và thành phần DOCX khác còn nguyên. Sao lưu bản trước khi cập nhật cùng file bàn giao.
-- Render lại báo cáo 87 trang, xem trang mục lục và nội dung 1.2.3, kiểm tra cú pháp/hash. File cũ bị ứng dụng khác khóa nên lưu bản bàn giao mới tại tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_OCR_1_2_3.docx và QA tại kiem_tra_1_2_3; không ép đóng ứng dụng. Không gọi model/deploy; dừng môi trường thử.
+- Render lại báo cáo 87 trang, xem trang mục lục và nội dung 1.2.3, kiểm tra cú pháp/hash. File cũ bị ứng dụng khác khóa nên lưu bản bàn giao mới tại backup/20261019/bao_cao_cu/Do_an_tot_nghiep_cap_nhat_OCR_1_2_3.docx và QA tại kiem_tra_1_2_3; không ép đóng ứng dụng. Không gọi model/deploy; dừng môi trường thử.
 
 ---
 
@@ -1966,7 +1966,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Theo yêu cầu dùng model đang nạp: API trạng thái xác nhận qwen/qwen3.5-9b VLM/Q4_K_M, context 30208; không nạp/đổi model khác. Runner hỗ trợ provider lmstudio qua chat/completions và JSON schema, giữ provider Google mặc định; local không cần khóa Google.
 - Hai request độc lập cùng ảnh/evidence bảng Paddle và prompt tiếng Việt v3, temperature 0/max_tokens 12000; không tool loop/retry/Google API. Hoàn tất kiểm tra ngày 13/10. HTTP 200/stop, thời gian 346,56 và 380,88 giây.
 - Hai JSON layout giống nhau: 4 cột nhưng rows chứa 10 mảng rỗng, blank_rows=0, trong khi Paddle có 8 hàng tổng/7 thân. Validator từ chối thiếu ô mỗi hàng; chưa tạo DOCX/render. Không sửa tay hoặc nới kiểm tra để báo thành công.
-- Lưu `tai_nguyen/ket_qua_ocr/lmstudio_qwen35_vi_paddle`, loaded_model/response/layout/metadata/verification, testcase 063. Cú pháp và kiểm tra raw đạt, container thử đã dừng. Chưa đạt trong phép thử này; giữ phương án Paddle + Gemini đã chốt, không sửa báo cáo/endpoint/deploy.
+- Lưu `backup/20261019/thu_nghiem_ocr/lmstudio_qwen35_vi_paddle`, loaded_model/response/layout/metadata/verification, testcase 063. Cú pháp và kiểm tra raw đạt, container thử đã dừng. Chưa đạt trong phép thử này; giữ phương án Paddle + Gemini đã chốt, không sửa báo cáo/endpoint/deploy.
 
 ---
 
@@ -1976,7 +1976,7 @@ Trong quá trình viết tài liệu phát hiện:
 - Chạy `qwen/qwen3.5-9b` đang nạp qua LM Studio, prompt tiếng Việt, ảnh gốc và bằng chứng PP-Structure/Paddle đã lưu; không inference Paddle mới, không gọi Google.
 - Model thực hiện 4 tool calls trong 4 lượt/237,29 giây: hai lần render đầu thiếu header bảng; lần 3 render Word được; lượt 4 xem render rồi chọn iteration 3. Không sửa nội dung hay số hàng bằng tay.
 - Bản chọn là DOCX hợp lệ nhưng chưa đạt: 9 hàng rỗng trong `rows` cộng `blank_rows=8` thành 17 hàng thân, trong khi cấu trúc Paddle có 7; render 2 trang, chữ ký bị đẩy sang trang hai, các vùng song song/246/dấu đỏ chưa được tái tạo.
-- Lưu prompt, Paddle input, tool logs, DOCX/render tại `tai_nguyen/ket_qua_ocr/lmstudio_qwen35_vi_paddle_toolcall`, testcase 064. Tool calling hoạt động nhưng chưa cải thiện độ giống ảnh trong lượt này. Giữ phương án Paddle + Gemini đã chốt; chưa tích hợp endpoint hoặc triển khai.
+- Lưu prompt, Paddle input, tool logs, DOCX/render tại `backup/20261019/thu_nghiem_ocr/lmstudio_qwen35_vi_paddle_toolcall`, testcase 064. Tool calling hoạt động nhưng chưa cải thiện độ giống ảnh trong lượt này. Giữ phương án Paddle + Gemini đã chốt; chưa tích hợp endpoint hoặc triển khai.
 
 ---
 
@@ -2262,3 +2262,50 @@ Trong quá trình viết tài liệu phát hiện:
 - Cập nhật Published application trên Cloudflare thành `http://frontend:3000`, giữ nguyên các ingress rule khác và đọc lại API để xác nhận cấu hình.
 - Bỏ phụ thuộc network namespace của Frontend; tạo lại riêng `cloudflared` trên mạng `digitalsign_ocrproject_default`. Log xác nhận connector nhận cấu hình version 2 và đăng ký 4 kết nối QUIC.
 - Kiểm tra domain công khai trả HTTP 200 cho trang chính và `/health`; health local cũng trả `Healthy`. Xác nhận Compose hợp lệ bằng `docker compose ... config --quiet`.
+
+---
+
+## Công việc số 104 — 19/10/2026
+### Bổ sung báo cáo và thiết kế phân quyền xóa mềm bản nháp
+
+- Người dùng chốt: Chuyên viên/Văn thư chỉ xóa mềm bản nháp do mình tạo, chưa trình/phân công/ký/tiếp nhận chính thức; Admin hỗ trợ và khôi phục có lý do, không vượt điều kiện nghiệp vụ. Manager/Ban Giám hiệu không có quyền xóa theo vai trò lãnh đạo; không xóa Rejected hoặc công văn đã qua quy trình. Hủy/thu hồi là quy trình riêng chưa triển khai.
+- Bản báo cáo cuối đặt tại `tai_lieu/05_bao_cao/Do_an_tot_nghiep_cap_nhat_phan_quyen_xoa.docx`, kế thừa bản cập nhật luồng công văn ngày 13/10. Thêm use case 2.1.4.7, ba dòng ma trận quyền kèm điều kiện, thiết kế Document Service, dữ liệu bổ sung và giới hạn triển khai. Giữ bản nguồn và các phần OCR/công văn đến/đi đã có.
+- Bổ sung tài liệu chính sách tại `tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_XOA_CONG_VAN.md`; đồng bộ kiến trúc, cấu trúc code, dữ liệu, tiến độ/kế hoạch, hướng dẫn service, tài khoản/vai trò và danh mục nghiệm thu. TC-DOC-DELETE-POLICY-087 được lập **chưa chạy**.
+- Thiết kế ghi rõ dữ liệu người tạo/mốc nghiệp vụ, xóa mềm/audit, đồng thời, bộ lọc đọc/ghi, SignService/Kafka/OCR callback, khôi phục và bảo toàn tệp/lịch sử. Cảnh báo kỹ thuật: source dùng Submit cho cả khởi tạo và trình duyệt, phải đối soát dữ liệu cũ, không cấp xóa khi không đủ bằng chứng.
+- Xác minh OOXML: chỉ mở rộng nội dung `word/document.xml`, các thành phần khác của gói và các nội dung cũ ngoài ma trận bổ sung giữ nguyên; 16 thành 17 bảng, ma trận thêm ba hàng. Nội dung trích xuất/source hash đã đồng bộ từ bản mới. Script tái lập `tools/update_thesis_document_deletion_policy.py`; bằng chứng tại `tai_nguyen/kiem_tra_bao_cao/phan_quyen_xoa_20261019/`.
+- Phạm vi lần này là tài liệu, chưa sửa API/entity/repository/Frontend, chưa áp dụng migration hoặc triển khai Docker. API hiện vẫn xóa cứng Draft/Rejected; không ghi nhận chức năng xóa mềm/khôi phục đã hoàn thành.
+- Bản bàn giao render 95 trang bằng `render_docx.py`/LibreOffice trong container riêng không có mạng. Đã xem tổng quan và các trang bổ sung, chỉnh ngắt dòng các ô/đoạn của bảng kịch bản; giữ các phần gốc theo nguồn. Hash DOCX trùng manifest render cuối `render_reviewed/`. Kiểm tra liên kết và đồng bộ nội dung trích xuất đạt; cần Update entire table trong Word để cập nhật mục lục/số trang theo Word.
+
+---
+
+## Công việc số 105 — 19/10/2026
+### Dọn phương án cũ sang kho lưu trữ
+
+- Chuyển 46 mục sang `backup/20261019`: runner LM Studio/tool calling, prompt cũ, kết quả thử không còn dùng, template frontend tham khảo, báo cáo cũ và đầu ra render/build/cache trung gian. Không xóa file; lệnh xóa đầu ra tự sinh bị bộ kiểm tra tự động từ chối nên dùng phương án lưu trữ có thể khôi phục.
+- Giữ nguồn ứng dụng, test hồi quy, báo cáo cuối trong tai_lieu, bản nguồn luồng công văn ngày 13/10, ảnh mẫu và bằng chứng Gemini/Paddle được báo cáo dẫn trực tiếp. Giữ `render_reviewed` và manifest xác minh của báo cáo cuối. Không thay file Word hoặc các dữ liệu thử nghiệm lịch sử.
+- `cleanup_manifest.json` ghi đường dẫn trước/sau và hash bảo vệ; cập nhật liên kết Markdown, README tài nguyên và vị trí các báo cáo cũ. Script thử nghiệm đã chuyển được sửa cách tìm workspace/OCRService, giữ helper cùng thư mục; không chạy model hoặc script sửa mật khẩu cũ.
+- Kiểm tra 380 file mã nguồn/test/cấu hình và báo cáo được bảo vệ giữ nguyên SHA-256; kiểm tra cú pháp runner và liên kết tài liệu. Các tham chiếu Kotlin của template vốn không có trong workspace được ghi rõ là tham chiếu lịch sử. Không chạy test ứng dụng, build Docker hoặc gọi OCR/Gemini trong lần dọn này.
+
+---
+
+## Công việc số 106 — 19/10/2026
+### Tách kho lưu trữ ra thư mục backup
+
+- Theo yêu cầu người dùng, chuyển toàn bộ kho lưu trữ sang `backup/20261019` ở gốc dự án. Không xóa file hoặc ghi đè dữ liệu.
+- Cập nhật liên kết Markdown, README và đường dẫn đích trong manifest; giữ đường dẫn nguồn để tra cứu khôi phục. Thêm `backup/` vào Git ignore và Docker ignore.
+- Kiểm tra lại đủ 46 mục lưu trữ và SHA-256 của 380 file được bảo vệ. Không thay đổi mã nguồn ứng dụng hoặc nội dung báo cáo Word.
+
+---
+
+## Công việc số 107 — 19/10/2026
+### Triển khai xóa mềm và khôi phục công văn
+
+- Thay xóa cứng bằng xóa mềm Draft đủ điều kiện. Actor/role lấy từ JWT; Specialist/Clerk chỉ xóa hồ sơ của mình. Admin hỗ trợ hoặc khôi phục bắt buộc có lý do, không vượt giai đoạn. Chặn Rejected, hồ sơ từng trình/phân công/ký/tiếp nhận, thiếu bằng chứng người tạo hoặc chưa đối soát.
+- Migration `20261019141345_SoftDeleteDraftDocuments` thêm người tạo, mốc nghiệp vụ, dấu xóa và token đồng thời. Luồng mới ghi Create riêng với Submit. Dữ liệu trước migration giữ DeletionEligibilityConfirmed=false; không sửa hoặc suy đoán lịch sử cũ. Thêm receive để Văn thư/Admin ghi mốc tiếp nhận chính thức công văn đến.
+- Xóa/khôi phục và audit trong cùng giao dịch; giữ Documents, DocumentProcesses, MinIO và bằng chứng ký. Query filter chặn các đường đọc/ghi thường, thống kê; danh sách đã xóa và khôi phục chỉ dành cho Admin. Khôi phục xác minh khả năng đọc tệp nếu có, không tự OCR/trình/phát hành.
+- Khóa hàng PostgreSQL kết hợp ConcurrencyVersion bảo vệ xóa với trình/tiếp nhận/phân công/ký. SignService commit mốc bắt đầu ký trước khi chạm PDF, giữ khóa qua ký/lưu chữ ký và từ chối hồ sơ đã xóa. Migration projection chỉ đồng bộ snapshot, không sửa bảng Documents do service khác quản lý.
+- OCR/Kafka kiểm tra trạng thái và đường dẫn tệp trước xử lý, callback kèm ExpectedVersion; từ chối kết quả cũ kể cả sau một vòng xóa/khôi phục. Gateway loại thông báo của hồ sơ đã xóa khỏi danh sách và số chưa đọc, giữ nguyên bản ghi/audit.
+- Frontend có nút Xóa bản nháp bằng biểu tượng X, xác nhận tên và lý do; hiển thị lỗi thực từ API, tải lại trạng thái khi xung đột. Admin mở Công văn đã xóa từ danh sách để xem lịch sử và khôi phục. Kiểm tra ảnh 300px/1366px; sửa chuỗi lỗi bị truyền như literal và cuộn trang quản trị về đầu.
+- Kiểm thử: DocumentService 93/93 (gồm HTTP phân quyền và 5 PostgreSQL tích hợp), Gateway 29/29, OCR 14/14 dùng mock, browser 14 tình huống đạt ở 1366px/300px. PostgreSQL dùng database/container riêng; browser intercept API; không gọi mô hình trả phí hoặc xóa/khôi phục công văn thật. Máy hiện tại chạy test net9.0 trên runtime .NET 10 bằng roll-forward; Docker publish dùng .NET 9.
+- Sao lưu database tại `backup/database/20261019/before_document_soft_delete.dump`, kiểm tra archive bằng pg_restore. Đã build/cập nhật Docker document-service, sign-service, api-gateway, ocr-service và frontend; hai migration đã áp dụng. Sau cập nhật vẫn đủ 14 Documents, 40 DocumentProcesses và 4 Signatures, hash các dữ liệu gốc giữ nguyên; không có hồ sơ thật bị xóa. Frontend/Gateway/OCR trả HTTP 200 tại endpoint kiểm tra tương ứng, API quản trị yêu cầu đăng nhập.
+- Đồng bộ thiết kế, kiến trúc, dữ liệu, tài khoản/vai trò, README service, kế hoạch và TC-DOC-DELETE-POLICY-087. Bằng chứng tại `tai_nguyen/ket_qua_kiem_thu/xoa_cong_van_20261019/`. Chưa có giao diện đối soát dữ liệu cũ, hủy/thu hồi hoặc purge; nghiệm thu tài liệu/điện thoại thật do người dùng thực hiện. Bản Word trước đó được giữ nguyên, phản ánh thiết kế tại thời điểm lập.

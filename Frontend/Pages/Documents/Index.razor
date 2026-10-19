@@ -12,6 +12,9 @@
         <p class="page-subtitle">Quản lý toàn bộ công văn trong hệ thống</p>
     </div>
     <div class="page-actions">
+        <AuthorizeView Roles="Admin">
+            <a href="/documents/deleted" class="btn btn-outline">Công văn đã xóa</a>
+        </AuthorizeView>
         <AuthorizeView Roles="Clerk,Specialist">
             <a href="/documents/create" class="btn btn-primary">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

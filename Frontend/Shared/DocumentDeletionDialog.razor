@@ -1,0 +1,43 @@
+@if (IsVisible)
+{
+    <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="draft-action-title">
+            <div class="modal-header">
+                <span id="draft-action-title" class="modal-title">@(Restore ? "Khôi phục bản nháp" : "Xóa bản nháp")</span>
+                <button class="modal-close" disabled="@Busy" @onclick="OnCancel" aria-label="Đóng">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn muốn @(Restore ? "khôi phục" : "xóa") công văn <strong>@DocumentTitle</strong>?</p>
+                <p>@(Restore ? "Công văn sẽ trở lại danh sách Nháp, giữ nguyên người tạo và lịch sử." : "Công văn sẽ được ẩn khỏi danh sách. Tệp và lịch sử được giữ lại; Admin có thể khôi phục.")</p>
+                <label for="draft-action-reason" class="form-label">Lý do @(RequireReason ? "(bắt buộc)" : "(tùy chọn)")</label>
+                <textarea id="draft-action-reason" class="form-control" rows="3" maxlength="1000" @bind="_reason" @bind:event="oninput" disabled="@Busy"></textarea>
+                @if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-danger" role="alert">@Error</div> }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" disabled="@Busy" @onclick="OnCancel">Hủy</button>
+                <button class="btn @(Restore ? "btn-primary" : "btn-danger")" disabled="@(Busy || (RequireReason && string.IsNullOrWhiteSpace(_reason)))" @onclick="Confirm">
+                    @(Busy ? "Đang xử lý..." : Restore ? "Khôi phục" : "Xóa bản nháp")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public bool Restore { get; set; }
+    [Parameter] public bool RequireReason { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string DocumentTitle { get; set; } = "";
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback<string> OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    private string _reason = "";
+    private bool _wasVisible;
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && !_wasVisible) _reason = "";
+        _wasVisible = IsVisible;
+    }
+    private Task Confirm() => OnConfirm.InvokeAsync(_reason.Trim());
+}

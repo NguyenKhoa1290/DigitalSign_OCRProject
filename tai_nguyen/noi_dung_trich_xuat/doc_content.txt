@@ -328,6 +328,7 @@ Quản lý hạ tầng và Lưu trữ: Admin giám sát tài nguyên lưu trữ 
 
 2.1.4.6. Kịch bản tính năng Quản trị hệ thống và Phân quyền
 
+2.1.4.7. Kịch bản xóa mềm và khôi phục bản nháp
 2.2. Mô hình Phân cấp Quản lý hành chính
 2.2.1. Luồng dữ liệu và sơ đồ luồng dữ liệu
 Hệ thống Hệ thống thông tin hỗ trợ quản lý công văn đi và đến của Trường đại học Kiến Trúc Hà Nội được thiết kế để mô phỏng chính xác cơ cấu tổ chức và quy trình nghiệp vụ hành chính thực tế tại Đại học Kiến trúc Hà Nội. Mô hình này đảm bảo tính kế thừa và đúng thẩm quyền trong việc xử lý văn bản:
@@ -345,6 +346,11 @@ Bảng 2.2.1. Bảng Vai trò người dùng và phân quyền
 Sơ đồ phân cấp chức năng hệ thống
 Ma trận phân quyền:
 Bảng 2.3. Ma trận phân quyền
+Bổ sung phân quyền ngày 19/10/2026: các quyền (1), (2), (3) là yêu cầu thiết kế cần triển khai, không xác nhận API hiện tại đã đáp ứng. Các quyền khác trong bảng được giữ nguyên.
+(1) Văn thư và Chuyên viên chỉ được xóa mềm dự thảo do mình tạo, còn Draft, chưa trình duyệt, chưa phân công xử lý, chưa ký và chưa tiếp nhận chính thức vào sổ công văn đến. Không xác định điều kiện này chỉ bằng trạng thái hiện tại.
+(2) Admin được xóa mềm dự thảo của người khác để xử lý nhập sai hoặc trùng, với cùng điều kiện nghiệp vụ và bắt buộc nhập lý do. Vai trò quản trị không cho phép bỏ qua giai đoạn xử lý hoặc xóa công văn đã phát hành.
+(3) Admin được khôi phục dự thảo đã xóa mềm khi điều kiện nghiệp vụ còn hợp lệ; phải ghi lý do, người thực hiện và thời điểm. Lãnh đạo Phòng, Ban Giám hiệu không có quyền xóa hoặc khôi phục chỉ từ vai trò lãnh đạo.
+Không cho xóa công văn đã trình duyệt, bị trả lại (Rejected), đang ký, đã ký, đã phát hành hoặc công văn đến đã tiếp nhận chính thức. Trường hợp dừng xử lý hoặc thu hồi cần quy trình riêng, giữ lý do và lịch sử; bổ sung này không tự cấp quyền hủy hoặc thu hồi.
 2.4. Thiết kế hệ thống và sơ đồ thiết kế hệ thống
 2.4.1. Tổng quan Kiến trúc Microservices
 Hệ thống thông tin hỗ trợ quản lý công văn đi và đến của Trường đại học Kiến Trúc Hà Nội áp dụng kiến trúc Microservices (Vi dịch vụ). Thay vì xây dựng một ứng dụng đơn khối (Monolithic) cồng kềnh, hệ thống được chia thành các dịch vụ nhỏ độc lập. Mỗi dịch vụ đảm nhận một chức năng nghiệp vụ riêng biệt và giao tiếp với nhau thông qua mạng hoặc trục truyền thông điệp (Message Bus).
@@ -393,6 +399,9 @@ Lưu trữ tệp vật lý: Dịch vụ trực tiếp đẩy tệp PDF gốc lê
 Quản lý Metadata: Song song với đó, các thông tin định tuyến cơ bản (như người tạo, thời gian, trạng thái hiện tại và liên kết tới tệp trong MinIO) được ghi nhận vào PostgreSQL.
 Điều phối quy trình bất đồng bộ qua Kafka: Đây là chức năng quan trọng nhất giúp hệ thống vận hành thông minh. Ngay sau khi tệp tin được lưu trữ thành công, Document Service sẽ phát đi một sự kiện (Event) mang tên "DocumentUploaded" vào trục Message Bus (Kafka). Hành động này chính là "ngòi nổ" để kích hoạt các dịch vụ xử lý chuyên sâu như OCR (Python) mà không cần người dùng phải thao tác thủ công hay chờ đợi phản hồi trực tiếp, từ đó nâng cao trải nghiệm người dùng và hiệu suất hệ thống.
 Kiểm soát trạng thái và Phiên bản: Dịch vụ chịu trách nhiệm theo dõi toàn bộ quá trình biến đổi của văn bản từ lúc là bản nháp, đang bóc tách thông tin, cho đến khi được ký số và ban hành chính thức. Mọi sự thay đổi về nội dung hoặc thuộc tính của công văn đều được Document Service cập nhật trạng thái liên tục vào cơ sở dữ liệu để các bộ phận liên quan có thể theo dõi thời gian thực.
+Thiết kế bổ sung về xóa mềm: Gateway xác thực, Document Service quyết định quyền theo vai trò, người tạo và toàn bộ giai đoạn xử lý. Nút trên giao diện chỉ hỗ trợ thao tác; API phải kiểm tra lại và không tin người tạo hoặc vai trò do client gửi. Chuyên viên/Văn thư chỉ xóa dự thảo cá nhân đủ điều kiện; Admin hỗ trợ và khôi phục có lý do, không vượt điều kiện nghiệp vụ.
+Xóa mềm được thực hiện trong giao dịch có kiểm soát đồng thời với thao tác trình duyệt, phân công, tiếp nhận và ký. Lưu dấu xóa riêng, giữ trạng thái Draft và toàn bộ tệp, lịch sử, bằng chứng ký. Việc hủy xử lý hoặc thu hồi công văn sau trình duyệt thuộc quy trình riêng, không dùng thao tác xóa.
+Các API đọc, tải tệp, sửa, OCR, phân công, trình duyệt và ký phải kiểm tra dấu xóa; danh sách, tìm kiếm, thống kê và thông báo thông thường không trả hồ sơ đã xóa. Callback hoặc tác vụ nền đang chạy không được phục hồi hay ghi đè hồ sơ này. Chỉ Admin được truy cập luồng quản lý dự thảo đã xóa để kiểm tra và khôi phục có nhật ký.
 2.4.4.3. OCR Service
 Dịch vụ Nhận dạng ký tự quang học (OCR Service) là thành phần mang tính đột phá nhất trong hệ thống, đóng vai trò là "trí tuệ nhân tạo" giúp tự động hóa khâu nhập liệu. Việc tách rời dịch vụ này bằng ngôn ngữ Python là một quyết định chiến lược, cho phép hệ thống khai thác tối đa các thư viện xử lý ảnh và mô hình học sâu (Deep Learning) mạnh mẽ nhất hiện nay.
 
@@ -522,6 +531,9 @@ Trạng thái vòng đời: Trường status được thiết kế kiểu Varcha
 Chiến lược tối ưu hóa:
 Đánh chỉ mục (Indexing): Thực hiện đánh chỉ mục trên các trường thường xuyên tra cứu như doc_number và title để đảm bảo tốc độ phản hồi khi cán bộ tìm kiếm văn bản trong kho dữ liệu khổng lồ của Nhà trường . 
 Kiểu dữ liệu JSONB: Sử dụng Jsonb cho dữ liệu OCR thô giúp tiết kiệm không gian lưu trữ và tăng tốc độ xử lý các thuộc tính không cố định mà mô hình AI bóc tách được . 
+Thiết kế dữ liệu bổ sung phục vụ xóa mềm (chưa có migration áp dụng): đề xuất lưu CreatedById và CreatedAt bất biến; FirstSubmittedAt đánh dấu lần trình duyệt đầu tiên; OfficiallyReceivedAt đánh dấu công văn đến đã tiếp nhận chính thức. Các mốc này cùng lịch sử phân công và bằng chứng ký quyết định điều kiện xóa, không suy ra chỉ từ giá trị Draft.
+Đề xuất bổ sung IsDeleted, DeletedAt, DeletedById và DeleteReason; nhật ký ghi riêng sự kiện SoftDelete và Restore, người thực hiện, thời điểm và lý do. Dùng ConcurrencyVersion hoặc cơ chế kiểm soát đồng thời tương đương. Khôi phục chỉ bỏ dấu xóa sau kiểm tra, không xóa sự kiện lịch sử. Các trường nêu trên là thiết kế bổ sung, chưa phải cấu trúc database đã triển khai.
+Giữ liên kết Documents với DocumentProcess, chữ ký và tệp MinIO khi xóa mềm; không gọi xóa bản ghi hoặc cascade delete. Dữ liệu cũ thiếu người tạo/mốc nghiệp vụ cần đối soát trước khi cấp quyền xóa. Code hiện dùng cùng action Submit cho khởi tạo và trình duyệt, vì vậy migration phải phân biệt hai sự kiện; trường hợp không xác định chắc chắn phải chặn xóa.
 2.6.3.6. Bảng DocumentTypes (Phân loại văn bản)
 Bảng này lưu trữ danh mục phân loại văn bản phục vụ tạo lập, tra cứu và quản lý hồ sơ. Phiên bản thử nghiệm sử dụng bốn giá trị: CongVanDen (công văn đến), CongVanDi (công văn đi), ToTrinh (Tờ trình) và QuyetDinh (Quyết định). Danh mục này chưa tự quyết định quyền truy cập hoặc chuyển trạng thái nghiệp vụ.
 
@@ -568,3 +580,7 @@ Luồng công văn đến cần hoàn thiện thao tác bút phê riêng, chuy�
 Luồng công văn đi cần liên kết kết quả ký PDF với trạng thái duyệt, kiểm tra quyền hạn tại backend và bảo đảm đúng phiên bản tài liệu trước khi phát hành. Khi lỗi ký hoặc thay đổi nội dung, hệ thống phải giữ trạng thái phù hợp và có lịch sử để đối soát. Các bước này thuộc yêu cầu cần hoàn thiện, chưa được ghi nhận là nghiệm thu đầy đủ.
 Kiểm thử kỹ thuật bộ lọc ngày 13/10/2026 tại giao diện 1366px và 390px xác nhận tham số lọc, phân trang và bốn lựa chọn loại văn bản hoạt động đúng với dữ liệu mô phỏng. API thật trả dữ liệu đúng loại. Kiểm thử bộ lọc không chứng minh hai luồng nghiệp vụ đã hoàn thành; người dùng cần nghiệm thu trên công văn thật với các vai trò Văn thư, Chuyên viên, Lãnh đạo Phòng và Ban Giám hiệu.
 Kết quả nghiệm thu cần ghi rõ tài liệu đầu vào, người thực hiện, từng bước xử lý, tệp đầu ra, ngày chạy và lỗi còn tồn tại. Đối với OCR, cần đối chiếu Word nháp với bản gốc; đối với ký số, cần xác minh PDF đã ký và trạng thái hồ sơ. Căn cứ kỹ thuật của lần rà soát được lưu tại testcase TC-DOC-TYPE-FILTER-069 và kế hoạch triển khai của dự án.
+2.8.4. Phạm vi bổ sung phân quyền xóa công văn
+Cập nhật thiết kế ngày 19/10/2026 bổ sung quyền xóa mềm và khôi phục bản nháp tại mục 2.1.4.7, ma trận 2.3, Document Service và dữ liệu Documents. Chính sách chỉ cho xử lý dự thảo chưa đi vào quy trình, phân biệt quyền cá nhân của Văn thư/Chuyên viên với hỗ trợ có lý do của Admin. Hồ sơ đã trình, bị trả lại, phân công, ký, tiếp nhận chính thức hoặc phát hành không được xóa bằng chức năng này.
+Đối chiếu mã nguồn hiện tại: API còn xóa cứng ở Draft hoặc Rejected, chưa kiểm tra người tạo/vai trò tại thao tác xóa; giao diện chưa có nút xóa. Vì vậy, chính sách mới là thiết kế cần triển khai, không phải kết quả nghiệm thu. Cần bổ sung dữ liệu người tạo, mốc nghiệp vụ và xóa mềm; kiểm soát đồng thời; bổ sung khôi phục và kiểm tra dấu xóa trong truy vấn, thống kê, tải tệp, ký và callback OCR.
+Nghiệm thu phải kiểm tra vai trò và người tạo, từ chối mọi giai đoạn không hợp lệ, bảo toàn tệp/lịch sử, khôi phục có lý do và xung đột xóa với trình duyệt hoặc ký. Dữ liệu cũ dùng chung action Submit cho khởi tạo và trình duyệt phải được đối soát trước; không đủ bằng chứng thì chặn xóa. Bộ tiêu chí TC-DOC-DELETE-POLICY-087 mới được lập, chưa chạy vì chức năng chưa được triển khai. Quy trình hủy, thu hồi và thời hạn xóa vật lý cần quyết định riêng, không được coi là đã bổ sung trong hạng mục này.

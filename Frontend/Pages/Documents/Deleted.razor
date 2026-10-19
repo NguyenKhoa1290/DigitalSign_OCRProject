@@ -1,0 +1,98 @@
+@page "/documents/deleted"
+@attribute [Authorize(Roles = "Admin")]
+@inject DocumentService DocumentService
+@inject IToastService Toast
+@inject IJSRuntime JS
+
+<PageTitle>Công văn đã xóa - HAU</PageTitle>
+<div class="page-header">
+    <div><h1 class="page-title">Công văn đã xóa</h1><p class="page-subtitle">Khôi phục bản nháp, giữ nguyên tệp và lịch sử.</p></div>
+    <a href="/documents" class="btn btn-outline">Quay lại danh sách</a>
+</div>
+<div class="filter-bar">
+    <input class="form-control" placeholder="Tìm tiêu đề, số hiệu..." aria-label="Tìm công văn đã xóa" @bind="_search" />
+    <button class="btn btn-outline" @onclick="Search" disabled="@_loading">Tìm kiếm</button>
+</div>
+@if (_loading) { <LoadingSpinner /> }
+else if (_error != null) { <div class="alert alert-danger" role="alert">@_error</div> }
+else if (_result?.Items.Count > 0)
+{
+    <div class="deleted-list">
+        @foreach (var doc in _result.Items)
+        {
+            <article class="card" @key="doc.Id">
+                <div class="card-body">
+                    <h2 class="deleted-title">@doc.Title</h2>
+                    <p>@doc.DocumentTypeDisplayName · @(doc.DocNumber ?? "Chưa có số hiệu")</p>
+                    <p>Ngày xóa: @doc.DeletedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                    <p class="deleted-reason">Lý do: @(doc.DeleteReason ?? "Người tạo xóa bản nháp.")</p>
+                    <details><summary>Lịch sử xử lý</summary>
+                        @foreach (var process in doc.Processes)
+                        { <p>@process.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @ActionLabel(process.Action): @process.Comment</p> }
+                    </details>
+                    <button class="btn btn-primary" disabled="@_busy" @onclick="() => Select(doc)">Khôi phục</button>
+                </div>
+            </article>
+        }
+    </div>
+    <div class="pagination">
+        <span>Trang @_page · @_result.TotalCount công văn</span>
+        <div class="pagination-controls">
+            <button class="btn btn-outline" disabled="@(!_result.HasPreviousPage || _busy)" @onclick="Previous">Trước</button>
+            <button class="btn btn-outline" disabled="@(!_result.HasNextPage || _busy)" @onclick="Next">Sau</button>
+        </div>
+    </div>
+}
+else { <div class="empty-state"><p class="empty-state-title">Không có công văn đã xóa</p></div> }
+
+<DocumentDeletionDialog IsVisible="@(_selected != null)" DocumentTitle="@(_selected?.Title ?? "")" Restore="true" RequireReason="true"
+                        Busy="_busy" Error="@_restoreError" OnCancel="Cancel" OnConfirm="Restore" />
+
+@code {
+    private PagedResult<DocumentDto>? _result;
+    private DocumentDto? _selected;
+    private bool _loading = true, _busy;
+    private int _page = 1;
+    private string _search = "";
+    private string? _error, _restoreError;
+    protected override Task OnInitializedAsync() => Load();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("documentFiles.scrollToTop");
+    }
+    private async Task Load()
+    {
+        _loading = true; _error = null;
+        try
+        {
+            _result = await DocumentService.GetDeletedDocumentsAsync(_page, _search);
+            if (_result == null) _error = "Không tải được danh sách công văn đã xóa.";
+            else if (_result.Items.Count == 0 && _page > 1) { _page--; _result = await DocumentService.GetDeletedDocumentsAsync(_page, _search); }
+        }
+        catch { _error = "Không tải được danh sách công văn đã xóa."; }
+        finally { _loading = false; }
+    }
+    private void Select(DocumentDto doc) { _selected = doc; _restoreError = null; }
+    private void Cancel() { if (!_busy) _selected = null; }
+    private async Task Search() { _page = 1; await Load(); }
+    private async Task Previous() { _page--; await Load(); }
+    private async Task Next() { _page++; await Load(); }
+    private async Task Restore(string reason)
+    {
+        if (_busy || _selected == null) return;
+        _busy = true;
+        try
+        {
+            await DocumentService.RestoreDraftAsync(_selected.Id, reason);
+            _selected = null; Toast.ShowSuccess("Đã khôi phục bản nháp."); await Load();
+        }
+        catch (HttpRequestException ex) { _restoreError = ex.Message; }
+        catch { _restoreError = "Không khôi phục được công văn. Hãy thử lại."; }
+        finally { _busy = false; }
+    }
+    private static string ActionLabel(string action) => action switch
+    {
+        "Create" => "Tạo mới", "SoftDelete" => "Xóa bản nháp", "Restore" => "Khôi phục",
+        "Update" => "Sửa thông tin", "UpdateOCR" => "Cập nhật OCR", _ => action
+    };
+}

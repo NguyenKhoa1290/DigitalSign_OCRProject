@@ -66,10 +66,11 @@ public class EventStore(NpgsqlDataSource dataSource)
     public async Task<PageResult<UserNotification>> GetNotificationsAsync(Guid user, int page, bool unreadOnly, string? kind, CancellationToken token)
     {
         page=Math.Clamp(page,1,100000); const int size=20;
-        const string where="WHERE \"UserId\"=@user AND (NOT @unread OR \"ReadAt\" IS NULL) AND (@kind IS NULL OR \"Kind\"=@kind)";
+        const string visibleDocument = "(\"DocumentId\" IS NULL OR EXISTS (SELECT 1 FROM \"Documents\" d WHERE d.\"Id\"=\"UserNotifications\".\"DocumentId\" AND NOT d.\"IsDeleted\"))";
+        var where="WHERE \"UserId\"=@user AND (NOT @unread OR \"ReadAt\" IS NULL) AND (@kind IS NULL OR \"Kind\"=@kind) AND " + visibleDocument;
         await using var cmd = dataSource.CreateCommand($"""
             SELECT count(*) FROM "UserNotifications" {where};
-            SELECT count(*) FROM "UserNotifications" WHERE "UserId"=@user AND "ReadAt" IS NULL;
+            SELECT count(*) FROM "UserNotifications" WHERE "UserId"=@user AND "ReadAt" IS NULL AND {visibleDocument};
             SELECT "Id","Kind","Message","TargetUrl","Timestamp","ReadAt" FROM "UserNotifications" {where}
             ORDER BY "Timestamp" DESC,"Id" DESC LIMIT @size OFFSET @offset;
             """);

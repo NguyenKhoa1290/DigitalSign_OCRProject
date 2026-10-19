@@ -5,6 +5,7 @@ namespace DocumentService.Core.DTOs;
 /// </summary>
 public class UpdateOcrDto
 {
+    public Guid? ExpectedVersion { get; set; }
     public string? DocNumber { get; set; }
     public string? Title { get; set; }
     public DateOnly? IssuedDate { get; set; }

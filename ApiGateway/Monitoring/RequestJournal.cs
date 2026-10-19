@@ -51,7 +51,8 @@ public static class RequestJournal
             var workflow=operation switch
             {
                 "upload"=>"UploadDocument", "submit"=>"Submit", "dept-sign"=>"DeptSign", "submit-director"=>"SubmitDirector",
-                "director-sign"=>"DirectorSign", "reject"=>"Reject", "publish"=>"Publish", "assign"=>"Assign", "ocr"=>"UpdateOCR", _=>null
+                "director-sign"=>"DirectorSign", "reject"=>"Reject", "publish"=>"Publish", "assign"=>"Assign", "ocr"=>"UpdateOCR",
+                "restore"=>"Restore", "receive"=>"Receive", _=>null
             };
             if(workflow!=null)return workflow;
         }

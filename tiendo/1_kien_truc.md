@@ -108,6 +108,15 @@ Roles seed:
 
 ## DocumentService
 
+### Thiết kế bổ sung ngày 19/10/2026 về xóa công văn
+
+Chính sách đã triển khai tại [thiết kế phân quyền xóa mềm](../tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_XOA_CONG_VAN.md). Bản báo cáo ở [tai_lieu/05_bao_cao](../tai_lieu/05_bao_cao/README.md) ghi nhận thiết kế trước triển khai; kết quả code/test hiện hành theo Công việc 107.
+
+- Chuyên viên/Văn thư chỉ xóa mềm Draft của mình, chưa trình duyệt, phân công, ký hoặc tiếp nhận chính thức. Admin hỗ trợ bản nháp của người khác có lý do, cùng điều kiện; Admin khôi phục có audit. Manager/Ban Giám hiệu không có quyền xóa theo vai trò lãnh đạo.
+- Không xóa Rejected hoặc các giai đoạn đã trình/đã ký/đã phát hành. Hủy/thu hồi là quy trình riêng cần thiết kế, không đồng nhất với xóa.
+- DocumentService kiểm tra quyền và đồng thời tại backend; giữ tệp/lịch sử và lọc hồ sơ đã xóa khỏi mọi đường nghiệp vụ thông thường, kể cả SignService đọc DB trực tiếp, OCR/Kafka/callback và thống kê.
+- Đã thay xóa cứng bằng xóa mềm có giao dịch audit, token đồng thời và khóa PostgreSQL chia sẻ với SignService. Có mốc tiếp nhận chính thức cho công văn đến. Dữ liệu cũ chưa đối soát bị chặn xóa, không suy đoán từ Submit/Draft.
+
 Chức năng chính:
 
 - Tạo/xem/xóa văn bản.

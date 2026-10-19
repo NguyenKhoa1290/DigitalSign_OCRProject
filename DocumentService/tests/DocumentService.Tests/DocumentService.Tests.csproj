@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\DocumentService.Core\DocumentService.Core.csproj" />
     <ProjectReference Include="..\..\src\DocumentService.Infrastructure\DocumentService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\DocumentService.API\DocumentService.API.csproj" />
+    <ProjectReference Include="..\..\..\SignService\src\SignService.Infrastructure\SignService.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

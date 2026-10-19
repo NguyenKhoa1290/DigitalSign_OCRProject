@@ -4,6 +4,8 @@ SignService cấp chứng thư số nội bộ, ký PDF và xác minh chữ ký.
 
 ## Chạy local
 
+Từ triển khai xóa mềm 19/10/2026, projection Documents kiểm tra IsDeleted. Cần áp dụng migration DocumentService trước khi cập nhật SignService. Luồng ký commit SigningStartedAt trước khi chạm PDF, giữ khóa hàng PostgreSQL xuyên thao tác ký/lưu chữ ký. Mốc này giữ lại khi ký lỗi vì tệp có thể đã thay đổi; hồ sơ đó không được xóa như bản nháp mới. Migration DocumentDeletionProjection chỉ đồng bộ EF snapshot, không sửa bảng Documents.
+
 Khởi động hạ tầng trước:
 
 ```bash

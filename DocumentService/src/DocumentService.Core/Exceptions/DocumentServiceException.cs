@@ -1,5 +1,7 @@
 namespace DocumentService.Core.Exceptions;
 
+public class DocumentConflictException(string message) : DocumentServiceException(message);
+
 /// <summary>Base exception cho DocumentService</summary>
 public class DocumentServiceException : Exception
 {

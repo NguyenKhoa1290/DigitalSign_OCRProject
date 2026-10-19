@@ -2268,7 +2268,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Mục tiêu: PP-StructureV3 tạo DOCX sửa được, tái tạo văn bản/bảng/bố cục ảnh chụp mà không gọi LLM hoặc sửa tay.
 - Dữ liệu: `tai_nguyen/mau_cong_van/ke-hoach-thuc-te.jpg`, ảnh 960×1280, SHA-256 trong metadata. Ảnh kế hoạch có bảng 4 cột/7 hàng thân trống, đầu trang và chữ ký song song.
 - Môi trường: CPU 4 thread, PaddleOCR 3.7.0, PaddlePaddle 3.3.1, PaddleX 3.7.2 trong container riêng; UVDoc bật. Không thay service chính.
-- Các bước: chạy `tools/test_ppstructure_word.py` với OCRv3, OCRv5 và override OCRv6 medium; lưu JSON/bố cục/HTML/Word; render bằng LibreOffice/render_docx.py; xem cả ba PNG; kiểm tra python-docx và số hình nhúng.
+- Các bước: chạy `backup/20261019/tools_ocr/test_ppstructure_word.py` với OCRv3, OCRv5 và override OCRv6 medium; lưu JSON/bố cục/HTML/Word; render bằng LibreOffice/render_docx.py; xem cả ba PNG; kiểm tra python-docx và số hình nhúng.
 - Kết quả kỹ thuật: cả ba xuất thành công, mỗi Word một trang, 4 cột/8 hàng tổng (7 hàng thân trống), không nhúng ảnh. Có 32/32/33 dòng OCR tương ứng. Script py_compile đạt. `verification.json` lưu bằng chứng cấu trúc.
 - Thời gian tổng: 73,36/51,53/50,78 giây; riêng xử lý/xuất: 15,48/35,12/31,67 giây. Có cache/tải model/font khác nhau, chưa benchmark nhiều lần.
 - **Kết quả yêu cầu tái tạo giống ảnh: Fail.** Chữ sai dấu/thiếu chữ; dấu đỏ lẫn vào tiêu đề; đầu trang gộp, chữ ký xếp dọc, bảng cột đều/hàng thấp và số trang xuống footer. Không tạo bản sửa tay để đổi trạng thái.
@@ -2286,7 +2286,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Word cuối một trang, bảng 4 cột và 7 hàng tổng (6 hàng thân), không nhúng ảnh; chữ ký/đầu trang hai khối, đã hết ký tự escape xuống dòng. File cuối trùng SHA-256 bản model chọn.
 - **Yêu cầu giống ảnh: Fail/Chưa đạt.** Thiếu một hàng thân, thiếu số 246, ghi chú thiếu “này” và cỡ chữ/tỷ lệ bảng khác ảnh. Chưa đo CER/WER hoặc nghiệm thu đa tài liệu; không đổi kết quả thành Pass vì chữ đọc rõ hơn.
 - Metadata: 427,54 giây có chờ free-tier request quota và gián đoạn khôi phục; usage tổng từ response đã lưu 474941 token, không bao gồm lượt parser lỗi đầu hoặc retry 429 không có usage. Chưa quy đổi tiền/benchmark thời gian inference.
-- Bằng chứng: `tai_nguyen/ket_qua_ocr/gemini35_flash_lite_tool_call/`. Giữ raw SSE/response/tool events, metadata, usage, render và Word nguyên trạng; không sửa tay.
+- Bằng chứng: `backup/20261019/thu_nghiem_ocr/gemini35_flash_lite_tool_call/`. Giữ raw SSE/response/tool events, metadata, usage, render và Word nguyên trạng; không sửa tay.
 - Dọn dẹp: xóa khóa tạm khỏi container, quét log không có khóa, dừng môi trường thử. Không tạo user/công văn/database record hoặc redeploy service chính.
 
 ## TC-DEPLOY-CLOUDFLARE-067 — Script khởi động đồng bộ tunnel/frontend
@@ -2319,7 +2319,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Thực tế: `qwen/qwen3.5-9b` thực hiện 4 tool calls/4 lượt trong 237,29 giây. Hai lần render đầu trả layout thiếu tiêu đề bảng nên tool từ chối. Lần 3 render thành công; lần 4 model xem preview rồi gọi `finish_document` chọn iteration 3.
 - Kỹ thuật Pass: DOCX hợp lệ, hash khớp iteration được chọn; có render 2 trang; không có chỉnh sửa nội dung thủ công.
 - **Giống ảnh: Fail.** Paddle có 7 hàng thân trống; layout chọn có 9 hàng rỗng trong `rows` cộng `blank_rows=8` = 17 hàng thân. Bảng tràn sang trang hai, phần ký tách trang; các vùng song song, số trang 246 và dấu đỏ chưa được tái tạo. Không sửa layout hoặc DOCX.
-- Bằng chứng `tai_nguyen/ket_qua_ocr/lmstudio_qwen35_vi_paddle_toolcall/` gồm prompt/evidence/raw tool responses/layouts/DOCX/render/verification. Không đổi endpoint, mô hình sản phẩm hoặc phương án Paddle + Gemini đã chốt.
+- Bằng chứng `backup/20261019/thu_nghiem_ocr/lmstudio_qwen35_vi_paddle_toolcall/` gồm prompt/evidence/raw tool responses/layouts/DOCX/render/verification. Không đổi endpoint, mô hình sản phẩm hoặc phương án Paddle + Gemini đã chốt.
 
 ## TC-OCR-LMSTUDIO-VI-063 — Model đang nạp và prompt tiếng Việt
 
@@ -2328,7 +2328,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Đầu vào: cùng ảnh và evidence testcase 062 (32 dòng chữ, HTML/cell boxes, 8 hàng tổng gồm header), prompt tiếng Việt v3 cùng hash. Không inference Paddle mới, sửa evidence hoặc gọi Google.
 - API hoàn tất 200/stop, 346,56 và 380,88 giây. Hai layout cùng hash, 4 headers/widths, rows chứa 10 mảng rỗng, blank_rows=0; tất cả 10 hàng thiếu 4 ô. Validator báo Table cell/width count mismatch.
 - **Yêu cầu Fail:** sai số hàng và shape dữ liệu, chưa tạo Word/render. Không sửa/nới kiểm tra để xuất file hoặc đổi kết quả thành Pass. Không kết luận mọi model local thất bại, chỉ ghi phép thử Qwen/config hiện tại chưa đạt.
-- Bằng chứng `tai_nguyen/ket_qua_ocr/lmstudio_qwen35_vi_paddle/`: loaded model/raw/layout/metadata/verification. Cú pháp đạt, container thử đã dừng; chưa đổi phương án Gemini đã chốt/endpoint/deploy/báo cáo.
+- Bằng chứng `backup/20261019/thu_nghiem_ocr/lmstudio_qwen35_vi_paddle/`: loaded model/raw/layout/metadata/verification. Cú pháp đạt, container thử đã dừng; chưa đổi phương án Gemini đã chốt/endpoint/deploy/báo cáo.
 
 ## TC-OCR-GEMINI-PADDLE-VI-062 — Prompt tiếng Việt và cấu trúc bảng Paddle
 
@@ -2344,14 +2344,14 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Mong đợi: Word editable, số hàng đúng và nhất quán với ảnh.
 - Kỹ thuật Pass: cả hai HTTP 200/STOP, Word một trang/chữ-bảng thật, số 246, không ảnh nhúng/literal escape, hash khớp metadata. Sinh 33,05 và 35,45 giây, usage 7958 và 9006. Đã xem cả hai render.
 - **Số hàng Fail:** 4 cột, request 1 có 10 hàng thân, request 2 có 8 hàng thân, nguồn có 7. Typography/in đậm còn khác, bản 1 gộp ghi chú/hướng dẫn. Chưa chứng minh prompt cải thiện ổn định hoặc hai lần gọi luôn khắc phục lỗi dịch vụ.
-- Bằng chứng `tai_nguyen/ket_qua_ocr/gemini38_prompt_v2_pair/`; quét output, xóa khóa tạm, dừng môi trường thử, chưa đổi endpoint/deploy.
+- Bằng chứng `backup/20261019/thu_nghiem_ocr/gemini38_prompt_v2_pair/`; quét output, xóa khóa tạm, dừng môi trường thử, chưa đổi endpoint/deploy.
 
 ## TC-OCR-GEMINI-PROMPT-060 — Prompt v2 đếm hàng grid
 
 - Ngày 12/10/2026. Mong đợi: chỉ ảnh tạo Word đúng số hàng/cột quan sát, không biết trước đáp án hoặc dùng Paddle.
 - Sửa prompt yêu cầu đếm separator và body bands hai chiều, header một hàng dù nhiều dòng, phân biệt bóng/baseline, kiểm tra tổng hàng và giữ số hàng khi căn trang. Metadata version/hash; không sửa schema, ảnh, model hoặc config so lượt 059.
 - Thực tế: một POST gemini-3.8-flash, image_only, HTTP 503 UNAVAILABLE sau 4,87 giây; không retry. **Bị chặn dịch vụ, chưa có layout/Word/render, chưa đánh giá được hiệu quả prompt.**
-- Bằng chứng `tai_nguyen/ket_qua_ocr/gemini38_image_only_prompt_v2/`; py_compile đạt, quét/xóa khóa tạm/dừng container, không đổi endpoint/deploy hoặc Word trước.
+- Bằng chứng `backup/20261019/thu_nghiem_ocr/gemini38_image_only_prompt_v2/`; py_compile đạt, quét/xóa khóa tạm/dừng container, không đổi endpoint/deploy hoặc Word trước.
 
 ## TC-OCR-GEMINI-IMAGEONLY-059 — Thử lại trực tiếp ảnh thành công
 
@@ -2360,14 +2360,14 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Mong đợi: Word editable một trang từ chỉ ảnh, giữ nội dung/bố cục/số hàng và cột nguồn, không sửa tay.
 - Kỹ thuật: Pass xuất/render, HTTP 200/STOP, một POST/0 retry. Sinh 26,96 giây, tổng 28,51 giây, usage 6073. Word một trang, bảng chính 4 cột/11 hàng tổng (10 hàng thân), không ảnh nhúng/literal escape, có số 246; hash khớp metadata, output không có paddle_evidence.json.
 - Đã xem toàn trang render và đối chiếu nguồn. **Độ giống ảnh: chưa đạt** do 10 hàng trống thay vì 7, typography/in đậm/vị trí chữ ký khác. Không sửa lại hoặc gửi thêm request. Không kết luận chất lượng tương đương mọi tài liệu từ một mẫu.
-- Bằng chứng `tai_nguyen/ket_qua_ocr/gemini38_image_only_retry1/`; quét khóa, xóa bản tạm, dừng môi trường thử; chưa đổi endpoint/deploy.
+- Bằng chứng `backup/20261019/thu_nghiem_ocr/gemini38_image_only_retry1/`; quét khóa, xóa bản tạm, dừng môi trường thử; chưa đổi endpoint/deploy.
 
 ## TC-OCR-GEMINI-IMAGEONLY-058 — Gemini không Paddle
 
 - Ngày 12/10/2026. Mong đợi: chỉ ảnh/prompt/schema tạo Word editable một request, không cần dữ liệu Paddle, đối chiếu với ảnh gốc và lượt 057.
 - Đầu vào thực tế: ảnh cùng hash các lượt trước; không --paddle-json, không chạy Paddle, không đọc/gửi OCR hoặc layout/Word cũ. Model gemini-3.8-flash, thinking medium, temperature 0, schema và maxOutputTokens 12000.
 - Một POST, không retry. Sau 2,41 giây nhận HTTP 503 UNAVAILABLE do nhu cầu sử dụng cao theo response Google. **Bị chặn bởi dịch vụ; chưa có layout/Word/render hoặc kết luận chất lượng.**
-- Bằng chứng: `tai_nguyen/ket_qua_ocr/gemini38_image_only/`, metadata input_mode=image_only/generation_requests=1/retries=0; không có paddle_evidence.json. Quét output không có khóa, xóa khóa tạm và dừng container; không đổi ứng dụng/deploy.
+- Bằng chứng: `backup/20261019/thu_nghiem_ocr/gemini38_image_only/`, metadata input_mode=image_only/generation_requests=1/retries=0; không có paddle_evidence.json. Quét output không có khóa, xóa khóa tạm và dừng container; không đổi ứng dụng/deploy.
 
 ## TC-OCR-GEMINI37-057 — Tên Gemini 3.7 Flash xuất Word một request
 
@@ -2376,7 +2376,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Mong đợi: một request tạo layout, Word editable giữ nội dung/bố cục/số hàng/cột của ảnh; local render, không sửa tay.
 - Thực tế kỹ thuật: HTTP 200, một POST, không retry, finish STOP; sinh 52,93 giây, tổng 54,49 giây gồm render, usage 9472. Word một trang, bảng chính 4 cột/9 hàng tổng (8 hàng thân), không nhúng ảnh, không literal newline escape, có số 246. Cú pháp script và hash Word đạt, đã xem toàn trang và ảnh gốc.
 - **Giống ảnh: Chưa đạt.** Có 8 hàng trống thay vì 7, typography/spacing/tỷ lệ khác, đề tài mất in đậm nguồn, quốc hiệu HOÀ/HÒA khác. Không sửa layout/Word hoặc gửi thêm request để tăng kết quả.
-- Bằng chứng: `tai_nguyen/ket_qua_ocr/gemini37_flash_single_shot/`. Quét output không có khóa; xóa khóa tạm và dừng container. Không tạo dữ liệu nghiệp vụ/deploy.
+- Bằng chứng: `backup/20261019/thu_nghiem_ocr/gemini37_flash_single_shot/`. Quét output không có khóa; xóa khóa tạm và dừng container. Không tạo dữ liệu nghiệp vụ/deploy.
 
 ## TC-OCR-GEMINI38-056 — Gemini 3.8 Flash một request
 
@@ -2384,7 +2384,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Mong đợi: một request tạo layout hợp lệ, xuất Word editable local, render để đối chiếu ảnh; không retry/tool loop.
 - Cấu hình: native generateContent, gemini-3.8-flash, thinking medium, temperature 0, responseJsonSchema, maxOutputTokens 12000. Prompt kiểm tra đọc đúng ảnh, đếm grid, vùng song song, boolean/width/newline và ngân sách trang.
 - Thực tế: một POST, HTTP 503 UNAVAILABLE sau 3,40 giây, thông báo nhu cầu sử dụng cao. Không gửi lại. Chưa có layout/Word/render; **bị chặn bởi dịch vụ, chưa đánh giá chất lượng**.
-- Bằng chứng: `tai_nguyen/ket_qua_ocr/gemini38_flash_single_shot/`. Script py_compile đạt. Quét log không có khóa; xóa khóa tạm, dừng container, không tạo dữ liệu nghiệp vụ/deploy.
+- Bằng chứng: `backup/20261019/thu_nghiem_ocr/gemini38_flash_single_shot/`. Script py_compile đạt. Quét log không có khóa; xóa khóa tạm, dừng container, không tạo dữ liệu nghiệp vụ/deploy.
 
 ## TC-OCR-GEMMA31B-055 — Google Gemma 4 31B tái tạo Word
 
@@ -2394,7 +2394,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - Lượt native cuối hoàn tất: 4 tool calls thực thi gồm 1 replay, 3 calls mới được API sinh; một response không có tool call. Model chọn iteration 3. Có 353,31 giây gồm retry/render, không gồm các lượt lỗi trước. Không coi là benchmark inference.
 - Kiểm tra kỹ thuật: Word cuối trùng hash iteration được chọn, một trang, bảng 4 cột/11 hàng tổng (10 hàng thân trống), văn bản/bảng thật, không nhúng ảnh. Xem cả hai trang bản đầu và các trang bản sau. Fixture ghép functionResponse.id/call ID và py_compile đạt.
 - **Yêu cầu giống ảnh: Fail/Chưa đạt.** Có số trang 246 và ghi chú giữ từ “này”, nhưng bảng 10 hàng thay vì 7, literal backslash-n trong header/title/chữ ký, typography/spacing/tỷ lệ khác ảnh. Không sửa tay hoặc kết luận model tốt hơn toàn diện.
-- Bằng chứng: `tai_nguyen/ket_qua_ocr/gemma4_31b_google_thu_nghiem/`, các lượt per_block/full_layout_compat/native_schema_rejected/native_validated/native_matched_ids được giữ riêng. Phân biệt lỗi client đã sửa với API 500/503/quota; không quy toàn bộ lỗi cho model.
+- Bằng chứng: `backup/20261019/thu_nghiem_ocr/gemma4_31b_google_thu_nghiem/`, các lượt per_block/full_layout_compat/native_schema_rejected/native_validated/native_matched_ids được giữ riêng. Phân biệt lỗi client đã sửa với API 500/503/quota; không quy toàn bộ lỗi cho model.
 - Dọn dẹp: quét output không có khóa, xóa bản khóa tạm trong container, dừng môi trường thử. Không đổi provider/endpoint ứng dụng hoặc deploy service.
 
 ## TC-OPS-TUNNEL-068 — Bật/tắt tunnel độc lập
@@ -2417,7 +2417,7 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 
 ## TC-DOC-REPORT-WORKFLOWS-070 — Chỉnh Word và bảo toàn định dạng
 
-- Ngày: 13/10/2026. Nguồn: `tai_nguyen/bao_cao/Do_an_tot_nghiep_cap_nhat_OCR_1_2_3.docx`; kết quả: `Do_an_tot_nghiep_cap_nhat_luong_cong_van.docx` trong cùng thư mục.
+- Ngày: 13/10/2026. Nguồn: `backup/20261019/bao_cao_cu/Do_an_tot_nghiep_cap_nhat_OCR_1_2_3.docx`; kết quả: `Do_an_tot_nghiep_cap_nhat_luong_cong_van.docx` trong cùng thư mục.
 - Mong đợi: giữ phạm vi đến/đi; sửa kịch bản ký pháp nhân, giải thích Tờ trình/Quyết định, ghi đúng mức triển khai; giữ định dạng nguồn và các cập nhật OCR đã được chốt.
 - Kết quả cấu trúc đạt: 18 đoạn cũ sửa nội dung và 12 đoạn mới; đoạn không liên quan, paragraph properties cũ và các phần ZIP ngoài `word/document.xml` giữ nguyên. Giữ 16 bảng, số hàng từng bảng, styles/media/header/footer/section properties. File nguồn giữ nguyên SHA-256.
 - Render và QA: 89 trang PNG ở 100 DPI; xem toàn bộ trang, chỉnh lại nội dung thêm để tránh hai dòng rơi sang trang gần trống. Bảng kịch bản, danh mục và mục 2.8 không mất chữ hoặc tràn footer. Giữ đặc điểm xuống dòng/ngắt trang của các phần gốc; số trang Microsoft Word có thể khác LibreOffice.
@@ -2542,3 +2542,20 @@ Script/build/cleanup dùng chung `TC-GW-LOGS-050`. Ảnh trong `tai_nguyen/ket_q
 - `OcrAuthorizationTests`: 6 trường hợp vai trò, mỗi trường hợp kiểm tra 5 route process, process-upload, export-word-upload, gemini/models, gemini/export-word-upload. Dùng cấu hình route YARP và policy thật trên HTTP host riêng; Admin/Clerk qua được lớp quyền, Specialist/Manager/BoardOfDirectors bị 403, chưa đăng nhập bị 401. Không forward tới service thật. Tổng Gateway 28/28 test đạt.
 - `tests/sidebar-navigation.spec.cjs`: Clerk/Specialist tại 1366px/300px đều đạt. Specialist không có nút Chạy OCR tại công văn Nháp; vẫn có Sửa thông tin, Tải lên file, Nộp trình duyệt và Kết quả OCR. Clerk giữ nút Chạy OCR. Menu/trang Quét OCR tiếp tục hạn chế vai trò, không phát sinh request OCR từ Chuyên viên.
 - Người dùng tải lại trang để nhận bản Docker mới, mở công văn Nháp bằng Chuyên viên và đối chiếu các nút; Kết quả OCR là quyền xem dữ liệu đã có, không phải chạy nhận diện.
+
+## TC-DOC-DELETE-POLICY-087 — Xóa mềm và khôi phục bản nháp
+
+- Ngày lập/kiểm thử: **19/10/2026**. Trạng thái: **ĐẠT KIỂM THỬ TỰ ĐỘNG**, nghiệm thu thực tế chờ người dùng. Source/migration theo [thiết kế](../tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_XOA_CONG_VAN.md); không xóa/khôi phục công văn thật trong kiểm thử.
+- Chuyên viên/Văn thư: Draft của chính mình đủ điều kiện được xóa mềm; Draft của người khác bị từ chối. Gọi API trực tiếp và giả mạo actor trong request không vượt được kiểm tra JWT.
+- Admin: hỗ trợ Draft của người khác cần lý do; thiếu lý do không đổi dữ liệu. Manager/Ban Giám hiệu không được xóa hoặc khôi phục chỉ từ vai trò lãnh đạo. Tài khoản nhiều vai trò vẫn phải đáp ứng đúng nhánh quyền.
+- Chặn ở tất cả trạng thái PendingDeptReview, DeptSigned, PendingDirectorSign, DirectorSigned, Rejected, Published; chặn cả Draft đã từng trình/đã phân công/đã ký hoặc công văn đến đã tiếp nhận chính thức. Trở lại Draft không mở lại quyền xóa.
+- Dữ liệu cũ: phân biệt Submit khi tạo với Submit trình duyệt; không xác định chắc chắn người tạo hoặc mốc nghiệp vụ thì không cho xóa. Null sau migration không được hiểu là chưa từng trình/tiếp nhận.
+- Xóa mềm: giữ Documents, tệp MinIO, lịch sử xử lý, chữ ký và audit; ghi đúng actor, UTC và lý do. Danh sách, tra cứu, thống kê và thông báo thông thường loại hồ sơ đã xóa.
+- Truy cập sau xóa: GET chi tiết/file, sửa, upload, OCR, callback, phân công, trình duyệt và SignService đọc DB đều chặn tác động lên hồ sơ đã xóa. Kafka/OCR đang chạy không được phục hồi hoặc ghi đè.
+- Đồng thời: xóa với trình duyệt/phân công/tiếp nhận/ký chỉ cho một thao tác hợp lệ commit; không sinh hồ sơ vừa xóa vừa có chữ ký hoặc bước workflow mới. Lỗi giao dịch giữ nguyên hồ sơ và audit nhất quán.
+- Khôi phục: chỉ Admin có lý do; kiểm tra điều kiện/ràng buộc và liên kết tệp; giữ người tạo, trạng thái và sự kiện xóa, ghi Restore riêng. Không tự chạy OCR/trình duyệt/phát hành; lặp request không tạo audit trùng.
+- UI desktop/mobile: biểu tượng X, đúng điều kiện hiện nút, xác nhận tên hồ sơ, Admin nhập lý do; xử lý xung đột bằng tải lại trạng thái. Ẩn nút không thay kiểm tra API.
+- Kết quả: DocumentService 93/93 test, bao gồm HTTP phân quyền và 5 test PostgreSQL trên container/database riêng; Gateway 29/29 gồm lọc thông báo/số chưa đọc khi hồ sơ bị xóa; OCR 14/14 với Paddle/Gemini mock, không mạng. Bộ test .NET đích net9.0 được chạy với runtime .NET 10 bằng DOTNET_ROLL_FORWARD=Major trên máy hiện tại; Docker build dùng SDK/runtime .NET 9.
+- Browser `tests/document-soft-delete.spec.cjs` kiểm tra 7 tình huống vai trò/điều kiện tại 1366px và 300px, gồm xác nhận, lý do Admin, hủy, lỗi 409, chuyển danh sách và khôi phục. API được intercept hoàn toàn; không ghi database/MinIO thật.
+- Chạy PostgreSQL test: đặt `HAU_DELETION_TEST_PG` tới database tạm **doc_deletion_tests** trên `127.0.0.1`, cổng khác 5432. Tests tự tạo/xóa schema có tên ngẫu nhiên, không chấp nhận database ứng dụng. Không đặt biến thì các test tích hợp được đánh dấu skip.
+- Chạy browser với `HAU_PLAYWRIGHT_MODULE`, `HAU_TEST_CHROMIUM` và tùy chọn `HAU_TEST_WEB`; `HAU_DELETION_SCREENSHOTS` lưu ảnh. Nghiệm thu công văn/điện thoại thật do người dùng thực hiện. Các smoke test cũ có cleanup bằng DELETE không còn xóa vật lý; không dùng chúng để dọn dữ liệu thật.

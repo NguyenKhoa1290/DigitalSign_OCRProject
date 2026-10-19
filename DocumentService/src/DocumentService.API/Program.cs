@@ -148,6 +148,7 @@ try
         catch (Exception ex)
         {
             Log.Warning(ex, "Không thể thực hiện migration database: {Message}", ex.Message);
+            throw;
         }
     }
 

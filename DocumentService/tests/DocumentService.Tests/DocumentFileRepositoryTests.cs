@@ -35,7 +35,12 @@ public class DocumentFileRepositoryTests
         (await repository.ReplaceFileAsync(Guid.NewGuid(), "", "documents/rejected.pdf", "rejected.pdf"))
             .Should().BeFalse();
         staleMetadata.Title = "Updated metadata";
-        await repository.UpdateAsync(staleMetadata);
+        await FluentActions.Invoking(() => repository.UpdateAsync(staleMetadata))
+            .Should().ThrowAsync<DbUpdateConcurrencyException>();
+        context.ChangeTracker.Clear();
+        var freshMetadata = (await repository.GetByIdAsync(id))!;
+        freshMetadata.Title = "Updated metadata";
+        await repository.UpdateAsync(freshMetadata);
         context.ChangeTracker.Clear();
         var saved = (await repository.GetByIdAsync(id))!;
         saved.Title.Should().Be("Updated metadata");

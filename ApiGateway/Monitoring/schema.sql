@@ -29,7 +29,7 @@ DECLARE
 BEGIN
  SELECT "Status" INTO doc_status FROM "Documents" WHERE "Id"=NEW."DocId";
  SELECT "FromUserId" INTO creator FROM "DocumentProcesses"
-   WHERE "DocId"=NEW."DocId" AND "Action"='Submit' ORDER BY "Timestamp", "Id" LIMIT 1;
+   WHERE "DocId"=NEW."DocId" AND "Action" IN ('Create','Submit') ORDER BY "Timestamp", "Id" LIMIT 1;
  event_action := CASE WHEN NEW."Action"='Submit' AND doc_status='Draft' THEN 'Create' ELSE NEW."Action" END;
  INSERT INTO "MonitoringEvents" ("Kind","Service","Level","Action","ActorId","ResourceId","Timestamp","StatusCode","TraceId")
  VALUES ('Audit','DocumentService','Information',event_action,NEW."FromUserId",NEW."DocId",NEW."Timestamp",200,

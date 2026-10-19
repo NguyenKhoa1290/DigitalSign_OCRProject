@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
             e.ToTable("Documents", table => table.ExcludeFromMigrations());
             e.HasKey(x => x.Id);
             e.Property(x => x.MinioPath).IsRequired();
+            e.HasQueryFilter(x => !x.IsDeleted);
         });
     }
 }

@@ -54,6 +54,11 @@ async def process_document(doc_id: str, minio_path: str, token: str) -> dict:
     """
     settings = get_settings()
 
+    update_token = token or settings.service_token
+    version = await document_service.require_active_document(
+        doc_id, minio_path, update_token, use_service_token=not bool(token)
+    )
+
     # 1. Tải PDF
     logger.info("Bắt đầu OCR cho document: %s (path=%s)", doc_id, minio_path)
     pdf_bytes = minio_service.download_file(minio_path)
@@ -91,6 +96,7 @@ async def process_document(doc_id: str, minio_path: str, token: str) -> dict:
 
     # 5. Chuẩn bị payload gửi DocumentService
     ocr_payload = {
+        "expectedVersion": version,
         "docNumber": fields.get("doc_number"),
         "title": fields.get("title"),
         "issuedDate": issued_date_str,
@@ -111,12 +117,14 @@ async def process_document(doc_id: str, minio_path: str, token: str) -> dict:
     # 6. Gọi DocumentService
     update_token = token or settings.service_token
     if update_token:
-        await document_service.update_ocr_result(
+        updated = await document_service.update_ocr_result(
             doc_id,
             ocr_payload,
             update_token,
             use_service_token=not bool(token),
         )
+        if not updated:
+            raise document_service.DocumentUnavailableError("Không ghi kết quả OCR: công văn đã thay đổi hoặc không còn khả dụng.")
     else:
         logger.warning("Khong co JWT hoac SERVICE_TOKEN, bo qua buoc cap nhat DocumentService.")
 

@@ -28,6 +28,29 @@ namespace DocumentService.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("ConcurrencyVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DeleteReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("DeletionEligibilityConfirmed")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("DocNumber")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
@@ -39,6 +62,15 @@ namespace DocumentService.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<DateTime?>("FirstAssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FirstSubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<DateOnly?>("IssuedDate")
                         .HasColumnType("date");
 
@@ -48,6 +80,12 @@ namespace DocumentService.Infrastructure.Migrations
 
                     b.Property<string>("OcrDataRaw")
                         .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("OfficiallyReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("SigningStartedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -65,6 +103,8 @@ namespace DocumentService.Infrastructure.Migrations
                         .HasDatabaseName("IX_Documents_DocNumber");
 
                     b.HasIndex("DocTypeId");
+
+                    b.HasIndex("IsDeleted", "DeletedAt");
 
                     b.ToTable("Documents");
                 });
@@ -149,6 +189,17 @@ namespace DocumentService.Infrastructure.Migrations
                             Id = new Guid("aaaaaaaa-0000-0000-0000-000000000004"),
                             Description = "Quyết định",
                             TypeName = "QuyetDinh"
+                        });
+                });
+
+            modelBuilder.Entity("DocumentService.Infrastructure.Data.SignatureEvidence", b =>
+                {
+                    b.Property<Guid>("DocId")
+                        .HasColumnType("uuid");
+
+                    b.ToTable("Signatures", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
                         });
                 });
 

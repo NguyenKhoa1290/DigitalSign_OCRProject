@@ -7,6 +7,14 @@ public class DocumentDto
     public string Title { get; set; } = string.Empty;
     public DateOnly? IssuedDate { get; set; }
     public DateTime? CreatedAt { get; set; }
+    public Guid? CreatedById { get; set; }
+    public Guid ConcurrencyVersion { get; set; }
+    public bool CanDeleteDraft { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public Guid? DeletedById { get; set; }
+    public string? DeleteReason { get; set; }
+    public DateTime? OfficiallyReceivedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string MinioPath { get; set; } = string.Empty;
     public string? FileName { get; set; }

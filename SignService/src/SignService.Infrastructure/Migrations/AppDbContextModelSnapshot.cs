@@ -48,6 +48,33 @@ namespace SignService.Infrastructure.Migrations
 
                     b.ToTable("Signatures");
                 });
+
+            modelBuilder.Entity("SignService.Infrastructure.Data.DocumentFileRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConcurrencyVersion")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MinioPath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SigningStartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Documents", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
 #pragma warning restore 612, 618
         }
     }

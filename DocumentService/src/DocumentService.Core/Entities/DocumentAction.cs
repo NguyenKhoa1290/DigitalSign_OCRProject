@@ -2,6 +2,10 @@ namespace DocumentService.Core.Entities;
 
 public static class DocumentAction
 {
+    public const string Create = "Create";
+    public const string SoftDelete = "SoftDelete";
+    public const string Restore = "Restore";
+    public const string Receive = "Receive";
     public const string Update = "Update"; // Cập nhật thông tin văn bản
     public const string Submit = "Submit";           // Trình duyệt
     public const string DeptSign = "DeptSign";       // Ký nháy cấp phòng

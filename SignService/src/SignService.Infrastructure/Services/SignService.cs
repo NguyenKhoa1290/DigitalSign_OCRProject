@@ -62,6 +62,8 @@ public class SignService : ISignService
         if (!_certService.IsCertificateValid(userCert))
             throw new CertificateExpiredException();
 
+        await using var signing = await _documentFileRepository.BeginSigningAsync(request.DocId);
+
         // Kiểm tra đã ký chưa
         bool alreadySigned = await _signatureRepo.HasSignatureAsync(request.DocId, signatureType);
         if (alreadySigned)
@@ -104,6 +106,7 @@ public class SignService : ISignService
             SignatureType = signatureType,
             SignedAt = DateTime.UtcNow
         });
+        await signing.CompleteAsync();
 
         _logger.LogInformation("Ký {Type} thành công. SignatureId={Id}", signatureType, signature.Id);
 
@@ -161,6 +164,7 @@ public class SignService : ISignService
 
     public async Task<IEnumerable<SignatureDto>> GetSignaturesByDocumentAsync(Guid docId)
     {
+        _ = await ResolveDocumentObjectNameAsync(docId);
         var signatures = await _signatureRepo.GetByDocumentIdAsync(docId);
         return signatures.Select(s => new SignatureDto
         {

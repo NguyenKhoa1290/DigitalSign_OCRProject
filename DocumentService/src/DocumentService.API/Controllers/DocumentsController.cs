@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Net;
 using System.Text.Json;
+using DocumentService.Core.Entities;
 
 namespace DocumentService.API.Controllers;
 
@@ -41,6 +42,9 @@ public class DocumentsController : ControllerBase
                ?? throw new UnauthorizedAccessException("Không tìm thấy UserId trong token.");
         return Guid.Parse(sub);
     }
+
+    private DocumentActor CurrentActor() => new(GetCurrentUserId(),
+        User.FindAll(ClaimTypes.Role).Concat(User.FindAll("role")).Select(c => c.Value).Distinct().ToArray());
 
     private bool TryGetOcrCallerUserId(out Guid userId, out string? errorMessage)
     {
@@ -83,6 +87,7 @@ public class DocumentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PagedResult<DocumentDto>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] DocumentQueryParams query)
     {
+        Response.Headers.CacheControl = "no-store";
         var result = await _documentService.GetAllDocumentsAsync(query);
         return Ok(ApiResponse<PagedResult<DocumentDto>>.Ok(result));
     }
@@ -131,6 +136,7 @@ public class DocumentsController : ControllerBase
     [ProducesResponseType(404)]
     public async Task<IActionResult> GetById(Guid id)
     {
+        Response.Headers.CacheControl = "no-store";
         var result = await _documentService.GetDocumentByIdAsync(id);
         return Ok(ApiResponse<DocumentDto>.Ok(result));
     }
@@ -155,16 +161,38 @@ public class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// DELETE /api/documents/{id} - Xóa văn bản (chỉ khi Draft hoặc Rejected)
+    /// DELETE /api/documents/{id} - Xóa mềm bản nháp hợp lệ
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin,Clerk,Specialist")]
     [ProducesResponseType(200)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, [FromBody] DocumentDeletionDto? dto = null)
     {
-        await _documentService.DeleteDocumentAsync(id);
-        return Ok(ApiResponse.Ok("Xóa văn bản thành công."));
+        await _documentService.DeleteDocumentAsync(id, CurrentActor(), dto?.Reason);
+        return Ok(ApiResponse.Ok("Đã xóa mềm bản nháp."));
     }
+
+    [HttpGet("deleted")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetDeleted([FromQuery] DocumentQueryParams query)
+    {
+        Response.Headers.CacheControl = "no-store";
+        return Ok(ApiResponse<PagedResult<DocumentDto>>.Ok(await _documentService.GetDeletedDocumentsAsync(query, CurrentActor())));
+    }
+
+    [HttpPost("{id:guid}/restore")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Restore(Guid id, [FromBody] DocumentDeletionDto dto)
+    {
+        await _documentService.RestoreDocumentAsync(id, CurrentActor(), dto.Reason);
+        return Ok(ApiResponse.Ok("Đã khôi phục bản nháp."));
+    }
+
+    [HttpPost("{id:guid}/receive")]
+    [Authorize(Roles = "Admin,Clerk")]
+    public async Task<IActionResult> Receive(Guid id)
+        => Ok(ApiResponse<DocumentDto>.Ok(await _documentService.ReceiveDocumentAsync(id, CurrentActor()), "Đã tiếp nhận chính thức công văn đến."));
 
     // ──────────────────────────────────────────────────────────────────────────
     // File Upload
@@ -215,6 +243,17 @@ public class DocumentsController : ControllerBase
 
         var result = await _documentService.UpdateOcrDataAsync(id, dto, userId);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Cập nhật OCR thành công."));
+    }
+
+    [HttpGet("{id:guid}/ocr-state")]
+    [AllowAnonymous]
+    public async Task<IActionResult> OcrState(Guid id)
+    {
+        if (!TryGetOcrCallerUserId(out _, out var errorMessage))
+            return Unauthorized(ApiResponse<object>.Fail(errorMessage!));
+        Response.Headers.CacheControl = "no-store";
+        var document = await _documentService.GetDocumentByIdAsync(id);
+        return Ok(ApiResponse<object>.Ok(new { document.MinioPath, document.ConcurrencyVersion }));
     }
 
     // ──────────────────────────────────────────────────────────────────────────

@@ -159,6 +159,23 @@ Ngoại lệ | 6.1. Admin nhập thiếu thông tin bắt buộc khi cấp tài 
 6.3.2. Admin kiểm tra trạng thái dịch vụ và thực hiện lại thao tác.
 
 === TABLE 6 ===
+Thành phần | Nội dung mô tả
+Use Case | Xóa mềm và khôi phục bản nháp (SoftDeleteAndRestoreDraft)
+Actor | Chuyên viên, Văn thư; Admin thực hiện hỗ trợ và khôi phục.
+Tiền điều kiện | Người dùng đã đăng nhập và có quyền. Hồ sơ còn Draft, chưa trình duyệt, phân công, ký hoặc tiếp nhận chính thức. Chuyên viên/Văn thư là người tạo; Admin hỗ trợ bắt buộc có lý do.
+Hậu điều kiện | Xóa: hồ sơ được đánh dấu xóa mềm và ẩn khỏi danh sách thông thường; tệp, chữ ký và lịch sử không bị xóa vật lý. Khôi phục: hồ sơ hợp lệ trở lại danh sách, giữ nguyên lịch sử và có nhật ký khôi phục.
+Kịch bản chính | 1. Người dùng mở dự thảo hợp lệ và chọn Xóa bản nháp; Admin có thể chọn hồ sơ cần hỗ trợ.
+2. Hệ thống hiển thị xác nhận, giải thích xóa mềm; Admin phải nhập lý do.
+3. API lấy danh tính từ JWT, kiểm tra quyền, người tạo, lịch sử, tình trạng tiếp nhận và ký.
+4. Trong một giao dịch, API kiểm tra phiên bản, đánh dấu xóa mềm và ghi người xóa, thời điểm, lý do cùng nhật ký.
+5. Hệ thống thông báo kết quả và cập nhật danh sách; không xóa tệp MinIO hoặc lịch sử luân chuyển.
+6. Admin nhập lý do khôi phục; API kiểm tra lại quyền, dữ liệu và ghi nhật ký.
+Ngoại lệ | Không có quyền hoặc không phải người tạo: từ chối, không thay đổi hồ sơ.
+Hồ sơ đã trình duyệt, Rejected, đã phân công, ký, tiếp nhận chính thức hoặc phát hành: không cho xóa, kể cả Admin.
+Hồ sơ thay đổi đồng thời, thiếu lý do bắt buộc hoặc không đủ bằng chứng về người tạo/giai đoạn: từ chối và yêu cầu kiểm tra lại.
+Giao dịch lỗi: giữ nguyên hồ sơ; tác vụ OCR và callback không được cập nhật hoặc làm sống lại hồ sơ đã xóa.
+
+=== TABLE 7 ===
 Vai trò | Nhiệm vụ chính trong hệ thống
 Admin | Quản trị kỹ thuật, cấp tài khoản, cấu hình luồng duyệt (Workflow).
 Văn thư | Tiếp nhận công văn đến, vận hành OCR, phát hành và lưu trữ công văn đi.
@@ -166,23 +183,26 @@ Chuyên viên | Soạn thảo tờ trình, tiếp nhận chỉ đạo và báo c
 Lãnh đạo Phòng | Kiểm soát nội dung chuyên môn, ký số cấp đơn vị, phân công nhiệm vụ.
 Ban Giám hiệu | Phê duyệt cuối cùng, thực hiện ký số pháp nhân và ghi bút phê chỉ đạo.
 
-=== TABLE 7 ===
+=== TABLE 8 ===
 Chức năng | Admin | Văn thư | Chuyên viên | Lãnh đạo phòng | Ban Giám Hiệu
-Nhóm Định danh |  |  |  |  | 
-Cấp tài khoản & Phân quyền | X |  |  |  | 
+Nhóm Định danh |  |  |  |  |
+Cấp tài khoản & Phân quyền | X |  |  |  |
 Xem lịch sử tác động | X |  |  | X | X
-Nhóm Công văn |  |  |  |  | 
-Tiếp nhận công văn đến |  | X |  |  | 
-Soạn thảo, tải công văn lên |  | X | X |  | 
-Phân phối và lưu trữ |  | X |  |  | 
+Nhóm Công văn |  |  |  |  |
+Tiếp nhận công văn đến |  | X |  |  |
+Soạn thảo, tải công văn lên |  | X | X |  |
+Xóa mềm dự thảo cá nhân |  | X (1) | X (1) |  |
+Xóa mềm dự thảo hỗ trợ | X (2) |  |  |  |
+Khôi phục dự thảo | X (3) |  |  |  |
+Phân phối và lưu trữ |  | X |  |  |
 Xem báo cáo số lượng | X | X |  | X | X
-Nhóm OCR & Ký số |  |  |  |  | 
-Kiểm tra kết quả bóc tách |  | X | X |  | 
-Ký số nội bộ / cấp phòng |  |  |  | X | 
+Nhóm OCR & Ký số |  |  |  |  |
+Kiểm tra kết quả bóc tách |  | X | X |  |
+Ký số nội bộ / cấp phòng |  |  |  | X |
 Ký số pháp nhân (Đại học) |  |  |  |  | X
 Tra cứu & Kiểm tra toàn vẹn | X | X | X | X | X
 
-=== TABLE 8 ===
+=== TABLE 9 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | id | GUID | Primary Key | Định danh duy nhất toàn cầu cho mỗi tài khoản, đảm bảo không trùng lặp khi mở rộng hệ thống.
 2 | username | Varchar(50) | Unique, Not Null | Tên đăng nhập dùng để truy cập hệ thống (ví dụ: khoand, admin). Không cho phép trùng lặp.
@@ -194,18 +214,18 @@ STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 8 | is_active | Boolean | Default: True | Trạng thái tài khoản. Nếu là False, người dùng sẽ không thể đăng nhập dù nhập đúng mật khẩu.
 9 | created_at | DateTime | Default: Now() | Ghi lại thời điểm tài khoản được khởi tạo lần đầu bởi Admin.
 
-=== TABLE 9 ===
+=== TABLE 10 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | id | GUID | Primary Key | Định danh duy nhất toàn cầu cho mỗi vai trò, đảm bảo tính nhất quán dữ liệu giữa các dịch vụ.
 2 | role_name | Varchar(50) | Unique, Not Null | Tên vai trò định danh cho các nhóm quyền (ví dụ: Admin, Clerk, Specialist, Manager, BoardOfDirectors) .
 3 | description | Nvarchar(255) |  | Mô tả chi tiết phạm vi quyền hạn và trách nhiệm của vai trò đó trong hệ thống quản lý công văn.
 
-=== TABLE 10 ===
+=== TABLE 11 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | user_id | GUID | Composite PK, Foreign Key | Liên kết trực tiếp tới trường id của bảng AppUsers. Xác định người dùng được gán quyền.
 2 | role_id | GUID | Composite PK, Foreign Key | Liên kết trực tiếp tới trường id của bảng AppRoles. Xác định vai trò được cấp cho người dùng.
 
-=== TABLE 11 ===
+=== TABLE 12 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | id | GUID | Primary Key | Định danh duy nhất cho mỗi đơn vị/phòng ban.
 2 | dept_name | Nvarchar(150) | Not Null | Tên đầy đủ của đơn vị (ví dụ: Khoa Công nghệ thông tin, Phòng Tổng hợp).
@@ -214,7 +234,7 @@ STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 5 | description | Nvarchar(255) |  | Ghi chú về chức năng hoặc vị trí văn phòng của đơn vị.
 6 | created_at | DateTime |  | Thời điểm đơn vị được khởi tạo trên hệ thống.
 
-=== TABLE 12 ===
+=== TABLE 13 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | id | GUID | Primary Key | Định danh duy nhất toàn cầu cho văn bản.
 2 | doc_number | Nvarchar(50) | Index | Số hiệu công văn (ví dụ: 123/QD-HAU) được bóc tách tự động bởi OCR.
@@ -225,13 +245,13 @@ STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 7 | status | Varchar(50) | Not Null | Trạng thái hiện tại của văn bản (ví dụ: 'Draft', 'Pending', 'Signed', 'Published') .
 8 | doc_type_id | GUID | Foreign Key | Liên kết tới bảng DocumentTypes để phân loại văn bản.
 
-=== TABLE 13 ===
+=== TABLE 14 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | id | GUID | Primary Key | Định danh duy nhất cho từng loại văn bản.
 2 | type_name | Varchar(100) | Unique, Not Null | Tên loại văn bản (ví dụ: 'CongVanDen', 'CongVanDi', 'ToTrinh', 'QuyetDinh').
 3 | description | Nvarchar(255) |  | Mô tả chi tiết về cách sử dụng loại văn bản này trong thực tế.
 
-=== TABLE 14 ===
+=== TABLE 15 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | id | GUID | Primary Key | Định danh duy nhất cho mỗi bước xử lý.
 2 | doc_id | GUID | Foreign Key | Liên kết tới bảng Documents. Xác định bước xử lý này thuộc văn bản nào.
@@ -241,11 +261,10 @@ STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 6 | comment | Nvarchar(Max) |  | Nội dung Bút phê chỉ đạo của lãnh đạo hoặc ý kiến giải trình của chuyên viên.
 7 | timestamp | DateTime | Default: Now() | Thời điểm chính xác thực hiện hành động để theo dõi tiến độ xử lý văn bản.
 
-=== TABLE 15 ===
+=== TABLE 16 ===
 STT | Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả nội dung
 1 | id | GUID | Primary Key | Định danh cho mỗi lượt ký số thành công.
 2 | doc_id | GUID | Foreign Key | Liên kết tới văn bản được áp dụng chữ ký.
 3 | signer_id | GUID | Foreign Key | Người thực hiện ký (Lãnh đạo hoặc Ban Giám hiệu).
 4 | signature_type | Varchar(100) | Not Null | Phân loại loại chữ ký theo yêu cầu: 'PersonalSignature' (Ký nháy) hoặc 'LegalSeal' (Ký pháp nhân).
 5 | signed_at | DateTime |  | Thời điểm ký số thành công để phục vụ giám sát hệ thống (Audit Logs) .
-

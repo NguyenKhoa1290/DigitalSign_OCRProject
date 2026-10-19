@@ -10,15 +10,25 @@ public class AppDbContext : DbContext
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
     public DbSet<DocumentProcess> DocumentProcesses => Set<DocumentProcess>();
+    public DbSet<SignatureEvidence> SignatureEvidence => Set<SignatureEvidence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<SignatureEvidence>(e =>
+        {
+            e.HasNoKey();
+            e.ToTable("Signatures", table => table.ExcludeFromMigrations());
+        });
 
         // ── Document ──────────────────────────────────────────────────────────
         modelBuilder.Entity<Document>(e =>
         {
             e.HasKey(x => x.Id);
+            e.HasQueryFilter(x => !x.IsDeleted);
+            e.Property(x => x.ConcurrencyVersion).IsConcurrencyToken();
+            e.Property(x => x.DeleteReason).HasMaxLength(1000);
+            e.HasIndex(x => new { x.IsDeleted, x.DeletedAt });
 
             e.Property(x => x.DocNumber)
              .HasMaxLength(50);

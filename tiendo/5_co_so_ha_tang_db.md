@@ -227,6 +227,14 @@ IX_RevokedAccessTokens_ExpiresAt
 
 ## DocumentService database
 
+### Migration xóa mềm ngày 19/10/2026
+
+[Chính sách xóa mềm/khôi phục](../tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_XOA_CONG_VAN.md) đã được triển khai trong migration `SoftDeleteDraftDocuments`, giữ bản ghi, tệp và lịch sử; không cascade delete khi người dùng xóa bản nháp. Cấu trúc gốc phía dưới được bổ sung bởi các trường sau.
+
+Documents bổ sung `CreatedById`, `CreatedAt` bất biến; `DeletionEligibilityConfirmed`; `FirstSubmittedAt`, `FirstAssignedAt`, `OfficiallyReceivedAt`, `SigningStartedAt`; `IsDeleted`, `DeletedAt`, `DeletedById`, `DeleteReason`; `ConcurrencyVersion`. Audit ghi `SoftDelete`/`Restore` với actor, UTC, lý do trong cùng giao dịch; giữ lịch sử mọi lần xóa/khôi phục. SignService chỉ đọc projection Documents, migration projection không tự thay cấu trúc bảng do DocumentService sở hữu.
+
+Migration giữ `DeletionEligibilityConfirmed=false` cho toàn bộ dữ liệu cũ; không suy quyền xóa từ Submit, Comment hoặc giá trị null. Luồng mới ghi Create khi tạo và Submit khi trình. Mốc tiếp nhận gắn endpoint receive riêng, không theo OCR/upload. Query filter và OCR preflight/callback ngăn ghi vào hồ sơ đã xóa; giữ object MinIO. Chưa có giao diện đối soát hoặc thời hạn purge vật lý.
+
 ### DbSets
 
 ```csharp

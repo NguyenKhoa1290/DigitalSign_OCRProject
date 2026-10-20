@@ -1,43 +1,0 @@
-Loading PP-StructureV3
-/tmp/test_ppstructure_word.py:53: UserWarning: `lang` and `ocr_version` will be ignored when model names or model directories are not `None`.
-  pipeline = PPStructureV3(**options)
-[32mCreating model: ('PP-LCNet_x1_0_doc_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_doc_ori`.[0m
-/opt/ppstructure/lib/python3.10/site-packages/paddle/utils/cpp_extension/extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
-  warnings.warn(warning_message)
-[32mCreating model: ('UVDoc', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/UVDoc`.[0m
-[32mCreating model: ('PP-DocLayout_plus-L', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-DocLayout_plus-L`.[0m
-[32mCreating model: ('PP-LCNet_x1_0_textline_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_textline_ori`.[0m
-[32mCreating model: ('PP-OCRv6_medium_det', None, None)[0m
-[33mChecking connectivity to the model hosters, this may take a while. To bypass this check, set `PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK` to `True`.[0m
-[32mUsing official model (PP-OCRv6_medium_det), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-OCRv6_medium_det`.[0m
-Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files:  20%|██        | 1/5 [00:00<00:01,  3.36it/s]Fetching 5 files: 100%|██████████| 5/5 [00:04<00:00,  1.10it/s]Fetching 5 files: 100%|██████████| 5/5 [00:04<00:00,  1.14it/s]
-[32mCreating model: ('PP-OCRv6_medium_rec', None, None)[0m
-[32mUsing official model (PP-OCRv6_medium_rec), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-OCRv6_medium_rec`.[0m
-Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files:  20%|██        | 1/5 [00:00<00:01,  3.61it/s]Fetching 5 files: 100%|██████████| 5/5 [00:05<00:00,  1.10s/it]Fetching 5 files: 100%|██████████| 5/5 [00:05<00:00,  1.05s/it]
-[32mCreating model: ('PP-LCNet_x1_0_table_cls', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_table_cls`.[0m
-[32mCreating model: ('SLANeXt_wired', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/SLANeXt_wired`.[0m
-[32mCreating model: ('SLANet_plus', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/SLANet_plus`.[0m
-[32mCreating model: ('RT-DETR-L_wired_table_cell_det', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/RT-DETR-L_wired_table_cell_det`.[0m
-[32mCreating model: ('RT-DETR-L_wireless_table_cell_det', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/RT-DETR-L_wireless_table_cell_det`.[0m
-[32mCreating model: ('PP-LCNet_x1_0_doc_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_doc_ori`.[0m
-[32mCreating model: ('PP-LCNet_x1_0_textline_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_textline_ori`.[0m
-[32mCreating model: ('PP-OCRv6_medium_det', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-OCRv6_medium_det`.[0m
-[32mCreating model: ('PP-OCRv6_medium_rec', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-OCRv6_medium_rec`.[0m
-Export page 1
-Connecting to https://paddle-model-ecology.bj.bcebos.com/paddlex/PaddleX3.0/fonts/simfang.ttf ...
-Downloading simfang.ttf ...
-[                                                  ] 0.04%[                                                  ] 0.97%[=                                                 ] 2.98%[===                                               ] 7.67%[========                                          ] 17.39%[===============                                   ] 30.71%[=====================                             ] 43.57%[================================                  ] 65.57%[============================================      ] 88.96%[==================================================] 100.00%
-{"input": "ppstructure-input.jpg", "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52", "versions": {"paddleocr": "3.7.0", "paddlepaddle": "3.3.1", "paddlex": "3.7.2"}, "options": {"device": "cpu", "cpu_threads": 4, "enable_mkldnn": false, "lang": "vi", "ocr_version": "PP-OCRv5", "use_doc_orientation_classify": true, "use_doc_unwarping": true, "use_textline_orientation": true, "use_table_recognition": true, "use_formula_recognition": false, "use_chart_recognition": false, "use_seal_recognition": false, "use_region_detection": false, "text_detection_model_name": "PP-OCRv6_medium_det", "text_recognition_model_name": "PP-OCRv6_medium_rec"}, "llm_used": false, "manual_content_edits": false, "status": "complete", "initialization_seconds": 19.1, "pages": 1, "inference_and_export_seconds": 31.67, "word_files": ["page-1/ppstructure-input.docx"], "total_seconds": 50.78}

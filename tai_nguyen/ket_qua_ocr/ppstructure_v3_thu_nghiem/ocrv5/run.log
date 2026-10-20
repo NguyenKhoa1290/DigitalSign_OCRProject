@@ -1,38 +1,0 @@
-Loading PP-StructureV3
-[32mCreating model: ('PP-LCNet_x1_0_doc_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_doc_ori`.[0m
-/opt/ppstructure/lib/python3.10/site-packages/paddle/utils/cpp_extension/extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
-  warnings.warn(warning_message)
-[32mCreating model: ('UVDoc', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/UVDoc`.[0m
-[32mCreating model: ('PP-DocLayout_plus-L', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-DocLayout_plus-L`.[0m
-[32mCreating model: ('PP-LCNet_x1_0_textline_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_textline_ori`.[0m
-[32mCreating model: ('PP-OCRv5_server_det', None, None)[0m
-[33mChecking connectivity to the model hosters, this may take a while. To bypass this check, set `PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK` to `True`.[0m
-[32mUsing official model (PP-OCRv5_server_det), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/PP-OCRv5_server_det`.[0m
-Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:02,  2.08it/s]Fetching 6 files: 100%|██████████| 6/6 [00:04<00:00,  1.24it/s]Fetching 6 files: 100%|██████████| 6/6 [00:04<00:00,  1.26it/s]
-[32mCreating model: ('latin_PP-OCRv5_mobile_rec', None, None)[0m
-[32mUsing official model (latin_PP-OCRv5_mobile_rec), the model files will be automatically downloaded and saved in `/root/.paddlex/official_models/latin_PP-OCRv5_mobile_rec`.[0m
-Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Fetching 6 files:  17%|█▋        | 1/6 [00:00<00:01,  2.76it/s]Fetching 6 files:  67%|██████▋   | 4/6 [00:00<00:00,  8.79it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  1.93it/s]Fetching 6 files: 100%|██████████| 6/6 [00:02<00:00,  2.30it/s]
-[32mCreating model: ('PP-LCNet_x1_0_table_cls', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_table_cls`.[0m
-[32mCreating model: ('SLANeXt_wired', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/SLANeXt_wired`.[0m
-[32mCreating model: ('SLANet_plus', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/SLANet_plus`.[0m
-[32mCreating model: ('RT-DETR-L_wired_table_cell_det', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/RT-DETR-L_wired_table_cell_det`.[0m
-[32mCreating model: ('RT-DETR-L_wireless_table_cell_det', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/RT-DETR-L_wireless_table_cell_det`.[0m
-[32mCreating model: ('PP-LCNet_x1_0_doc_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_doc_ori`.[0m
-[32mCreating model: ('PP-LCNet_x1_0_textline_ori', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-LCNet_x1_0_textline_ori`.[0m
-[32mCreating model: ('PP-OCRv5_server_det', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/PP-OCRv5_server_det`.[0m
-[32mCreating model: ('latin_PP-OCRv5_mobile_rec', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/root/.paddlex/official_models/latin_PP-OCRv5_mobile_rec`.[0m
-Export page 1
-{"input": "ppstructure-input.jpg", "image_sha256": "3ac3abe4aa4c1c45917b27c49694c9718094b40955f42c62a4e073699dc72e52", "versions": {"paddleocr": "3.7.0", "paddlepaddle": "3.3.1", "paddlex": "3.7.2"}, "options": {"device": "cpu", "cpu_threads": 4, "enable_mkldnn": false, "lang": "vi", "ocr_version": "PP-OCRv5", "use_doc_orientation_classify": true, "use_doc_unwarping": true, "use_textline_orientation": true, "use_table_recognition": true, "use_formula_recognition": false, "use_chart_recognition": false, "use_seal_recognition": false, "use_region_detection": false}, "llm_used": false, "manual_content_edits": false, "status": "complete", "initialization_seconds": 16.39, "pages": 1, "inference_and_export_seconds": 35.12, "word_files": ["page-1/ppstructure-input.docx"], "total_seconds": 51.53}

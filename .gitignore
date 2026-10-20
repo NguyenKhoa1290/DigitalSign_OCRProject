@@ -8,6 +8,7 @@
 **/.pytest_cache/
 **/tai_lieu/
 **/tiendo/
+/tai_nguyen/
 **/FlightTaskbarWeb/
 **/backup/
 .env

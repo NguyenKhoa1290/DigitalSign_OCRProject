@@ -31,10 +31,24 @@ public class DocumentService
         await EnsureDocumentActionAsync(response);
     }
 
+    public async Task CancelDocumentAsync(Guid id, string reason, Guid expectedVersion)
+    {
+        using var response = await _api.PostResponseAsync($"api/documents/{id}/cancel", new { reason, expectedVersion });
+        await EnsureDocumentActionAsync(response);
+    }
+
     public async Task RestoreDraftAsync(Guid id, string reason)
     {
         using var response = await _api.PostResponseAsync($"api/documents/{id}/restore", new { reason });
         await EnsureDocumentActionAsync(response);
+    }
+
+    public async Task<bool> PurgeDocumentAsync(Guid id, string reason, string confirmationTitle, Guid expectedVersion)
+    {
+        using var response = await _api.PostResponseAsync($"api/documents/{id}/purge", new { reason, confirmationTitle, expectedVersion });
+        await EnsureDocumentActionAsync(response);
+        using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return json.RootElement.GetProperty("data").GetProperty("filesPendingCleanup").GetBoolean();
     }
 
     public async Task ReceiveDocumentAsync(Guid id)
@@ -109,6 +123,9 @@ public class DocumentService
         var document = await GetDocumentAsync(id);
         if (document is null || string.IsNullOrWhiteSpace(document.MinioObjectName))
             return false;
+
+        if (document.MinioObjectName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+            throw new HttpRequestException("Word không cần chạy OCR. Hãy tải PDF hoặc ảnh nếu cần nhận diện.");
 
         using var response = await _api.PostResponseAsync("api/ocr/process", new
         {

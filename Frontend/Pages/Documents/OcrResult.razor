@@ -41,7 +41,14 @@ else
         </div>
     </div>
 
-    @if (!_document.HasOcrData)
+    @if (_document.FileContentType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    {
+        <div class="empty-state table-wrapper">
+            <p class="empty-state-title">Văn bản Word không cần OCR</p>
+            <p class="empty-state-desc">Tệp Word đã có nội dung văn bản. Mở chi tiết công văn để tải Word về máy.</p>
+        </div>
+    }
+    else if (!_document.HasOcrData)
     {
         <div class="empty-state table-wrapper">
             <div class="empty-state-icon">

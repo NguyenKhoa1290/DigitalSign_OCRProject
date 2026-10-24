@@ -13,7 +13,7 @@ public static class RequestJournal
         "change-password","send-email-verification","users","roles","departments","tree","stats","assignees","me",
         "documents","types","file","upload","ocr","submit","dept-sign","submit-director","director-sign","reject","publish","assign",
         "signatures","certificates","issue","personal-sign","legal-seal","document","verify","health","process","process-upload",
-        "incoming-submit","incoming","direction","assignment"
+        "incoming-submit","incoming","direction","assignment","cancel","purge"
     };
     public static (string Service,string Path,Guid? Resource)? Describe(string path)
     {
@@ -54,7 +54,7 @@ public static class RequestJournal
             {
                 "upload"=>"UploadDocument", "submit"=>"Submit", "dept-sign"=>"DeptSign", "submit-director"=>"SubmitDirector",
                 "director-sign"=>"DirectorSign", "reject"=>"Reject", "publish"=>"Publish", "assign"=>"Assign", "ocr"=>"UpdateOCR",
-                "restore"=>"Restore", "receive"=>"Receive", "incoming-submit"=>"SubmitIncoming", _=>null
+                "restore"=>"Restore", "receive"=>"Receive", "incoming-submit"=>"SubmitIncoming", "cancel"=>"Cancel", "purge"=>"PurgeDocument", _=>null
             };
             if(workflow!=null)return workflow;
         }

@@ -1,0 +1,39 @@
+@if (IsVisible)
+{
+    <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="purge-title">
+            <div class="modal-header">
+                <span id="purge-title" class="modal-title">Xóa vĩnh viễn công văn</span>
+                <button class="modal-close" disabled="@Busy" @onclick="OnCancel" aria-label="Đóng">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Xóa vĩnh viễn <strong>@DocumentTitle</strong> cùng tệp, chữ ký và lịch sử xử lý. Không thể khôi phục. Hệ thống giữ nhật ký người thực hiện và lý do xóa.</p>
+                <label for="purge-reason" class="form-label">Lý do (bắt buộc)</label>
+                <textarea id="purge-reason" class="form-control" rows="3" maxlength="1000" @bind="_reason" @bind:event="oninput" disabled="@Busy"></textarea>
+                <label for="purge-confirmation" class="form-label">Nhập lại tên công văn để xác nhận</label>
+                <input id="purge-confirmation" class="form-control" maxlength="500" @bind="_title" @bind:event="oninput" disabled="@Busy" autocomplete="off" />
+                @if (!string.IsNullOrEmpty(Error)) { <div class="alert alert-danger" role="alert">@Error</div> }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" disabled="@Busy" @onclick="OnCancel">Quay lại</button>
+                <button class="btn btn-danger" disabled="@(Busy || string.IsNullOrWhiteSpace(_reason) || _title.Trim() != DocumentTitle.Trim())" @onclick="Confirm">@(Busy ? "Đang xóa..." : "Xóa vĩnh viễn")</button>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string DocumentTitle { get; set; } = "";
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<DocumentPurgeInput> OnConfirm { get; set; }
+    private string _reason = "", _title = "";
+    private bool _wasVisible;
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && !_wasVisible) { _reason = ""; _title = ""; }
+        _wasVisible = IsVisible;
+    }
+    private Task Confirm() => OnConfirm.InvokeAsync(new(_reason.Trim(), _title.Trim()));
+}

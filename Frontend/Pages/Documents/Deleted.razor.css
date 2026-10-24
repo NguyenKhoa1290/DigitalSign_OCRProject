@@ -4,3 +4,4 @@
 details { margin-bottom: 16px; }
 .card-body { min-width: 0; }
 .filter-bar { flex-wrap: wrap; }
+.deleted-actions { display: flex; flex-wrap: wrap; gap: 10px; }

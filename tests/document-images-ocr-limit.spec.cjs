@@ -38,7 +38,9 @@ async function check(browser, width) {
       ocrCalls++; return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ detail: limitMessage }) });
     } else if (req.method() === 'GET' && url.pathname === '/api/ocr/gemini/models')
       data = [{ id: 'gemini-fixture', displayName: 'Fixture Gemini' }];
-    else if (req.method() === 'POST' && url.pathname === '/api/ocr/gemini/export-word-upload') {
+    else if (req.method() === 'POST' && url.pathname === '/api/ocr/input-info') {
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ totalPages: 6 }) });
+    } else if (req.method() === 'POST' && url.pathname === '/api/ocr/gemini/export-word-upload') {
       exports++; return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ detail: limitMessage }) });
     } else throw new Error(`Unexpected fixture API ${req.method()} ${url.pathname}`);
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data }) });
@@ -52,7 +54,7 @@ async function check(browser, width) {
   const input = page.locator('input[type="file"]');
   assert.match(await input.getAttribute('accept'), /\.png/);
   await input.setInputFiles({ name: 'unsupported.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
-  await page.getByText('Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.', { exact: true }).waitFor();
+  await page.getByText('Chỉ hỗ trợ PDF, Word (.docx), PNG, JPG/JPEG hoặc WEBP.', { exact: true }).waitFor();
   await input.setInputFiles({ name: imageName, mimeType: 'image/png', buffer: image });
   await page.getByText('File sẵn sàng tải lên', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Tạo Công văn', exact: true }).click();
@@ -77,8 +79,10 @@ async function check(browser, width) {
   assert(await ocr.isEnabled()); assert.equal(ocrCalls, 1);
 
   await page.goto(web + '/documents/ocr-scan');
-  await page.getByText(/tối đa 25 MB và 5 trang mỗi lượt OCR/).waitFor();
+  await page.getByText(/Chọn tối đa 5 trang\/ảnh mỗi lượt OCR/).waitFor();
   await page.locator('#ocr-file').setInputFiles({ name: 'six.pdf', mimeType: 'application/pdf', buffer: pdf });
+  await page.locator('iframe.ocr-pdf-preview').waitFor();
+  await page.getByRole('button', { name: 'Chạy OCR', exact: true }).click();
   const exportButton = page.getByRole('button', { name: 'Tạo và tải Word', exact: true }); await exportButton.click();
   await page.getByRole('status').filter({ hasText: limitMessage }).waitFor();
   assert(await exportButton.isEnabled()); assert.equal(exports, 1);

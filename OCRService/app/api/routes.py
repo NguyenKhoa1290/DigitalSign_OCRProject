@@ -13,7 +13,7 @@ from app.services import ocr_processor
 from app.services import gemini_service
 from app.services.document_service import DocumentUnavailableError
 from app.services.layout_exporter import create_layout_docx
-from app.services.document_input import load_document_images, DocumentInputError
+from app.services.document_input import load_document_images, document_page_count, select_pages, DocumentInputError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ocr", tags=["OCR"])
@@ -133,16 +133,45 @@ async def gemini_models():
         raise HTTPException(status_code=503, detail="Không kết nối được Google AI Studio.") from exc
 
 
-@router.post("/gemini/export-word-upload", summary="Dựng Word từ bản quét bằng PaddleOCR và Gemini")
-async def gemini_export_word_upload(
-    file: UploadFile = File(...),
-    model_id: str = Query(..., min_length=5, max_length=100),
-):
-    file_bytes = await file.read(25 * 1024 * 1024 + 1)
-    if len(file_bytes) > 25 * 1024 * 1024:
+@router.post("/input-info", summary="Đếm trang trước khi chọn OCR, không gọi AI")
+async def input_info(file: UploadFile = File(...)):
+    content = await file.read(25 * 1024 * 1024 + 1)
+    if len(content) > 25 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Tệp vượt quá giới hạn 25 MB.")
     try:
-        images = load_document_images(file_bytes, file.filename or "", dpi=180)
+        return {"totalPages": document_page_count(content, file.filename or "")}
+    except DocumentInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/gemini/export-word-upload", summary="Dựng Word từ bản quét bằng PaddleOCR và Gemini")
+async def gemini_export_word_upload(
+    file: UploadFile | None = File(None),
+    files: list[UploadFile] | None = File(None),
+    model_id: str = Query(..., min_length=5, max_length=100),
+    pages: str | None = Query(None, max_length=200),
+):
+    inputs = ([file] if file else []) + (files or [])
+    if not inputs or len(inputs) > 100:
+        raise HTTPException(status_code=400, detail="Chọn một PDF hoặc tối đa 100 ảnh.")
+    try:
+        if len(inputs) > 1 and any(not (item.filename or "").lower().endswith((".png", ".jpg", ".jpeg", ".webp")) for item in inputs):
+            raise DocumentInputError("Chọn một PDF hoặc nhiều ảnh; không trộn PDF với ảnh.")
+        contents = []
+        total_bytes = 0
+        for item in inputs:
+            content = await item.read(25 * 1024 * 1024 - total_bytes + 1)
+            total_bytes += len(content)
+            if total_bytes > 25 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Tổng dung lượng vượt quá giới hạn 25 MB.")
+            contents.append(content)
+        if len(inputs) == 1:
+            total = document_page_count(contents[0], inputs[0].filename or "")
+            selected = select_pages(pages, total)
+            images = load_document_images(contents[0], inputs[0].filename or "", dpi=180, pages=pages)
+        else:
+            selected = select_pages(pages, len(inputs))
+            images = [load_document_images(contents[n - 1], inputs[n - 1].filename or "", dpi=180)[0] for n in selected]
     except DocumentInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -155,7 +184,7 @@ async def gemini_export_word_upload(
         layouts = []
         engine = ocr_processor.get_engine()
         with tempfile.TemporaryDirectory() as tmpdir:
-            for page_number, image in enumerate(images, start=1):
+            for page_number, image in zip(selected, images):
                 image_path = os.path.join(tmpdir, f"page-{page_number}.png")
                 image.save(image_path, "PNG")
                 lines = engine.extract_lines(image_path)
@@ -167,7 +196,7 @@ async def gemini_export_word_upload(
                 combined["blocks"].append({"type": "page_break"})
             combined["blocks"].extend(layout["blocks"])
         docx_bytes = create_layout_docx(combined)
-        headers = {"Content-Disposition": 'attachment; filename="ban-nhap-ocr-gemini.docx"'}
+        headers = {"Content-Disposition": 'attachment; filename="ban-nhap-ocr-gemini.docx"', "X-OCR-Pages": ",".join(map(str, selected))}
         return StreamingResponse(io.BytesIO(docx_bytes), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
     except HTTPException:
         raise

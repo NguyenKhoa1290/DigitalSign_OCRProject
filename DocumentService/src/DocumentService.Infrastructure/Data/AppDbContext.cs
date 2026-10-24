@@ -11,10 +11,21 @@ public class AppDbContext : DbContext
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
     public DbSet<DocumentProcess> DocumentProcesses => Set<DocumentProcess>();
     public DbSet<SignatureEvidence> SignatureEvidence => Set<SignatureEvidence>();
+    public DbSet<DocumentPurgeRecord> DocumentPurgeRecords => Set<DocumentPurgeRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<DocumentPurgeRecord>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.DocId).IsUnique();
+            e.Property(x => x.Title).HasMaxLength(500);
+            e.Property(x => x.OriginalStatus).HasMaxLength(50);
+            e.Property(x => x.Reason).HasMaxLength(1000);
+            e.Property(x => x.ObjectNamesJson).HasColumnType("jsonb");
+            e.Property(x => x.CleanupError).HasMaxLength(100);
+        });
         modelBuilder.Entity<SignatureEvidence>(e =>
         {
             e.HasNoKey();

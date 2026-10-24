@@ -26,6 +26,63 @@ namespace DocumentService.Tests;
 public class DocumentDeletionApiTests
 {
     [Fact]
+    public async Task PurgeEndpointRequiresAdmin_ValidatedConfirmation_AndJwtActor()
+    {
+        var id = Guid.NewGuid(); var actor = Guid.NewGuid();
+        var service = new Mock<IDocumentPurgeService>();
+        service.Setup(s => s.PurgeAsync(id, It.IsAny<DocumentActor>(), It.IsAny<DocumentService.Core.DTOs.DocumentPurgeDto>()))
+            .ReturnsAsync(new DocumentService.Core.DTOs.DocumentPurgeResult(id, false));
+        var builder = WebApplication.CreateBuilder(); builder.WebHost.UseTestServer();
+        builder.Services.AddAuthentication("fixture").AddScheme<AuthenticationSchemeOptions, FixtureAuth>("fixture", _ => { });
+        builder.Services.AddAuthorization(); builder.Services.AddSingleton(service.Object);
+        builder.Services.AddControllers().AddApplicationPart(typeof(DocumentPurgeController).Assembly);
+        await using var app = builder.Build(); app.UseAuthentication(); app.UseAuthorization(); app.MapControllers(); await app.StartAsync();
+        using var client = app.GetTestClient();
+        var body = new { Reason = "Remove fixture", ConfirmationTitle = "Fixture", ExpectedVersion = Guid.Empty, UserId = Guid.NewGuid() };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync($"/api/documents/{id}/purge", body)).StatusCode);
+        client.DefaultRequestHeaders.Add("Fixture-User", actor.ToString());
+        foreach (var role in new[] { "Clerk", "Specialist", "Manager", "BoardOfDirectors" })
+        {
+            client.DefaultRequestHeaders.Remove("Fixture-Roles"); client.DefaultRequestHeaders.Add("Fixture-Roles", role);
+            Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/api/documents/{id}/purge", body)).StatusCode);
+        }
+        client.DefaultRequestHeaders.Remove("Fixture-Roles"); client.DefaultRequestHeaders.Add("Fixture-Roles", "Admin");
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync($"/api/documents/{id}/purge", new { Reason = "Missing", ConfirmationTitle = "Fixture" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/documents/{id}/purge", body)).StatusCode);
+        service.Verify(s => s.PurgeAsync(id, It.Is<DocumentActor>(a => a.UserId == actor && a.IsAdmin),
+            It.Is<DocumentService.Core.DTOs.DocumentPurgeDto>(r => r.ExpectedVersion == Guid.Empty && r.Reason == body.Reason)), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelEndpointRequiresAdminAndUsesJwtActor()
+    {
+        var id = Guid.NewGuid(); var actor = Guid.NewGuid(); var version = Guid.NewGuid();
+        var service = new Mock<IDocumentService>();
+        var builder = WebApplication.CreateBuilder(); builder.WebHost.UseTestServer();
+        builder.Services.AddAuthentication("fixture").AddScheme<AuthenticationSchemeOptions, FixtureAuth>("fixture", _ => { });
+        builder.Services.AddAuthorization(); builder.Services.AddHttpClient(); builder.Services.AddSingleton(service.Object);
+        builder.Services.AddControllers().AddApplicationPart(typeof(DocumentsController).Assembly);
+        await using var app = builder.Build(); app.UseAuthentication(); app.UseAuthorization(); app.MapControllers(); await app.StartAsync();
+        using var client = app.GetTestClient();
+        object body = new { Reason = "Wrong publication", ExpectedVersion = version, UserId = Guid.NewGuid(), Roles = new[] { "Admin" } };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", body)).StatusCode);
+        client.DefaultRequestHeaders.Add("Fixture-User", actor.ToString());
+        foreach (var role in new[] { "Clerk", "Specialist", "Manager", "BoardOfDirectors" })
+        {
+            client.DefaultRequestHeaders.Remove("Fixture-Roles"); client.DefaultRequestHeaders.Add("Fixture-Roles", role);
+            Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", body)).StatusCode);
+        }
+        client.DefaultRequestHeaders.Remove("Fixture-Roles"); client.DefaultRequestHeaders.Add("Fixture-Roles", "Admin");
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", new { ExpectedVersion = version })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", new { Reason = "Missing version" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", new { Reason = "Null version", ExpectedVersion = (Guid?)null })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", new { Reason = "Legacy", ExpectedVersion = Guid.Empty })).StatusCode);
+        service.Verify(s => s.CancelDocumentAsync(id, It.Is<DocumentActor>(a => a.UserId == actor && a.IsAdmin), "Legacy", Guid.Empty), Times.Once);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", body)).StatusCode);
+        service.Verify(s => s.CancelDocumentAsync(id, It.Is<DocumentActor>(a => a.UserId == actor && a.IsAdmin), "Wrong publication", version), Times.Once);
+    }
+
+    [Fact]
     public async Task IncomingSubmitRequiresClerkAndClerkCannotUseTheAssignmentApi()
     {
         var actor = Guid.NewGuid(); var version = Guid.NewGuid(); var id = Guid.NewGuid();
@@ -111,5 +168,17 @@ public class DocumentDeletionApiTests
         (await client.GetAsync("/api/documents/deleted")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await client.PostAsJsonAsync($"/api/documents/{id}/restore", new { reason = "Đối chiếu" })).StatusCode.Should().Be(HttpStatusCode.OK);
         (await client.GetAsync($"/api/documents/{id}")).StatusCode.Should().Be(HttpStatusCode.OK);
+        // A real controller -> service -> repository call for the legacy zero-version record.
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var legacy = await db.Documents.SingleAsync(d => d.Id == id);
+            legacy.Status = DocumentStatus.Published; legacy.ConcurrencyVersion = Guid.Empty;
+            await db.SaveChangesAsync();
+        }
+        (await client.PostAsJsonAsync($"/api/documents/{id}/cancel", new { Reason = "Legacy cancellation", ExpectedVersion = Guid.Empty })).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await client.GetAsync($"/api/documents/{id}")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        using var deletedJson = System.Text.Json.JsonDocument.Parse(await (await client.GetAsync("/api/documents/deleted")).Content.ReadAsStringAsync());
+        deletedJson.RootElement.GetProperty("data").GetProperty("items")[0].GetProperty("isCancelled").GetBoolean().Should().BeTrue();
     }
 }

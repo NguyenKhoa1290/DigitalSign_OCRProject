@@ -11,6 +11,7 @@ public class DocumentDto
     public Guid ConcurrencyVersion { get; set; }
     public bool CanDeleteDraft { get; set; }
     public bool IsDeleted { get; set; }
+    public bool IsCancelled { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? DeletedById { get; set; }
     public string? DeleteReason { get; set; }

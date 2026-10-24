@@ -13,6 +13,7 @@ public interface IDocumentService
     Task<DocumentDto> GetDocumentByIdAsync(Guid id);
     Task<PagedResult<DocumentDto>> GetAllDocumentsAsync(DocumentQueryParams query);
     Task DeleteDocumentAsync(Guid id, DocumentActor actor, string? reason);
+    Task CancelDocumentAsync(Guid id, DocumentActor actor, string reason, Guid expectedVersion);
     Task RestoreDocumentAsync(Guid id, DocumentActor actor, string? reason);
     Task<PagedResult<DocumentDto>> GetDeletedDocumentsAsync(DocumentQueryParams query, DocumentActor actor);
     Task<DocumentDto> ReceiveDocumentAsync(Guid id, DocumentActor actor);

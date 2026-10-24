@@ -149,6 +149,7 @@ public class DocumentFileReplacementTests
 
     [Theory]
     [InlineData("")]
+    [InlineData("document.doc")]
     [InlineData("bad\r\nname.pdf")]
     [InlineData("document.svg")]
     [InlineData("document.exe")]
@@ -156,5 +157,23 @@ public class DocumentFileReplacementTests
     {
         await FluentActions.Awaiting(() => Upload(name)).Should().ThrowAsync<DocumentServiceException>();
         _files.Verify(f => f.UploadFileAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("Công văn đã sửa.docx")]
+    [InlineData("Công văn đã sửa.DOCX")]
+    public async Task WordReplacement_DownloadsWithOriginalNameAndMime_WithoutQueuingOcr(string name)
+    {
+        const string mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        _files.Setup(f => f.UploadFileAsync(It.IsAny<Stream>(), name, mime, "documents")).ReturnsAsync("edited.docx");
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/edited.docx", name)).ReturnsAsync(true);
+        var result = await Upload(name);
+        result.FileContentType.Should().Be(mime);
+        result.FileName.Should().Be(name);
+        _files.Verify(f => f.DeleteFileAsync("old.pdf", "documents"), Times.Once);
+        _kafka.Verify(k => k.PublishDocumentUploadedAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        var download = await _service.GetFileAsync(_document.Id);
+        download.FileName.Should().Be(name);
+        download.ContentType.Should().Be(mime);
     }
 }

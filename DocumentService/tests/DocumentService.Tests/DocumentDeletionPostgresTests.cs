@@ -23,6 +23,36 @@ public sealed class DeletionPostgresFactAttribute : FactAttribute
 
 public class DocumentDeletionPostgresTests
 {
+    [DeletionPostgresFact]
+    public async Task PermanentPurge_CascadesProcessesNotificationsAndSignatures_ButKeepsAudit()
+    {
+        await using var f = new Fixture(); await f.Initialize();
+        await using var db = f.Context();
+        var doc = await db.Documents.SingleAsync(d => d.Id == f.Id);
+        doc.IsDeleted = true;
+        doc.ConcurrencyVersion = Guid.Empty;
+        db.Add(new DocumentProcess { Id = Guid.NewGuid(), DocId = doc.Id, Action = "Cancel", Timestamp = DateTime.UtcNow });
+        await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlRawAsync("CREATE TABLE \"UserNotifications\" (\"DocumentId\" uuid REFERENCES \"Documents\" (\"Id\") ON DELETE CASCADE)");
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"UserNotifications\" VALUES ({doc.Id})");
+        var signature = Guid.NewGuid(); var now = DateTime.UtcNow;
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"Signatures\" VALUES ({signature},{doc.Id},{f.Owner},'LegalSeal',{now})");
+        db.ChangeTracker.Clear();
+        var files = new Moq.Mock<DocumentService.Core.Interfaces.IFileStorageService>();
+        files.Setup(s => s.DeleteFileAsync(Moq.It.IsAny<string>(), "documents")).Returns(Task.FromResult(true));
+        var service = new DocumentService.Infrastructure.Services.DocumentPurgeService(db, files.Object,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DocumentService.Infrastructure.Services.DocumentPurgeService>.Instance);
+        var request = new DocumentService.Core.DTOs.DocumentPurgeDto { Reason = "Remove fixture", ConfirmationTitle = doc.Title, ExpectedVersion = Guid.Empty };
+        (await service.PurgeAsync(doc.Id, new(f.Owner, ["Admin"]), request)).FilesPendingCleanup.Should().BeFalse();
+        (await db.Documents.IgnoreQueryFilters().CountAsync()).Should().Be(0);
+        (await db.DocumentProcesses.CountAsync()).Should().Be(0);
+        (await db.SignatureEvidence.CountAsync()).Should().Be(0);
+        (await db.Database.SqlQueryRaw<int>("SELECT COUNT(*)::int AS \"Value\" FROM \"UserNotifications\"").SingleAsync()).Should().Be(0);
+        (await db.DocumentPurgeRecords.SingleAsync()).ActorId.Should().Be(f.Owner);
+        (await service.PurgeAsync(doc.Id, new(f.Owner, ["Admin"]), request)).FilesPendingCleanup.Should().BeFalse();
+        db.Database.HasPendingModelChanges().Should().BeFalse();
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly string _schema = "deletion_" + Guid.NewGuid().ToString("N");
@@ -70,6 +100,49 @@ public class DocumentDeletionPostgresTests
             await using var command = new NpgsqlCommand($"DROP SCHEMA IF EXISTS {_schema} CASCADE", admin);
             await command.ExecuteNonQueryAsync();
         }
+    }
+
+    [DeletionPostgresFact]
+    public async Task AdminCanCancelPublishedSignedDocument_AndItDisappearsFromSigningAndStatistics()
+    {
+        await using var f = new Fixture(); await f.Initialize();
+        await using var db = f.Context();
+        var doc = (await db.Documents.SingleAsync(d => d.Id == f.Id));
+        doc.Status = DocumentStatus.Published;
+        doc.ConcurrencyVersion = Guid.Empty; // Match the actual legacy migration default.
+        await db.SaveChangesAsync(); var version = doc.ConcurrencyVersion; db.ChangeTracker.Clear();
+        var signatureId = Guid.NewGuid(); var now = DateTime.UtcNow;
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"Signatures\" (\"Id\",\"DocId\",\"SignerId\",\"SignatureType\",\"SignedAt\") VALUES ({signatureId},{f.Id},{f.Owner},'LegalSeal',{now})");
+        var repo = new DocumentRepository(db);
+        await repo.CancelAsync(f.Id, new(f.Owner, ["Admin"]), "Cancel publication", version);
+        db.ChangeTracker.Clear();
+        var saved = (await repo.GetIncludingDeletedAsync(f.Id))!;
+        saved.Status.Should().Be(DocumentStatus.Published); saved.MinioPath.Should().Be("documents/fixture.pdf");
+        saved.Processes.Should().ContainSingle(p => p.Action == DocumentAction.Cancel);
+        (await db.SignatureEvidence.CountAsync()).Should().Be(1);
+        (await repo.GetStatisticsAsync(f.Owner, DateTime.UtcNow.Date, DateTime.UtcNow.Date.AddDays(1))).TotalDocuments.Should().Be(0);
+        await using var signDb = new SignContext(new DbContextOptionsBuilder<SignContext>().UseNpgsql(f.ConnectionString).Options);
+        var signing = new SignDocumentRepository(signDb);
+        (await signing.GetMinioPathAsync(f.Id)).Should().BeNull();
+        await FluentActions.Invoking(() => signing.BeginSigningAsync(f.Id)).Should().ThrowAsync<SignService.Core.Exceptions.DocumentNotFoundException>();
+    }
+
+    [DeletionPostgresFact]
+    public async Task CancellationWaitsForSigningLock_AndRejectsTheOldVersion()
+    {
+        await using var f = new Fixture(); await f.Initialize();
+        await using var db = f.Context(); var repo = new DocumentRepository(db);
+        var version = (await repo.GetByIdAsync(f.Id))!.ConcurrencyVersion;
+        await using var signDb = new SignContext(new DbContextOptionsBuilder<SignContext>().UseNpgsql(f.ConnectionString).Options);
+        await using var lease = await new SignDocumentRepository(signDb).BeginSigningAsync(f.Id);
+        var cancellation = repo.CancelAsync(f.Id, new(f.Owner, ["Admin"]), "Cancel", version);
+        (await Task.WhenAny(cancellation, Task.Delay(150))).Should().NotBe(cancellation);
+        await lease.CompleteAsync();
+        await FluentActions.Invoking(() => cancellation).Should().ThrowAsync<DocumentConflictException>();
+        db.ChangeTracker.Clear();
+        var current = (await repo.GetByIdAsync(f.Id))!;
+        current.IsDeleted.Should().BeFalse();
+        await repo.CancelAsync(f.Id, new(f.Owner, ["Admin"]), "Reviewed signing result", current.ConcurrencyVersion);
     }
 
     [DeletionPostgresFact]

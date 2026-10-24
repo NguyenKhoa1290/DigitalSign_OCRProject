@@ -88,6 +88,22 @@ public class DocumentStatisticsTests
         otherResult.AssignedDocuments.Should().Be(1);
     }
 
+    [Fact]
+    public async Task WordIsNotPendingOcr_WhilePdfAndImagesRemainPending()
+    {
+        await using var context = CreateContext();
+        foreach (var path in new[] { "documents/final.docx", "documents/FINAL.DOCX", "documents/scan.pdf", "documents/scan.jpg" })
+        {
+            var doc = Document(DocumentStatus.Draft, Owner, Start);
+            doc.MinioPath = path;
+            context.Documents.Add(doc);
+        }
+        await context.SaveChangesAsync();
+        var result = await new DocumentRepository(context).GetStatisticsAsync(Owner, Start, Start.AddDays(1));
+        result.TotalDocuments.Should().Be(4);
+        result.PendingOcrDocuments.Should().Be(2);
+    }
+
     private static Document Document(string status, Guid owner, DateTime timestamp)
     {
         var doc = new Document { Id = Guid.NewGuid(), Title = "Statistics fixture", Status = status };

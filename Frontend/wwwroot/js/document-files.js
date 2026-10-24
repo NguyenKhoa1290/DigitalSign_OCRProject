@@ -1,4 +1,5 @@
 window.documentFiles = {
+    previewFiles: id => Array.from(document.getElementById(id)?.files || []).map(file => URL.createObjectURL(file)),
     scrollToTop: () => {
         document.querySelector(".page-container")?.scrollTo({ top: 0, behavior: "instant" });
     },

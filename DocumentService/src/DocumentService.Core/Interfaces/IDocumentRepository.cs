@@ -14,6 +14,7 @@ public interface IDocumentRepository
     Task<Document?> GetIncludingDeletedAsync(Guid id);
     Task<(IEnumerable<Document> Documents, int Total)> GetDeletedAsync(DocumentQueryParams query);
     Task SetDeletedAsync(Guid id, DocumentActor actor, string? reason, bool deleted);
+    Task CancelAsync(Guid id, DocumentActor actor, string reason, Guid expectedVersion);
     Task ReceiveAsync(Guid id, Guid actorId);
     Task SubmitIncomingAsync(Guid id, Guid actorId, Guid expectedVersion, string? comment);
     Task<bool> ExistsAsync(Guid id);

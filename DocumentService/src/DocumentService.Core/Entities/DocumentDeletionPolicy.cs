@@ -21,7 +21,7 @@ public static class DocumentDeletionPolicy
         && document.OfficiallyReceivedAt == null && document.SigningStartedAt == null
         && !document.Processes.Any(p => p.Action is DocumentAction.Submit or DocumentAction.Assign
             or DocumentAction.DeptSign or DocumentAction.SubmitDirector or DocumentAction.DirectorSign
-            or DocumentAction.Reject or DocumentAction.Publish or DocumentAction.Receive);
+            or DocumentAction.Reject or DocumentAction.Publish or DocumentAction.Receive or DocumentAction.Cancel);
 
     public static void Authorize(Document document, DocumentActor actor, bool restore)
     {

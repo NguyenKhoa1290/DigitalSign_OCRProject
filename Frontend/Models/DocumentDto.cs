@@ -23,6 +23,7 @@ public class DocumentDto
     public Guid? AssignedToId { get; set; }
     public string? AssignedToName { get; set; }
     public bool IsDeleted { get; set; }
+    public bool IsCancelled { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? DeletedById { get; set; }
     public string? DeleteReason { get; set; }

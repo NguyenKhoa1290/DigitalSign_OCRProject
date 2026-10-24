@@ -181,6 +181,14 @@ public class DocumentsController : ControllerBase
         return Ok(ApiResponse.Ok("Đã xóa mềm bản nháp."));
     }
 
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelDocumentDto dto)
+    {
+        await _documentService.CancelDocumentAsync(id, CurrentActor(), dto.Reason, dto.ExpectedVersion!.Value);
+        return Ok(ApiResponse.Ok("Đã hủy công văn. Tệp và lịch sử được giữ lại."));
+    }
+
     [HttpGet("deleted")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetDeleted([FromQuery] DocumentQueryParams query)

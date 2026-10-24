@@ -66,6 +66,8 @@ public class SignService : ISignService
         if (!_certService.IsCertificateValid(userCert))
             throw new CertificateExpiredException();
 
+        // Reject unsupported input before persisting a signing-start marker.
+        await ResolveDocumentObjectNameAsync(request.DocId);
         await using var signing = await _documentFileRepository.BeginSigningAsync(request.DocId);
 
         // Kiểm tra đã ký chưa
@@ -256,6 +258,9 @@ public class SignService : ISignService
             _logger.LogWarning("MinioPath của văn bản {DocId} không hợp lệ: {MinioPath}", docId, minioPath);
             throw new DocumentNotFoundException(docId);
         }
+
+        if (!objectName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            throw new SignServiceException("Cần xuất Word hoặc ảnh thành PDF và tải lại trước khi ký số hoặc xác minh chữ ký.");
 
         _logger.LogInformation("Resolved MinIO object cho văn bản {DocId}: {MinioPath} -> {ObjectName}",
             docId, minioPath, objectName);

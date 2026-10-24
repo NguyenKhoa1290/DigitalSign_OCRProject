@@ -202,6 +202,37 @@ public class DocumentRepository : IDocumentRepository
         await transaction.CommitAsync();
     }
 
+    public async Task CancelAsync(Guid id, DocumentActor actor, string reason, Guid expectedVersion)
+    {
+        if (!actor.IsAdmin || actor.UserId == Guid.Empty) throw new UnauthorizedDocumentAccessException();
+        reason = reason?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(reason) || reason.Length > 1000)
+            throw new DocumentServiceException("Nhập lý do hủy, tối đa 1000 ký tự.");
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await LockAsync(id);
+        var document = await GetIncludingDeletedAsync(id) ?? throw new DocumentNotFoundException(id);
+        if (document.IsDeleted && document.Processes.Any(p => p.Action == DocumentAction.Cancel)) return;
+        if (document.IsDeleted || document.ConcurrencyVersion != expectedVersion)
+            throw new DocumentConflictException("Công văn đã thay đổi hoặc đã xóa. Hãy tải lại danh sách trước khi hủy.");
+        document.IsDeleted = true;
+        document.DeletedAt = DateTime.UtcNow;
+        document.DeletedById = actor.UserId;
+        document.DeleteReason = reason;
+        document.ConcurrencyVersion = Guid.NewGuid();
+        _context.Entry(document).State = EntityState.Modified;
+        _context.Entry(document).Property(d => d.ConcurrencyVersion).OriginalValue = expectedVersion;
+        var process = new DocumentProcess { Id = Guid.NewGuid(), DocId = id, FromUserId = actor.UserId,
+            Action = DocumentAction.Cancel, Comment = reason, Timestamp = document.DeletedAt.Value };
+        _context.DocumentProcesses.Add(process);
+        if (_context.Database.IsNpgsql())
+        {
+            var trace = Activity.Current?.TraceId.ToString() ?? "process:" + process.Id;
+            await _context.Database.ExecuteSqlInterpolatedAsync($"SELECT set_config('hau.trace_id', {trace}, true)");
+        }
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+    }
+
     public async Task ReceiveAsync(Guid id, Guid actorId)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -278,7 +309,7 @@ public class DocumentRepository : IDocumentRepository
                 || d.Status == DocumentStatus.PendingDirectorSign || d.Status == DocumentStatus.DirectorSigned
                 || d.Status == DocumentStatus.PendingDirection || d.Status == DocumentStatus.PendingAssignment || d.Status == DocumentStatus.IncomingAssigned),
             PublishedDocuments = group.Count(d => d.Status == DocumentStatus.Published),
-            PendingOcrDocuments = group.Count(d => d.MinioPath.Trim() != "" && d.OcrDataRaw == null),
+            PendingOcrDocuments = group.Count(d => d.MinioPath.Trim() != "" && !d.MinioPath.ToLower().EndsWith(".docx") && d.OcrDataRaw == null),
             MyDraftDocuments = group.Count(d => d.Status == DocumentStatus.Draft && d.CreatedBy == userId),
             MyPendingDocuments = group.Count(d => d.CreatedBy == userId && (d.Status == DocumentStatus.PendingDeptReview
                 || d.Status == DocumentStatus.DeptSigned || d.Status == DocumentStatus.PendingDirectorSign

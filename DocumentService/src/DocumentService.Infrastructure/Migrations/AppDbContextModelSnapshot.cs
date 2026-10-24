@@ -162,6 +162,61 @@ namespace DocumentService.Infrastructure.Migrations
                     b.ToTable("DocumentProcesses");
                 });
 
+            modelBuilder.Entity("DocumentService.Core.Entities.DocumentPurgeRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CleanupAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CleanupError")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("DocId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("FilesCleanedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ObjectNamesJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("OriginalStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("OriginalVersion")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("PurgedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocId")
+                        .IsUnique();
+
+                    b.ToTable("DocumentPurgeRecords");
+                });
+
             modelBuilder.Entity("DocumentService.Core.Entities.DocumentType", b =>
                 {
                     b.Property<Guid>("Id")

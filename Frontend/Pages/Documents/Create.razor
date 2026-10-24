@@ -11,7 +11,7 @@
 <div class="page-header">
     <div>
         <h1 class="page-title">Tạo Công văn mới</h1>
-        <p class="page-subtitle">Điền thông tin và đính kèm PDF hoặc ảnh công văn</p>
+        <p class="page-subtitle">Điền thông tin và đính kèm PDF, Word hoặc ảnh công văn</p>
     </div>
     <div class="page-actions">
         <a href="/documents" class="btn btn-outline">
@@ -84,7 +84,7 @@
 
     <div class="card">
         <div class="card-header">
-            <span class="card-title">Tải lên PDF hoặc ảnh</span>
+            <span class="card-title">Tải lên PDF, Word hoặc ảnh</span>
         </div>
         <div class="card-body">
             <div class="file-upload-area" @onclick="TriggerFileInput">
@@ -101,7 +101,7 @@
                     }
                     else
                     {
-                        <span>Chọn PDF hoặc ảnh để đính kèm công văn.</span>
+                        <span>Chọn PDF, Word hoặc ảnh để đính kèm công văn.</span>
                     }
                 </div>
                 <button type="button" class="btn btn-primary pdf-picker-button"
@@ -111,7 +111,7 @@
                     </svg>
                     @(_selectedFile == null ? "Chọn file" : "Đổi file")
                 </button>
-                <div class="file-upload-hint">PDF, PNG, JPG/JPEG hoặc WEBP (tối đa 50 MB). OCR tối đa 5 trang mỗi lượt.</div>
+                <div class="file-upload-hint">PDF, Word (.docx), PNG, JPG/JPEG hoặc WEBP (tối đa 50 MB). OCR chỉ nhận PDF/ảnh, tối đa 5 trang mỗi lượt. Word cần xuất PDF trước khi ký số. Tệp tải lên sẽ thay thế tệp hiện tại.</div>
             </div>
             <div class="file-input-wrapper" hidden>
                 <InputFile id="fileInput" OnChange="OnFileSelected" accept="@DocumentFileFormats.Accept" />
@@ -220,7 +220,7 @@
         _selectedFile = null;
         _errorMessage = null;
         if (DocumentFileFormats.GetContentType(e.File.Name) is null)
-            _errorMessage = "Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.";
+            _errorMessage = "Chỉ hỗ trợ PDF, Word (.docx), PNG, JPG/JPEG hoặc WEBP.";
         else if (e.File.Size > 52428800)
             _errorMessage = "File vượt quá giới hạn 50 MB.";
         else _selectedFile = e.File;

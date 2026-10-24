@@ -199,7 +199,7 @@ Payload kỳ vọng:
 
 ## Dựng Word nháp bằng PaddleOCR và Gemini
 
-Văn thư/Admin mở `/documents/ocr-scan`, chọn model Gemini khả dụng, tải PDF hoặc ảnh và tải về DOCX nháp để rà soát. PDF tối đa 10 trang; tệp tối đa 25 MB. Nếu Google báo hết quota hoặc model quá tải, chọn model khác trong danh sách rồi gửi lại.
+Văn thư/Admin mở `/documents/ocr-scan`, chọn model Gemini khả dụng, tải PDF hoặc ảnh và tải về DOCX nháp để rà soát. Nhận một PDF nhiều trang hoặc tối đa100 ảnh, tổng tối đa25 MB; mỗi lượt chọn tối đa5 trang/ảnh. Nếu Google báo hết quota hoặc model quá tải, chọn model khác trong danh sách rồi gửi lại.
 
 Admin cấu hình hoặc xóa API key tại `/admin/gemini-settings`. Key được kiểm tra với Google, mã hóa bằng ASP.NET Data Protection và không gửi xuống trình duyệt. OCRService lấy key qua endpoint nội bộ IdentityService bằng `SERVICE_TOKEN`; IdentityService cần giữ Data Protection key ring bền vững ở `DataProtection:KeysPath` (Docker Compose mount volume `hau_identity_keys`).
 
@@ -210,4 +210,8 @@ Các route qua API Gateway:
 | `GET` | `/api/ocr/gemini/models` | Admin, Văn thư |
 | `POST` | `/api/ocr/gemini/export-word-upload?model_id={id}` | Admin, Văn thư |
 
-Endpoint nhận field multipart `file`. PaddleOCR hiện cung cấp các dòng OCR và tọa độ; Gemini đọc ảnh cùng bằng chứng này để trả layout JSON, sau đó OCRService tạo DOCX có thể sửa. PP-Structure chưa được tích hợp vào endpoint này. Đây là bản nháp, cần Văn thư kiểm tra; việc build/smoke test không xác nhận chất lượng nội dung hoặc bố cục trên mọi tài liệu.
+Endpoint nhận multipart `file` (tương thích cũ) hoặc danh sách `files`, query `pages` như `1-5`/`1,3,8-10` và `model_id`. Không trộn PDF với ảnh. Trang được loại trùng, sắp theo thứ tự gốc, kiểm tra trong phạm vi và tối đa5 trước khi nhận diện/gọi AI. Thiếu pages giữ hành vi cũ: quét tất cả nếu không quá5 trang. `POST /api/ocr/input-info` nhận file và trả totalPages, chỉ đọc số trang, không gọi AI. Response Word có header X-OCR-Pages ghi số trang nguồn đã chọn.
+
+Trang quét xem trước PDF bằng blob URL tại máy người dùng, có liên kết mở riêng nếu trình duyệt điện thoại không hỗ trợ iframe; ảnh hiển thị thumbnail theo thứ tự chọn. Bấm Chạy OCR mở hộp chọn trang (mặc định1), sau đó Tạo và tải Word mới chạy nhận diện. Nếu429/lỗi giữ lựa chọn để đổi model/thử lại. Nút gửi/chọn tệp khóa khi xử lý; blob URL được giải phóng khi thay tài liệu/rời trang. Chức năng nhiều ảnh/chọn trang mới thuộc trang Quét OCR và xuất Word; tệp gắn với một công văn và OCR thông tin ở trang chi tiết giữ nguyên.
+
+ PaddleOCR hiện cung cấp các dòng OCR và tọa độ; Gemini đọc ảnh cùng bằng chứng này để trả layout JSON, sau đó OCRService tạo DOCX có thể sửa. PP-Structure chưa được tích hợp vào endpoint này. Đây là bản nháp, cần Văn thư kiểm tra; việc build/smoke test không xác nhận chất lượng nội dung hoặc bố cục trên mọi tài liệu.

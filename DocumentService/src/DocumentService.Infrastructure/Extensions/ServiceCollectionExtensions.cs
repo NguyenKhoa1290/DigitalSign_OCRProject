@@ -53,6 +53,7 @@ public static class ServiceCollectionExtensions
         // ── Services ──────────────────────────────────────────────────────────
         services.AddScoped<IFileStorageService, MinioStorageService>();
         services.AddScoped<IDocumentService, Services.DocumentService>();
+        services.AddScoped<IDocumentPurgeService, DocumentPurgeService>();
 
         // ── Kafka Producer (Singleton — IProducer nên dùng chung) ──────────────
         services.AddSingleton<IKafkaProducerService, KafkaProducerService>();

@@ -4,6 +4,7 @@ public static class DocumentAction
 {
     public const string Create = "Create";
     public const string SoftDelete = "SoftDelete";
+    public const string Cancel = "Cancel";
     public const string Restore = "Restore";
     public const string Receive = "Receive";
     public const string Update = "Update"; // Cập nhật thông tin văn bản

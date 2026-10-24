@@ -30,6 +30,7 @@ try
 
     // ── Infrastructure (DbContext, MinIO, repositories, services) ─────────────
     builder.Services.AddInfrastructure(configuration);
+    builder.Services.AddHostedService<DocumentService.API.Services.DocumentPurgeCleanupWorker>();
     builder.Services.AddHttpClient("identity-directory", client =>
     {
         client.BaseAddress = new Uri(configuration["IdentityService:BaseUrl"] ?? "http://localhost:5048/");

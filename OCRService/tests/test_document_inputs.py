@@ -25,6 +25,55 @@ def picture(format="PNG"):
 
 
 class DocumentInputsTests(unittest.TestCase):
+    def test_selected_pages_validate_deduplicate_and_sort_before_rendering(self):
+        self.assertEqual(document_input.select_pages("8, 1-3, 3", 89), [1, 2, 3, 8])
+        for expression in ["1-6", "0", "90", "3-1", "", "1,,2", "x", "1,2,3,4,5,8", "1-999999999"]:
+            with self.subTest(expression=expression):
+                with self.assertRaises(document_input.DocumentInputError):
+                    document_input.select_pages(expression, 89)
+
+    def test_long_pdf_renders_only_selected_original_page_numbers(self):
+        with patch.object(document_input, "convert_from_bytes", return_value=[Image.new("RGB", (24, 32))]) as render:
+            images = document_input.load_document_images(pdf(8), "eight.pdf", pages="8, 2-3")
+            self.assertEqual(len(images), 3)
+            self.assertEqual([(call.kwargs["first_page"], call.kwargs["last_page"]) for call in render.call_args_list], [(2, 2), (3, 3), (8, 8)])
+
+    def test_input_info_counts_long_pdf_without_rendering_or_cloud(self):
+        with patch.object(document_input, "convert_from_bytes") as render, \
+             patch.object(routes.gemini_service, "get_gemini_api_key", new_callable=AsyncMock) as key:
+            response = self.client.post("/api/ocr/input-info", files={"file": ("long.pdf", pdf(8), "application/pdf")})
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.json()["totalPages"], 8)
+            render.assert_not_called(); key.assert_not_awaited()
+
+    def test_multiple_inputs_reject_mixed_pdf_or_more_than_five_selected_before_cloud(self):
+        with patch.object(routes.gemini_service, "get_gemini_api_key", new_callable=AsyncMock) as key:
+            url = "/api/ocr/gemini/export-word-upload?model_id=gemini-fixture"
+            response = self.client.post(url + "&pages=1", files=[("files", ("a.pdf", pdf(1), "application/pdf")), ("files", ("b.png", picture(), "image/png"))])
+            self.assertEqual(response.status_code, 400, response.text)
+            response = self.client.post(url + "&pages=1-6", files=[("files", (f"{i}.png", picture(), "image/png")) for i in range(6)])
+            self.assertEqual(response.status_code, 400, response.text)
+            key.assert_not_awaited()
+
+    def test_multi_image_selection_and_long_pdf_call_only_selected_pages_and_chosen_model(self):
+        engine = Mock(); engine.extract_lines.return_value = []
+        with patch.object(ocr_processor, "get_engine", return_value=engine), \
+             patch.object(routes.gemini_service, "get_gemini_api_key", new_callable=AsyncMock, return_value="fixture-only"), \
+             patch.object(routes.gemini_service, "list_gemini_models", new_callable=AsyncMock, return_value=[{"id": "gemini-fixture"}]), \
+             patch.object(routes.gemini_service, "generate_layout", new_callable=AsyncMock, return_value={"blocks": []}) as generate, \
+             patch.object(routes, "create_layout_docx", return_value=b"fixture-docx"):
+            response = self.client.post("/api/ocr/gemini/export-word-upload?model_id=gemini-fixture&pages=8,2", files=[("files", ("long.pdf", pdf(8), "application/pdf"))])
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.headers["X-OCR-Pages"], "2,8")
+            self.assertEqual(generate.await_count, 2)
+            self.assertEqual(generate.call_args.args[2], "gemini-fixture")
+            generate.reset_mock(); engine.reset_mock()
+            response = self.client.post("/api/ocr/gemini/export-word-upload?model_id=gemini-fixture&pages=2,6", files=[("files", (f"{i}.png", picture(), "image/png")) for i in range(6)])
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.headers["X-OCR-Pages"], "2,6")
+            self.assertEqual(generate.await_count, 2)
+            self.assertEqual(engine.extract_lines.call_count, 2)
+
     def setUp(self):
         app = FastAPI()
         app.include_router(routes.router)

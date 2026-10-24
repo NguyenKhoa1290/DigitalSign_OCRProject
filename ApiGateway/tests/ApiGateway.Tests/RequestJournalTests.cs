@@ -42,6 +42,7 @@ public class RequestJournalTests
     [InlineData("POST","/api/documents/id/reject","Reject")]
     [InlineData("POST","/api/documents/id/publish","Publish")]
     [InlineData("POST","/api/documents/id/assign","Assign")]
+    [InlineData("POST","/api/documents/id/cancel","Cancel")]
     [InlineData("POST","/api/documents/id/incoming-submit","SubmitIncoming")]
     [InlineData("POST","/api/signatures/incoming/id/direction","DirectIncoming")]
     [InlineData("POST","/api/signatures/incoming/id/assignment","AssignIncoming")]

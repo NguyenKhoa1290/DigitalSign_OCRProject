@@ -6,7 +6,7 @@
 
 <PageTitle>Công văn đã xóa - HAU</PageTitle>
 <div class="page-header">
-    <div><h1 class="page-title">Công văn đã xóa</h1><p class="page-subtitle">Khôi phục bản nháp, giữ nguyên tệp và lịch sử.</p></div>
+    <div><h1 class="page-title">Công văn đã xóa</h1><p class="page-subtitle">Công văn đã xóa hoặc hủy. Chỉ khôi phục bản nháp đủ điều kiện.</p></div>
     <a href="/documents" class="btn btn-outline">Quay lại danh sách</a>
 </div>
 <div class="filter-bar">
@@ -23,6 +23,7 @@ else if (_result?.Items.Count > 0)
             <article class="card" @key="doc.Id">
                 <div class="card-body">
                     <h2 class="deleted-title">@doc.Title</h2>
+                    @if (doc.IsCancelled) { <span class="badge badge-danger">Đã hủy</span> }
                     <p>@doc.DocumentTypeDisplayName · @(doc.DocNumber ?? "Chưa có số hiệu")</p>
                     <p>Ngày xóa: @doc.DeletedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
                     <p class="deleted-reason">Lý do: @(doc.DeleteReason ?? "Người tạo xóa bản nháp.")</p>
@@ -30,7 +31,11 @@ else if (_result?.Items.Count > 0)
                         @foreach (var process in doc.Processes)
                         { <p>@process.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @ActionLabel(process.Action): @process.Comment</p> }
                     </details>
-                    <button class="btn btn-primary" disabled="@_busy" @onclick="() => Select(doc)">Khôi phục</button>
+                    <div class="deleted-actions">
+                        @if (!doc.IsCancelled)
+                        { <button class="btn btn-primary" disabled="@_busy" @onclick="() => Select(doc)">Khôi phục</button> }
+                        <button class="btn btn-danger" disabled="@_busy" @onclick="() => SelectPurge(doc)"><span aria-hidden="true">×</span> Xóa vĩnh viễn</button>
+                    </div>
                 </div>
             </article>
         }
@@ -47,10 +52,14 @@ else { <div class="empty-state"><p class="empty-state-title">Không có công v�
 
 <DocumentDeletionDialog IsVisible="@(_selected != null)" DocumentTitle="@(_selected?.Title ?? "")" Restore="true" RequireReason="true"
                         Busy="_busy" Error="@_restoreError" OnCancel="Cancel" OnConfirm="Restore" />
+<DocumentPermanentDeleteDialog IsVisible="@(_purging != null)" DocumentTitle="@(_purging?.Title ?? "")"
+                               Busy="_busy" Error="@_purgeError" OnCancel="CancelPurge" OnConfirm="Purge" />
 
 @code {
     private PagedResult<DocumentDto>? _result;
     private DocumentDto? _selected;
+    private DocumentDto? _purging;
+    private string? _purgeError;
     private bool _loading = true, _busy;
     private int _page = 1;
     private string _search = "";
@@ -74,6 +83,23 @@ else { <div class="empty-state"><p class="empty-state-title">Không có công v�
     }
     private void Select(DocumentDto doc) { _selected = doc; _restoreError = null; }
     private void Cancel() { if (!_busy) _selected = null; }
+    private void SelectPurge(DocumentDto doc) { _selected = null; _purging = doc; _purgeError = null; }
+    private void CancelPurge() { if (!_busy) _purging = null; }
+    private async Task Purge(DocumentPurgeInput input)
+    {
+        if (_busy || _purging == null) return;
+        _busy = true;
+        try
+        {
+            var pending = await DocumentService.PurgeDocumentAsync(_purging.Id, input.Reason, input.ConfirmationTitle, _purging.ConcurrencyVersion);
+            _purging = null;
+            Toast.ShowSuccess(pending ? "Đã xóa hồ sơ. Tệp đang chờ hệ thống dọn dẹp." : "Đã xóa vĩnh viễn công văn.");
+            await Load();
+        }
+        catch (HttpRequestException ex) { _purgeError = ex.Message; }
+        catch { _purgeError = "Không xóa được công văn. Hãy thử lại."; }
+        finally { _busy = false; }
+    }
     private async Task Search() { _page = 1; await Load(); }
     private async Task Previous() { _page--; await Load(); }
     private async Task Next() { _page++; await Load(); }
@@ -92,7 +118,7 @@ else { <div class="empty-state"><p class="empty-state-title">Không có công v�
     }
     private static string ActionLabel(string action) => action switch
     {
-        "Create" => "Tạo mới", "SoftDelete" => "Xóa bản nháp", "Restore" => "Khôi phục",
+        "Create" => "Tạo mới", "SoftDelete" => "Xóa bản nháp", "Restore" => "Khôi phục", "Cancel" => "Hủy công văn",
         "Update" => "Sửa thông tin", "UpdateOCR" => "Cập nhật OCR", _ => action
     };
 }

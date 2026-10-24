@@ -67,7 +67,7 @@ else if (_data != null)
     private Task Next() {_page++;return Load();}
     private static string ActionLabel(string action)=>action switch
     {
-        "Create"=>"Tạo công văn", "Update"=>"Sửa công văn", "Submit"=>"Trình duyệt", "Assign"=>"Phân công", "UpdateOCR"=>"Cập nhật OCR",
+        "Create"=>"Tạo công văn", "Update"=>"Sửa công văn", "Submit"=>"Trình duyệt", "Assign"=>"Phân công", "UpdateOCR"=>"Cập nhật OCR", "Cancel"=>"Hủy công văn", "PurgeDocument"=>"Xóa vĩnh viễn công văn",
         "DeptSign"=>"Ký nháy", "SubmitDirector"=>"Trình BGH", "DirectorSign"=>"Ký pháp nhân", "Reject"=>"Từ chối", "Publish"=>"Phát hành", "UploadDocument"=>"Tải PDF lên",
         "Login"=>"Đăng nhập", "Logout"=>"Đăng xuất", "Request"=>"Truy cập API", "Startup"=>"Khởi tạo Gateway", "IssueCertificate"=>"Cấp chứng thư", "RevokeCertificate"=>"Thu hồi chứng thư",
         _=>action

@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Clerk")]
 @inject ApiService Api
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>Quét OCR và xuất Word</PageTitle>
 
@@ -30,7 +31,7 @@
             <div class="gemini-scan-form">
                 <div class="form-group">
                     <label class="form-label" for="gemini-model">Model Gemini</label>
-                    <select id="gemini-model" class="form-control" @bind="_modelId">
+                    <select id="gemini-model" class="form-control" @bind="_modelId" disabled="@_working">
                         @foreach (var model in _models)
                         {
                             <option value="@model.Id">@model.DisplayName (@model.Id)</option>
@@ -40,15 +41,32 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="ocr-file">Tài liệu đầu vào</label>
-                    <InputFile id="ocr-file" OnChange="SelectFile" accept=".pdf,.png,.jpg,.jpeg,.webp" />
-                    <small class="form-hint">PDF, PNG, JPG/JPEG hoặc WEBP; tối đa 25 MB và 5 trang mỗi lượt OCR. Mỗi ảnh tính là 1 trang.</small>
-                    @if (_file is not null)
+                    <InputFile id="ocr-file" OnChange="SelectFile" accept=".pdf,.png,.jpg,.jpeg,.webp" multiple disabled="@(_working || _inspecting)" />
+                    <small class="form-hint">Một PDF hoặc nhiều ảnh PNG, JPG/JPEG, WEBP; tổng tối đa 25 MB. Chọn tối đa 5 trang/ảnh mỗi lượt OCR.</small>
+                    @foreach (var file in _files)
                     {
-                        <span class="gemini-selected-file">@_file.Name (@($"{_file.Size / 1024.0:N0} KB"))</span>
+                        <span class="gemini-selected-file">@file.Name (@($"{file.Size / 1024.0:N0} KB"))</span>
                     }
+                    @if (_inspecting) { <p>Đang đọc số trang...</p> }
                 </div>
-                <button class="btn btn-primary" @onclick="ExportWord" disabled="@(_working || _file is null || string.IsNullOrWhiteSpace(_modelId))">
-                    @(_working ? "Đang xử lý tài liệu..." : "Tạo và tải Word")
+                @if (_previewUrls.Length > 0 && _totalPages > 0)
+                {
+                    <p>Tổng @_totalPages @(_isPdf ? "trang" : "ảnh"). Bản gốc được giữ đầy đủ.</p>
+                    @if (_isPdf)
+                    {
+                        <iframe class="ocr-pdf-preview" src="@(_previewUrls[0] + "#page=1")" title="Xem trước PDF"></iframe>
+                        <a class="btn btn-outline" href="@_previewUrls[0]" target="_blank" rel="noopener">Mở PDF để xem trước</a>
+                    }
+                    else
+                    {
+                        <div class="ocr-image-previews">
+                            @for (var i = 0; i < _previewUrls.Length; i++)
+                            { <figure><img src="@_previewUrls[i]" alt="Ảnh @(i + 1)" /><figcaption>Ảnh @(i + 1): @_files[i].Name</figcaption></figure> }
+                        </div>
+                    }
+                }
+                <button class="btn btn-primary" @onclick="OpenPageSelection" disabled="@(_working || _inspecting || _totalPages < 1 || string.IsNullOrWhiteSpace(_modelId))">
+                    @(_working ? "Đang xử lý tài liệu..." : "Chạy OCR")
                 </button>
             </div>
         }
@@ -61,10 +79,40 @@
     </div>
 </section>
 
+@if (_selecting)
+{
+    <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ocr-pages-title">
+            <div class="modal-header"><span id="ocr-pages-title" class="modal-title">Chọn trang OCR</span><button class="modal-close" disabled="@_working" @onclick="ClosePageSelection" aria-label="Đóng">×</button></div>
+            <div class="modal-body">
+                <p>Tài liệu có @_totalPages @(_isPdf ? "trang" : "ảnh"). Tối đa 5 trang/ảnh mỗi lượt, theo thứ tự tài liệu.</p>
+                <label class="form-label" for="ocr-pages">Các trang cần OCR</label>
+                <input id="ocr-pages" class="form-control" placeholder="Ví dụ: 1-5 hoặc 1, 3, 8-10" @bind="_pageExpression" @bind:event="oninput" disabled="@_working" maxlength="200" />
+                @if (TrySelectedPages(out var selected, out var selectionError))
+                { <p>Đã chọn @selected.Count/5: @string.Join(", ", selected)</p> }
+                else { <p class="alert alert-warning" role="alert">@selectionError</p> }
+                <label class="form-label" for="ocr-dialog-model">Model Gemini</label>
+                <select id="ocr-dialog-model" class="form-control" @bind="_modelId" disabled="@_working">
+                    @foreach (var model in _models) { <option value="@model.Id">@model.DisplayName (@model.Id)</option> }
+                </select>
+                @if (_isError && !string.IsNullOrEmpty(_message)) { <div class="alert alert-danger" role="alert">@_message</div> }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" disabled="@_working" @onclick="ClosePageSelection">Quay lại</button>
+                <button class="btn btn-primary" disabled="@(_working || !TrySelectedPages(out _, out _))" @onclick="ExportWord">@(_working ? "Đang xử lý..." : "Tạo và tải Word")</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private const long MaxFileSize = 25 * 1024 * 1024;
     private List<GeminiModelOption> _models = new();
-    private IBrowserFile? _file;
+    private IReadOnlyList<IBrowserFile> _files = Array.Empty<IBrowserFile>();
+    private string[] _previewUrls = Array.Empty<string>();
+    private int _totalPages;
+    private bool _isPdf, _inspecting, _selecting;
+    private string _pageExpression = "";
     private string? _modelId;
     private string? _message;
     private bool _loading = true;
@@ -92,40 +140,76 @@
         finally { _loading = false; }
     }
 
-    private void SelectFile(InputFileChangeEventArgs args)
+    private async Task SelectFile(InputFileChangeEventArgs args)
     {
-        _file = null;
+        await ReleasePreviews();
+        _files = Array.Empty<IBrowserFile>(); _totalPages = 0; _selecting = false;
         _message = null;
-        if (DocumentFileFormats.GetContentType(args.File.Name) is null)
+        _inspecting = true;
+        try
         {
-            _isError = true;
-            _message = "Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.";
+            var files = args.GetMultipleFiles(100);
+            if (files.Any(f => DocumentFileFormats.GetContentType(f.Name) is null || f.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.");
+            if (files.Sum(f => f.Size) > MaxFileSize) throw new InvalidOperationException("Tổng dung lượng vượt quá giới hạn 25 MB.");
+            _isPdf = files.Any(f => f.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
+            if (_isPdf && files.Count != 1) throw new InvalidOperationException("Chọn một PDF hoặc nhiều ảnh; không trộn PDF với ảnh.");
+            _files = files;
+            if (_isPdf)
+            {
+                using var form = new MultipartFormDataContent();
+                await using var stream = files[0].OpenReadStream(MaxFileSize);
+                form.Add(new StreamContent(stream), "file", files[0].Name);
+                using var response = await Api.PostFormAsync("api/ocr/input-info", form);
+                if (!response.IsSuccessStatusCode) throw new InvalidOperationException(await ReadError(response));
+                using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                _totalPages = json.RootElement.GetProperty("totalPages").GetInt32();
+            }
+            else _totalPages = files.Count;
+            _previewUrls = await JS.InvokeAsync<string[]>("documentFiles.previewFiles", "ocr-file");
         }
-        else _file = args.File;
+        catch (Exception ex) { _files = Array.Empty<IBrowserFile>(); _totalPages = 0; _isError = true; _message = ex is InvalidOperationException ? ex.Message : "Không đọc được tài liệu. Chọn lại tệp (tối đa 100 ảnh)."; }
+        finally { _inspecting = false; }
     }
+
+    private void OpenPageSelection() { _pageExpression = "1"; _message = null; _selecting = true; }
+    private void ClosePageSelection() { if (!_working) _selecting = false; }
+    private bool TrySelectedPages(out List<int> selected, out string error)
+    {
+        selected = new(); error = "Nhập trang như 1-5 hoặc 1, 3, 8-10.";
+        foreach (var part in _pageExpression.Replace('–', '-').Split(','))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(part, @"^\s*(\d+)(?:\s*-\s*(\d+))?\s*$");
+            if (!match.Success || !int.TryParse(match.Groups[1].Value, out var start)) return false;
+            var end = start;
+            if (match.Groups[2].Success && !int.TryParse(match.Groups[2].Value, out end)) return false;
+            if (start < 1 || end < start || end > _totalPages) { error = $"Chọn trang từ 1 đến {_totalPages}."; return false; }
+            if (end - start > 4) { error = "Mỗi lượt OCR tối đa 5 trang/ảnh."; return false; }
+            for (var n = start; n <= end; n++) if (!selected.Contains(n)) selected.Add(n);
+            if (selected.Count > 5) { error = "Mỗi lượt OCR tối đa 5 trang/ảnh."; return false; }
+        }
+        selected.Sort(); return selected.Count > 0;
+    }
+    private async Task ReleasePreviews() { foreach (var url in _previewUrls) await JS.InvokeVoidAsync("documentFiles.releaseUrl", url); _previewUrls = Array.Empty<string>(); }
+    public async ValueTask DisposeAsync() { try { await ReleasePreviews(); } catch (JSDisconnectedException) { } }
 
     private async Task ExportWord()
     {
-        if (_file is null || string.IsNullOrWhiteSpace(_modelId)) return;
-        if (_file.Size > MaxFileSize)
-        {
-            _isError = true;
-            _message = "Tệp vượt quá giới hạn 25 MB.";
-            return;
-        }
+        if (_working || _files.Count == 0 || string.IsNullOrWhiteSpace(_modelId) || !TrySelectedPages(out var selectedPages, out _)) return;
 
         _working = true;
         _message = null;
         try
         {
             using var form = new MultipartFormDataContent();
-            await using var stream = _file.OpenReadStream(MaxFileSize);
-            using var fileContent = new StreamContent(stream);
-            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
-                string.IsNullOrWhiteSpace(_file.ContentType) ? "application/octet-stream" : _file.ContentType);
-            form.Add(fileContent, "file", _file.Name);
+            foreach (var file in _files)
+            {
+                var fileContent = new StreamContent(file.OpenReadStream(MaxFileSize));
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(DocumentFileFormats.GetContentType(file.Name)!);
+                form.Add(fileContent, "files", file.Name);
+            }
             using var response = await Api.PostFormAsync(
-                $"api/ocr/gemini/export-word-upload?model_id={Uri.EscapeDataString(_modelId)}", form);
+                $"api/ocr/gemini/export-word-upload?model_id={Uri.EscapeDataString(_modelId)}&pages={Uri.EscapeDataString(string.Join(",", selectedPages))}", form);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -140,7 +224,8 @@
             await JS.InvokeVoidAsync("documentFiles.download", url, "ban-nhap-ocr-gemini.docx");
             await JS.InvokeVoidAsync("documentFiles.releaseUrl", url);
             _isError = false;
-            _message = "Đã tạo bản Word. Hãy rà soát nội dung và bố cục trước khi dùng.";
+            _selecting = false;
+            _message = $"Đã tạo Word cho trang/ảnh {string.Join(", ", selectedPages)}. Hãy rà soát nội dung và bố cục trước khi dùng.";
         }
         catch (Exception)
         {

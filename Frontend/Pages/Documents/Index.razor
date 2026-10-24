@@ -3,6 +3,8 @@
 @inject DocumentService DocumentService
 @inject NavigationManager NavManager
 @inject IToastService Toast
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@implements IDisposable
 
 <PageTitle>Danh sách Công văn - HAU</PageTitle>
 
@@ -39,6 +41,7 @@
     <CustomSelect CssClass="filter-select" AriaLabel="Lọc theo loại văn bản"
                   @bind-Value="_typeFilter" Options="TypeFilterOptions" AfterValueChanged="OnFilterChanged" />
 </div>
+@if (_isAdmin) { <p class="document-hold-hint">Nhấn giữ công văn để mở thao tác hủy.</p> }
 
 @if (_isLoading)
 {
@@ -70,6 +73,7 @@ else
                     <th>Ngày ban hành</th>
                     <th>Người tạo</th>
                     <th>Ngày tạo</th>
+                    @if (_isAdmin) { <th>Thao tác</th> }
                 </tr>
             </thead>
             <tbody>
@@ -94,6 +98,15 @@ else
                         <td>@(doc.IssuedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                         <td>@(doc.CreatedByName ?? "—")</td>
                         <td>@(doc.CreatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                        @if (_isAdmin)
+                        {
+                            <td @onclick:stopPropagation="true">
+                                <button type="button" class="document-action-trigger" aria-label="Thao tác công văn @doc.Title"
+                                        aria-haspopup="menu" aria-expanded="@(_menuDoc?.Id == doc.Id)" @onclick="e => OpenMenu(doc, e)">
+                                    <span aria-hidden="true">•••</span>
+                                </button>
+                            </td>
+                        }
                     </tr>
                 }
             </tbody>
@@ -101,8 +114,10 @@ else
         <div class="document-mobile-list">
             @foreach (var doc in _result.Items)
             {
-                <article class="document-mobile-card" @key="doc.Id">
-                    <a class="document-mobile-title" href="@($"/documents/{doc.Id}")">@doc.Title</a>
+                <article class="document-mobile-card" @key="doc.Id"
+                         @ontouchstart="() => BeginHold(doc)" @ontouchend="EndHold" @ontouchcancel="CancelHold"
+                         @ontouchmove="CancelHold" @oncontextmenu:preventDefault="_isAdmin">
+                    <a class="document-mobile-title" href="@($"/documents/{doc.Id}")" @onclick="() => ViewDocument(doc.Id)" @onclick:preventDefault="true">@doc.Title</a>
                     @if (!string.IsNullOrEmpty(doc.DocumentNumber))
                     {
                         <div class="document-mobile-number">Số: @doc.DocumentNumber</div>
@@ -119,7 +134,7 @@ else
                         <div><dt>Người tạo</dt><dd>@(doc.CreatedByName ?? "—")</dd></div>
                         <div><dt>Ngày tạo</dt><dd>@(doc.CreatedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "—")</dd></div>
                     </dl>
-                    <a class="document-mobile-open" href="@($"/documents/{doc.Id}")">Xem chi tiết <span aria-hidden="true">→</span></a>
+                    <a class="document-mobile-open" href="@($"/documents/{doc.Id}")" @onclick="() => ViewDocument(doc.Id)" @onclick:preventDefault="true">Xem chi tiết <span aria-hidden="true">→</span></a>
                 </article>
             }
         </div>
@@ -148,7 +163,28 @@ else
     </div>
 }
 
+@if (_isAdmin && _menuDoc != null)
+{
+    <button type="button" class="document-action-backdrop" aria-label="Đóng menu thao tác" @ontouchstart="AcceptMenuTouch" @onclick="DismissMenu"></button>
+    <div class="document-action-menu @(_touchMenu ? "from-hold" : "")" role="menu" aria-label="Thao tác công văn"
+         style="--action-x:@($"{_menuX:0}px"); --action-y:@($"{_menuY:0}px");">
+        <div class="document-action-name">@_menuDoc.Title</div>
+        <button type="button" class="document-cancel-action" role="menuitem" @ontouchstart="AcceptMenuTouch" @onclick="SelectCancellation">
+            <span aria-hidden="true">×</span> Hủy công văn
+        </button>
+    </div>
+}
+<DocumentDeletionDialog IsVisible="@(_isAdmin && _cancelDoc != null)" Cancellation="true" RequireReason="true"
+                        DocumentTitle="@(_cancelDoc?.Title ?? "")" Busy="_cancelling" Error="@_cancelError"
+                        OnCancel="CloseCancellation" OnConfirm="ConfirmCancellation" />
+
 @code {
+    private bool _isAdmin, _touchMenu, _cancelling, _disposed;
+    private DocumentDto? _menuDoc, _cancelDoc;
+    private double _menuX, _menuY;
+    private DateTime _ignoreTouchClickUntil;
+    private string? _cancelError;
+    private System.Threading.CancellationTokenSource? _holdCts;
     private bool _isLoading = true;
     private PagedResult<DocumentDto>? _result;
     private List<DocumentTypeDto>? _documentTypes;
@@ -186,17 +222,24 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _isAdmin = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.IsInRole("Admin");
         _documentTypes = await DocumentService.GetDocumentTypesAsync();
         await LoadDocuments();
     }
 
     private async Task LoadDocuments()
     {
+        CloseMenu();
         _isLoading = true;
         try
         {
             _result = await DocumentService.GetDocumentsAsync(
                 _currentPage, _pageSize, _statusFilter, _typeFilter, _searchQuery);
+            if (_result?.Items.Count == 0 && _currentPage > 1)
+            {
+                _currentPage--;
+                _result = await DocumentService.GetDocumentsAsync(_currentPage, _pageSize, _statusFilter, _typeFilter, _searchQuery);
+            }
         }
         catch (Exception ex)
         {
@@ -224,7 +267,60 @@ else
         catch (TaskCanceledException) { }
     }
 
-    private void ViewDocument(Guid id) => NavManager.NavigateTo($"/documents/{id}");
+    private void ViewDocument(Guid id)
+    {
+        if (_menuDoc == null && _cancelDoc == null) NavManager.NavigateTo($"/documents/{id}");
+    }
+    private void OpenMenu(DocumentDto doc, Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
+    {
+        if (!_isAdmin) return;
+        CancelHold(); _menuDoc = doc; _touchMenu = false; _menuX = e.ClientX; _menuY = e.ClientY;
+    }
+    private void BeginHold(DocumentDto doc)
+    {
+        if (!_isAdmin || _cancelling) return;
+        CancelHold(); _holdCts = new(); _ = ShowAfterHold(doc, _holdCts.Token);
+    }
+    private async Task ShowAfterHold(DocumentDto doc, System.Threading.CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(550, token);
+            await InvokeAsync(() => { if (!_disposed && !token.IsCancellationRequested) { _menuDoc = doc; _touchMenu = true; StateHasChanged(); } });
+        }
+        catch (TaskCanceledException) { }
+    }
+    private void CancelHold() { _holdCts?.Cancel(); _holdCts?.Dispose(); _holdCts = null; }
+    private void EndHold()
+    {
+        if (_touchMenu && _menuDoc != null) _ignoreTouchClickUntil = DateTime.UtcNow.AddMilliseconds(400);
+        CancelHold();
+    }
+    private void AcceptMenuTouch() => _ignoreTouchClickUntil = default;
+    private void DismissMenu() { if (!_touchMenu || DateTime.UtcNow >= _ignoreTouchClickUntil) CloseMenu(); }
+    private void CloseMenu() { CancelHold(); _menuDoc = null; _touchMenu = false; _ignoreTouchClickUntil = default; }
+    private void SelectCancellation()
+    {
+        if (_touchMenu && DateTime.UtcNow < _ignoreTouchClickUntil) return;
+        _cancelDoc = _menuDoc; _cancelError = null; CloseMenu();
+    }
+    private void CloseCancellation() { if (!_cancelling) { _cancelDoc = null; _cancelError = null; } }
+    private async Task ConfirmCancellation(string reason)
+    {
+        if (!_isAdmin || _cancelDoc == null || _cancelling) return;
+        _cancelling = true; _cancelError = null;
+        try
+        {
+            await DocumentService.CancelDocumentAsync(_cancelDoc.Id, reason, _cancelDoc.ConcurrencyVersion);
+            _cancelDoc = null; Toast.ShowSuccess("Đã hủy công văn."); await LoadDocuments();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+        { _cancelDoc = null; Toast.ShowWarning(ex.Message); await LoadDocuments(); }
+        catch (HttpRequestException ex) { _cancelError = ex.Message; }
+        catch { _cancelError = "Chưa xác nhận được kết quả hủy. Kiểm tra danh sách trước khi thử lại."; }
+        finally { _cancelling = false; }
+    }
+    public void Dispose() { _disposed = true; CancelHold(); _searchCts?.Cancel(); _searchCts?.Dispose(); }
     private async Task PrevPage() { if (_currentPage > 1) { _currentPage--; await LoadDocuments(); } }
     private async Task NextPage() { if (_result?.HasNextPage == true) { _currentPage++; await LoadDocuments(); } }
     private async Task GoToPage(int page) { _currentPage = page; await LoadDocuments(); }

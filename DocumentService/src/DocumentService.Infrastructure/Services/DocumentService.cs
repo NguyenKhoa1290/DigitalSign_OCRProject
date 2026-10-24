@@ -147,6 +147,12 @@ public class DocumentService : IDocumentService
     public Task DeleteDocumentAsync(Guid id, DocumentActor actor, string? reason)
         => _documentRepository.SetDeletedAsync(id, actor, reason, deleted: true);
 
+    public Task CancelDocumentAsync(Guid id, DocumentActor actor, string reason, Guid expectedVersion)
+    {
+        if (!actor.IsAdmin || actor.UserId == Guid.Empty) throw new UnauthorizedDocumentAccessException();
+        return _documentRepository.CancelAsync(id, actor, reason, expectedVersion);
+    }
+
     public async Task RestoreDocumentAsync(Guid id, DocumentActor actor, string? reason)
     {
         if (!actor.IsAdmin || actor.UserId == Guid.Empty) throw new UnauthorizedDocumentAccessException();
@@ -210,7 +216,7 @@ public class DocumentService : IDocumentService
             || originalFileName.Any(char.IsControl))
             throw new DocumentServiceException("Tên file không hợp lệ hoặc dài quá 255 ký tự.");
         var supportedContentType = DocumentFileFormats.GetContentType(originalFileName)
-            ?? throw new DocumentServiceException("Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.");
+            ?? throw new DocumentServiceException("Chỉ hỗ trợ PDF, Word (.docx), PNG, JPG/JPEG hoặc WEBP.");
 
         // Save the new object before changing the document or deleting its old PDF.
         var storedFileName = await _fileStorageService.UploadFileAsync(
@@ -235,6 +241,8 @@ public class DocumentService : IDocumentService
         // 3. Đẩy event lên Kafka → OCR Service tự động xử lý (bất đồng bộ)
         //    - Không throw nếu Kafka lỗi (upload vẫn thành công)
         //    - minioPath chỉ là objectName (không có bucket prefix) cho OCR Service
+        // Word is an edited draft, not an OCR input. Do not queue it for Paddle.
+        if (!originalFileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
         await _kafkaProducer.PublishDocumentUploadedAsync(
             docId:     document.Id,
             minioPath: storedFileName,          // objectName trên MinIO
@@ -562,6 +570,7 @@ public class DocumentService : IDocumentService
         CreatedById = doc.CreatedById,
         ConcurrencyVersion = doc.ConcurrencyVersion,
         CanDeleteDraft = !doc.IsDeleted && DocumentDeletionPolicy.IsEligible(doc),
+        IsCancelled = doc.Processes.Any(p => p.Action == DocumentAction.Cancel),
         IsDeleted = doc.IsDeleted, DeletedAt = doc.DeletedAt, DeletedById = doc.DeletedById,
         DeleteReason = doc.DeleteReason, OfficiallyReceivedAt = doc.OfficiallyReceivedAt,
         ProcessingDepartmentId = doc.ProcessingDepartmentId, ProcessingDepartmentName = doc.ProcessingDepartmentName,

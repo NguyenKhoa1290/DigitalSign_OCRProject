@@ -183,7 +183,7 @@ public class DocumentDeletionTests
     }
 
     [Fact]
-    public async Task OfficialReceiptAndAssignmentAtomicallyPreventDeletion()
+    public async Task OfficialReceiptPreventsDeletionAndIncomingCannotUseUnsignedAssignment()
     {
         await using var f = new Fixture(); var doc = await f.Seed();
         await f.Service.ReceiveDocumentAsync(doc.Id, f.Actor("Clerk")); f.Db.ChangeTracker.Clear();
@@ -191,8 +191,9 @@ public class DocumentDeletionTests
             .Should().ThrowAsync<DocumentConflictException>();
         var document = (await f.Repository.GetByIdAsync(doc.Id))!;
         document.OfficiallyReceivedAt.Should().NotBeNull();
-        await f.Service.AssignAsync(doc.Id, f.Owner, Guid.NewGuid(), null); f.Db.ChangeTracker.Clear();
-        (await f.Repository.GetByIdAsync(doc.Id))!.FirstAssignedAt.Should().NotBeNull();
+        await FluentActions.Invoking(() => f.Service.AssignAsync(doc.Id, f.Owner, Guid.NewGuid(), null))
+            .Should().ThrowAsync<DocumentConflictException>();
+        (await f.Repository.GetByIdAsync(doc.Id))!.FirstAssignedAt.Should().BeNull();
     }
 
     [Fact]

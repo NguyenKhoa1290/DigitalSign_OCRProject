@@ -16,6 +16,7 @@ public interface IDocumentService
     Task RestoreDocumentAsync(Guid id, DocumentActor actor, string? reason);
     Task<PagedResult<DocumentDto>> GetDeletedDocumentsAsync(DocumentQueryParams query, DocumentActor actor);
     Task<DocumentDto> ReceiveDocumentAsync(Guid id, DocumentActor actor);
+    Task<DocumentDto> SubmitIncomingAsync(Guid id, DocumentActor actor, Guid expectedVersion, string? comment);
 
     // File
     Task<DocumentFileDto> GetFileAsync(Guid id);

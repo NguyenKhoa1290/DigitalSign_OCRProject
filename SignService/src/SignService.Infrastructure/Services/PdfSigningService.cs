@@ -202,6 +202,10 @@ public class PdfSigningService : IPdfSigningService
 
     private static string ExtractSignatureType(string fieldName)
     {
+        if (fieldName.Contains("IncomingDirection", StringComparison.OrdinalIgnoreCase))
+            return Core.Entities.SignatureType.IncomingDirection;
+        if (fieldName.Contains("IncomingAssignment", StringComparison.OrdinalIgnoreCase))
+            return Core.Entities.SignatureType.IncomingAssignment;
         if (fieldName.Contains("PersonalSignature", StringComparison.OrdinalIgnoreCase))
             return Core.Entities.SignatureType.PersonalSignature;
         if (fieldName.Contains("LegalSeal", StringComparison.OrdinalIgnoreCase))

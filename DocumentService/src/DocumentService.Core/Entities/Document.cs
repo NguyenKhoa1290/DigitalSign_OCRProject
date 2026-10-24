@@ -19,6 +19,12 @@ public class Document
     public DateTime? FirstAssignedAt { get; set; }
     public DateTime? OfficiallyReceivedAt { get; set; }
     public DateTime? SigningStartedAt { get; set; }
+    public Guid? ProcessingDepartmentId { get; set; }
+    public string? ProcessingDepartmentName { get; set; }
+    public Guid? AssignedToId { get; set; }
+    public string? AssignedToName { get; set; }
+    public string? IncomingOriginalPath { get; set; }
+    public string? IncomingDirectionPath { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? DeletedById { get; set; }

@@ -42,6 +42,9 @@ public class RequestJournalTests
     [InlineData("POST","/api/documents/id/reject","Reject")]
     [InlineData("POST","/api/documents/id/publish","Publish")]
     [InlineData("POST","/api/documents/id/assign","Assign")]
+    [InlineData("POST","/api/documents/id/incoming-submit","SubmitIncoming")]
+    [InlineData("POST","/api/signatures/incoming/id/direction","DirectIncoming")]
+    [InlineData("POST","/api/signatures/incoming/id/assignment","AssignIncoming")]
     [InlineData("PATCH","/api/documents/id/ocr","UpdateOCR")]
     public void AuditIdentifiesBusinessOperation(string method,string path,string expected)
         =>Assert.Equal(expected,RequestJournal.Action(method,path));

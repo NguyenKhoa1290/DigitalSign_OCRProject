@@ -15,6 +15,7 @@ public interface IDocumentRepository
     Task<(IEnumerable<Document> Documents, int Total)> GetDeletedAsync(DocumentQueryParams query);
     Task SetDeletedAsync(Guid id, DocumentActor actor, string? reason, bool deleted);
     Task ReceiveAsync(Guid id, Guid actorId);
+    Task SubmitIncomingAsync(Guid id, Guid actorId, Guid expectedVersion, string? comment);
     Task<bool> ExistsAsync(Guid id);
     Task<DocumentStatisticsDto> GetStatisticsAsync(Guid userId, DateTime todayStartUtc, DateTime tomorrowStartUtc);
 }

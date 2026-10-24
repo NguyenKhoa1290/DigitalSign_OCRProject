@@ -24,6 +24,9 @@ public class DocumentFileRepository : IDocumentFileRepository
             .FirstOrDefaultAsync();
     }
 
+    public Task<bool> IsIncomingAsync(Guid docId)
+        => _context.DocumentFiles.AnyAsync(d => d.Id == docId && _context.DocumentTypes.Any(t => t.Id == d.DocTypeId && t.TypeName == "CongVanDen"));
+
     public async Task<IDocumentSigningLease> BeginSigningAsync(Guid docId)
     {
         // Persist an irreversible signing marker BEFORE touching the external PDF.

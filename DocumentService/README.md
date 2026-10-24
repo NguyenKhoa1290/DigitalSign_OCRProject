@@ -57,9 +57,10 @@ POST   /api/documents/{id}/director-sign
 POST   /api/documents/{id}/reject
 POST   /api/documents/{id}/publish
 POST   /api/documents/{id}/assign
+POST   /api/documents/{id}/incoming-submit
 ```
 
-## Workflow hiện tại
+## Workflow công văn đi
 
 ```text
 Draft
@@ -71,6 +72,14 @@ Draft
 ```
 
 `DeptSignAsync` chuyển `PendingDeptReview` sang `DeptSigned`. Sau đó gọi `SubmitToDirectorAsync` hoặc `POST /api/documents/{id}/submit-director` để chuyển sang `PendingDirectorSign`.
+
+## Workflow công văn đến
+
+`CongVanDen` dùng chuỗi `Draft -> PendingDirection -> PendingAssignment -> IncomingAssigned`. Clerk trình Ban Giám hiệu bằng `incoming-submit` với `ExpectedVersion`; thao tác này tiếp nhận chính thức nếu hồ sơ chưa có mốc tiếp nhận. Cần PDF để ký; ảnh vẫn dùng được cho OCR.
+
+Ban Giám hiệu ký chỉ đạo và chọn đơn vị qua `POST /api/signatures/incoming/{id}/direction`. Manager của đúng đơn vị ký phân công chuyên viên qua `POST /api/signatures/incoming/{id}/assignment`. Hai bước ký cập nhật PDF, trạng thái, bằng chứng chữ ký và lịch sử trong luồng riêng tại SignService. Clerk không có quyền gọi `assign`.
+
+Các API trình/ký nháy/ký pháp nhân/phát hành và phân công không ký của chiều đi từ chối `CongVanDen`. Không tự chuyển trạng thái hồ sơ cũ; hồ sơ đang Nháp nhưng đã có bằng chứng ký cần đối soát. Chưa có thao tác thời hạn, báo cáo kết quả hoặc xác nhận hoàn thành công việc trong nhánh mới.
 
 ## Lưu ý tích hợp
 

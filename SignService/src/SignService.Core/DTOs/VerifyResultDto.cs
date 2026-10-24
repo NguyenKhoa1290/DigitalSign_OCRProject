@@ -7,6 +7,8 @@ public class VerifyResultDto
     public int TotalSignatures { get; set; }
     public bool HasPersonalSignature { get; set; }
     public bool HasLegalSeal { get; set; }
+    public bool HasIncomingDirectionSignature { get; set; }
+    public bool HasIncomingAssignmentSignature { get; set; }
     public List<SignatureVerifyInfo> Signatures { get; set; } = new();
 }
 

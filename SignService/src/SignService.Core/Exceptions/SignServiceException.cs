@@ -29,3 +29,7 @@ public class PdfSigningException : SignServiceException
 {
     public PdfSigningException(string message) : base($"Lỗi ký số PDF: {message}") { }
 }
+
+public class IncomingConflictException(string message) : SignServiceException(message);
+public class IncomingAccessException() : SignServiceException("Bạn không có quyền xử lý công văn đến này.");
+public class WorkflowDirectoryUnavailableException() : SignServiceException("Chưa xác minh được đơn vị hoặc tài khoản. Vui lòng thử lại.");

@@ -28,6 +28,13 @@ namespace DocumentService.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AssignedToId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssignedToName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<Guid>("ConcurrencyVersion")
                         .IsConcurrencyToken()
                         .HasColumnType("uuid");
@@ -68,6 +75,12 @@ namespace DocumentService.Infrastructure.Migrations
                     b.Property<DateTime?>("FirstSubmittedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("IncomingDirectionPath")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IncomingOriginalPath")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -83,6 +96,13 @@ namespace DocumentService.Infrastructure.Migrations
 
                     b.Property<DateTime?>("OfficiallyReceivedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ProcessingDepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProcessingDepartmentName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<DateTime?>("SigningStartedAt")
                         .HasColumnType("timestamp with time zone");

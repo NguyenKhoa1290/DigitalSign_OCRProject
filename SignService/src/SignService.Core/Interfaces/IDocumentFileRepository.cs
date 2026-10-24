@@ -7,6 +7,7 @@ namespace SignService.Core.Interfaces;
 public interface IDocumentFileRepository
 {
     Task<string?> GetMinioPathAsync(Guid docId);
+    Task<bool> IsIncomingAsync(Guid docId);
     Task<IDocumentSigningLease> BeginSigningAsync(Guid docId);
 }
 

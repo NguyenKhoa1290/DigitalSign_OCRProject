@@ -4,4 +4,5 @@ public class WorkflowActionDto
 {
     public string? Comment { get; set; }
     public Guid? ToUserId { get; set; } // để Assign cho user cụ thể
+    public Guid ExpectedVersion { get; set; }
 }

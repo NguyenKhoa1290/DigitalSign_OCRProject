@@ -90,6 +90,8 @@ public class DocumentService : IDocumentService
             ?? throw new DocumentNotFoundException(id);
         if (document.Status != DocumentStatus.Draft && document.Status != DocumentStatus.Rejected)
             throw new InvalidWorkflowTransitionException(document.Status, "Update (chỉ sửa Draft hoặc Rejected)");
+        if (document.DocType?.TypeName == "CongVanDen" && document.OfficiallyReceivedAt.HasValue && dto.DocTypeId != document.DocTypeId)
+            throw new DocumentConflictException("Không đổi loại văn bản sau khi tiếp nhận chính thức công văn đến.");
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 500 || dto.DocNumber?.Length > 50)
             throw new DocumentServiceException("Tiêu đề hoặc số hiệu văn bản không hợp lệ.");
         _ = await _documentTypeRepository.GetByIdAsync(dto.DocTypeId)
@@ -202,6 +204,8 @@ public class DocumentService : IDocumentService
             ?? throw new DocumentNotFoundException(id);
 
         var originalFileName = Path.GetFileName(fileName.Replace('\\', '/'));
+        if (document.DocType?.TypeName == "CongVanDen" && document.Status != DocumentStatus.Draft)
+            throw new DocumentConflictException("Không thay tệp công văn đến đã trình chỉ đạo hoặc đã ký.");
         if (string.IsNullOrWhiteSpace(originalFileName) || originalFileName.Length > 255
             || originalFileName.Any(char.IsControl))
             throw new DocumentServiceException("Tên file không hợp lệ hoặc dài quá 255 ký tự.");
@@ -316,6 +320,7 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireOutgoingWorkflow(document);
 
         if (document.Status != DocumentStatus.Draft)
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.PendingDeptReview);
@@ -344,6 +349,7 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireOutgoingWorkflow(document);
 
         if (document.Status != DocumentStatus.PendingDeptReview)
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.DeptSigned);
@@ -371,6 +377,7 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireOutgoingWorkflow(document);
 
         if (document.Status != DocumentStatus.DeptSigned)
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.PendingDirectorSign);
@@ -398,6 +405,7 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireOutgoingWorkflow(document);
 
         if (document.Status != DocumentStatus.PendingDirectorSign)
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.DirectorSigned);
@@ -425,6 +433,7 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireOutgoingWorkflow(document);
 
         // Có thể reject ở bất kỳ trạng thái pending nào
         var allowedStatuses = new[]
@@ -460,6 +469,7 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireOutgoingWorkflow(document);
 
         if (document.Status != DocumentStatus.DirectorSigned)
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.Published);
@@ -489,6 +499,7 @@ public class DocumentService : IDocumentService
             throw new DocumentServiceException("Người nhận phân công không hợp lệ.");
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireOutgoingWorkflow(document);
 
         await _documentProcessRepository.CreateAsync(new DocumentProcess
         {
@@ -526,6 +537,20 @@ public class DocumentService : IDocumentService
     // Mapping helper
     // ──────────────────────────────────────────────────────────────────────────
 
+    public async Task<DocumentDto> SubmitIncomingAsync(Guid id, DocumentActor actor, Guid expectedVersion, string? comment)
+    {
+        if (actor.UserId == Guid.Empty || !actor.Roles.Contains("Clerk"))
+            throw new UnauthorizedDocumentAccessException();
+        await _documentRepository.SubmitIncomingAsync(id, actor.UserId, expectedVersion, comment);
+        return await GetDocumentByIdAsync(id);
+    }
+
+    private static void RequireOutgoingWorkflow(Document document)
+    {
+        if (document.DocType?.TypeName == "CongVanDen")
+            throw new DocumentConflictException("Công văn đến dùng luồng trình Ban Giám hiệu ký chỉ đạo, sau đó lãnh đạo phòng ký phân công.");
+    }
+
     private static DocumentDto MapToDto(Document doc) => new DocumentDto
     {
         Id = doc.Id,
@@ -539,6 +564,8 @@ public class DocumentService : IDocumentService
         CanDeleteDraft = !doc.IsDeleted && DocumentDeletionPolicy.IsEligible(doc),
         IsDeleted = doc.IsDeleted, DeletedAt = doc.DeletedAt, DeletedById = doc.DeletedById,
         DeleteReason = doc.DeleteReason, OfficiallyReceivedAt = doc.OfficiallyReceivedAt,
+        ProcessingDepartmentId = doc.ProcessingDepartmentId, ProcessingDepartmentName = doc.ProcessingDepartmentName,
+        AssignedToId = doc.AssignedToId, AssignedToName = doc.AssignedToName,
         UpdatedAt = doc.Processes.Select(process => (DateTime?)process.Timestamp).Max(),
         MinioPath = doc.MinioPath,
         FileName = doc.FileName,

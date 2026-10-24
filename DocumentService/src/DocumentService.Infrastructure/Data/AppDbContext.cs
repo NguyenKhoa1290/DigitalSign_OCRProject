@@ -28,6 +28,8 @@ public class AppDbContext : DbContext
             e.HasQueryFilter(x => !x.IsDeleted);
             e.Property(x => x.ConcurrencyVersion).IsConcurrencyToken();
             e.Property(x => x.DeleteReason).HasMaxLength(1000);
+            e.Property(x => x.ProcessingDepartmentName).HasMaxLength(255);
+            e.Property(x => x.AssignedToName).HasMaxLength(100);
             e.HasIndex(x => new { x.IsDeleted, x.DeletedAt });
 
             e.Property(x => x.DocNumber)

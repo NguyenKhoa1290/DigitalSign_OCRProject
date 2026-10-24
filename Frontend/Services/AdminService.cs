@@ -1,4 +1,7 @@
 using HauDocumentApp.Models;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace HauDocumentApp.Services;
 
@@ -30,6 +33,9 @@ public class AdminService
         var roles = await GetRolesAsync();
         var roleId = roles?.FirstOrDefault(r =>
             string.Equals(r.RoleName, dto.Role, StringComparison.OrdinalIgnoreCase))?.Id;
+        if (!roleId.HasValue)
+            throw new HttpRequestException("Không tải được vai trò đã chọn. Vui lòng thử lại.", null,
+                HttpStatusCode.ServiceUnavailable);
 
         // Gửi request đúng định dạng backend (RoleIds thay vì Role string)
         var backendRequest = new
@@ -40,12 +46,47 @@ public class AdminService
             Password     = dto.Password,
             PhoneNumber  = dto.PhoneNumber,
             DepartmentId = dto.DepartmentId,
-            RoleIds      = roleId.HasValue
-                ? new List<Guid> { roleId.Value }
-                : new List<Guid>()
+            RoleIds      = new List<Guid> { roleId.Value }
         };
 
-        return await _api.PostAsync<UserDto>("api/users", backendRequest);
+        using var response = await _api.PostResponseAsync("api/users", backendRequest);
+        if (!response.IsSuccessStatusCode)
+            throw new HttpRequestException(await ReadCreateUserErrorAsync(response), null, response.StatusCode);
+
+        return (await response.Content.ReadFromJsonAsync<ApiResponse<UserDto>>())?.Data;
+    }
+
+    private static async Task<string> ReadCreateUserErrorAsync(HttpResponseMessage response)
+    {
+        const string fallback = "Không thể tạo người dùng. Vui lòng thử lại sau.";
+        if ((int)response.StatusCode >= 500) return fallback;
+        try
+        {
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = json.RootElement;
+            var message = root.TryGetProperty("message", out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString() : null;
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                if (message?.Contains("username", StringComparison.OrdinalIgnoreCase) == true)
+                    return "Mã cán bộ/giảng viên này đã tồn tại. Vui lòng chọn mã khác.";
+                if (message?.Contains("email", StringComparison.OrdinalIgnoreCase) == true)
+                    return "Email này đã được sử dụng. Vui lòng dùng email khác hoặc để trống.";
+                return "Mã cán bộ/giảng viên hoặc email đã tồn tại. Vui lòng kiểm tra lại.";
+            }
+            if (response.StatusCode == HttpStatusCode.BadRequest && root.TryGetProperty("errors", out var errors))
+            {
+                var entries = errors.ValueKind == JsonValueKind.Object
+                    ? errors.EnumerateObject().SelectMany(p => p.Value.ValueKind == JsonValueKind.Array
+                        ? p.Value.EnumerateArray().ToArray() : new[] { p.Value })
+                    : errors.ValueKind == JsonValueKind.Array ? errors.EnumerateArray().ToArray() : Array.Empty<JsonElement>();
+                var messages = entries.Where(e => e.ValueKind == JsonValueKind.String)
+                    .Select(e => e.GetString()).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToArray();
+                if (messages.Length > 0) return string.Join(" ", messages);
+            }
+            return string.IsNullOrWhiteSpace(message) ? fallback : message;
+        }
+        catch (JsonException) { return fallback; }
     }
     public async Task<UserDto?> UpdateUserAsync(Guid id, UpdateUserDto dto) => await _api.PutAsync<UserDto>($"api/users/{id}", dto);
     public async Task<bool> DeleteUserAsync(Guid id) { try { await _api.DeleteAsync($"api/users/{id}"); return true; } catch { return false; } }

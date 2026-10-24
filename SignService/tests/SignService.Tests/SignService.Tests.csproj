@@ -10,6 +10,9 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="9.0.1" />
+    <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
@@ -21,6 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SignService.Core\SignService.Core.csproj" />
     <ProjectReference Include="..\..\src\SignService.Infrastructure\SignService.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SignService.API\SignService.API.csproj" />
+    <ProjectReference Include="..\..\..\DocumentService\src\DocumentService.Infrastructure\DocumentService.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

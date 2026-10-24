@@ -4,6 +4,305 @@
     "E:\\DigitalSign_OCRProject\\SignService\\tests\\SignService.Tests\\SignService.Tests.csproj": {}
   },
   "projects": {
+    "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj",
+        "projectName": "DocumentService.Core",
+        "projectPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj",
+        "packagesPath": "C:\\Users\\Khoa\\.nuget\\packages\\",
+        "outputPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Khoa\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "framework": "net9.0",
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net9.0": {
+          "framework": "net9.0",
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Infrastructure\\DocumentService.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Infrastructure\\DocumentService.Infrastructure.csproj",
+        "projectName": "DocumentService.Infrastructure",
+        "projectPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Infrastructure\\DocumentService.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\Khoa\\.nuget\\packages\\",
+        "outputPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Infrastructure\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Khoa\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "framework": "net9.0",
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj": {
+                "projectPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Core\\DocumentService.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net9.0": {
+          "framework": "net9.0",
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Confluent.Kafka": {
+              "target": "Package",
+              "version": "[2.6.0, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Microsoft.Extensions.Configuration.Binder": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.IdentityModel.Tokens": {
+              "target": "Package",
+              "version": "[8.7.0, )"
+            },
+            "Minio": {
+              "target": "Package",
+              "version": "[6.0.4, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.7.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.API\\SignService.API.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.API\\SignService.API.csproj",
+        "projectName": "SignService.API",
+        "projectPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.API\\SignService.API.csproj",
+        "packagesPath": "C:\\Users\\Khoa\\.nuget\\packages\\",
+        "outputPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.API\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\Khoa\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "framework": "net9.0",
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj": {
+                "projectPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj"
+              },
+              "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\SignService.Infrastructure.csproj": {
+                "projectPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Infrastructure\\SignService.Infrastructure.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net9.0": {
+          "framework": "net9.0",
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Serilog.AspNetCore": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[7.3.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[9.0.20, 9.0.20]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
     "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj": {
       "version": "1.0.0",
       "restore": {
@@ -211,6 +510,12 @@
             "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {
+              "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Infrastructure\\DocumentService.Infrastructure.csproj": {
+                "projectPath": "E:\\DigitalSign_OCRProject\\DocumentService\\src\\DocumentService.Infrastructure\\DocumentService.Infrastructure.csproj"
+              },
+              "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.API\\SignService.API.csproj": {
+                "projectPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.API\\SignService.API.csproj"
+              },
               "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj": {
                 "projectPath": "E:\\DigitalSign_OCRProject\\SignService\\src\\SignService.Core\\SignService.Core.csproj"
               },
@@ -237,9 +542,21 @@
           "framework": "net9.0",
           "targetAlias": "net9.0",
           "dependencies": {
+            "Microsoft.AspNetCore.TestHost": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
+            "Microsoft.EntityFrameworkCore.Sqlite": {
+              "target": "Package",
+              "version": "[9.0.1, )"
+            },
             "Microsoft.NET.Test.Sdk": {
               "target": "Package",
               "version": "[17.12.0, )"
+            },
+            "Moq": {
+              "target": "Package",
+              "version": "[4.20.72, )"
             },
             "coverlet.collector": {
               "target": "Package",

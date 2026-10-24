@@ -56,12 +56,13 @@ public class UsersController : ControllerBase
     // Danh bạ tối thiểu để chọn người nhận công văn, không trả email hoặc thông tin quản trị.
     [HttpGet("assignees")]
     [Authorize(Roles = "Admin,Clerk,Manager,BoardOfDirectors")]
-    public async Task<IActionResult> GetAssignees([FromQuery] string? search = null)
+    public async Task<IActionResult> GetAssignees([FromQuery] string? search = null,
+        [FromQuery] Guid? departmentId = null, [FromQuery] string? role = null)
     {
-        var users = await _userService.GetAllUsersAsync(1, 20, search);
-        var assignees = users.Items.Where(user => user.IsActive).Select(user => new
+        var users = await _userService.GetAllUsersAsync(1, departmentId.HasValue ? 100 : 20, search, departmentId);
+        var assignees = users.Items.Where(user => user.IsActive && (string.IsNullOrEmpty(role) || user.Roles.Contains(role))).Select(user => new
         {
-            user.Id, user.Username, user.FullName, user.DepartmentName
+            user.Id, user.Username, user.FullName, user.DepartmentName, user.DepartmentId, user.Roles
         });
         return Ok(ApiResponse<object>.Ok(assignees));
     }

@@ -43,6 +43,8 @@ docker compose up -d
 ```text
 POST   /api/signatures/personal-sign
 POST   /api/signatures/legal-seal
+POST   /api/signatures/incoming/{id}/direction
+POST   /api/signatures/incoming/{id}/assignment
 GET    /api/signatures/document/{docId}
 GET    /api/signatures/document/{docId}/verify
 POST   /api/signatures/certificates/issue
@@ -52,6 +54,16 @@ GET    /api/signatures/certificates
 GET    /api/signatures/certificates/{userId}
 DELETE /api/signatures/certificates/{userId}
 ```
+
+## Ký công văn đến
+
+Chiều đến dùng thứ tự Ban Giám hiệu ký `IncomingDirection`, rồi Manager ký `IncomingAssignment`. Người ký lấy từ JWT và được kiểm tra lại vai trò/trạng thái tại IdentityService. Cấu hình `IdentityService:BaseUrl` cho danh bạ; Compose dùng `http://identity-service:8080/`.
+
+Chỉ đạo yêu cầu `ExpectedVersion`, `DepartmentId` và `Comment`; phân công yêu cầu `ExpectedVersion`, `ToUserId` và `Comment`. Manager phải thuộc đúng đơn vị được chỉ đạo; người nhận là Specialist đang hoạt động trong đơn vị hoặc đơn vị trực thuộc. Ý kiến và đích nhận được ghi vào Reason của chữ ký, cùng lịch sử xử lý; chưa vẽ bút phê lên nội dung trang PDF.
+
+Ký và xác minh PDF trước khi chuyển trạng thái. Mỗi bước tạo object MinIO mới, giữ bản gốc và bản ký chỉ đạo. Khóa hàng PostgreSQL và token phiên bản chặn gửi lặp; trạng thái, bằng chứng ký và lịch sử cùng giao dịch. Phải flush đơn vị mới trước khi insert lịch sử để trigger thông báo đọc đúng đơn vị. Lỗi giao dịch không thay đường dẫn bản đang dùng; có thể còn object mới chưa được tham chiếu để xử lý dọn sau.
+
+Các endpoint `personal-sign`/`legal-seal` dành cho chiều đi từ chối `CongVanDen`. Chữ ký chiều đến xem và xác minh bằng các endpoint document/verify hiện có.
 
 ## Chứng thư số
 

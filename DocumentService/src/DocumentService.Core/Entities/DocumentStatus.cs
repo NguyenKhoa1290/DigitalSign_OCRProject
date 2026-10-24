@@ -9,6 +9,9 @@ public static class DocumentStatus
     public const string DirectorSigned = "DirectorSigned";
     public const string Published = "Published";
     public const string Rejected = "Rejected";
+    public const string PendingDirection = "PendingDirection";
+    public const string PendingAssignment = "PendingAssignment";
+    public const string IncomingAssigned = "IncomingAssigned";
 
     public static string GetDisplayName(string status) => status switch
     {
@@ -19,6 +22,9 @@ public static class DocumentStatus
         DirectorSigned => "Ban Giám hiệu đã ký số",
         Published => "Đã phát hành",
         Rejected => "Đã bị từ chối",
+        PendingDirection => "Chờ Ban Giám hiệu ký chỉ đạo",
+        PendingAssignment => "Chờ lãnh đạo phòng ký phân công",
+        IncomingAssigned => "Đã phân công xử lý",
         _ => status
     };
 }

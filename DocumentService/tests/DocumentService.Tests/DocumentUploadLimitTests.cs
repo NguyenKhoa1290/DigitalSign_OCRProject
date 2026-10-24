@@ -21,6 +21,7 @@ public class DocumentUploadLimitTests
     {
         var actor = Guid.NewGuid(); var id = Guid.NewGuid();
         var service = new Mock<IDocumentService>();
+        service.Setup(s => s.GetDocumentByIdAsync(id)).ReturnsAsync(new DocumentDto { Id = id, DocTypeName = "CongVanDi" });
         service.Setup(s => s.UploadFileAsync(id, It.IsAny<Stream>(), "test.pdf", "application/pdf", actor))
             .ReturnsAsync(new DocumentDto { Id = id });
         var controller = new DocumentsController(service.Object, NullLogger<DocumentsController>.Instance,

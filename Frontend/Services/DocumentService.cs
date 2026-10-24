@@ -43,6 +43,18 @@ public class DocumentService
         await EnsureDocumentActionAsync(response);
     }
 
+    public async Task SubmitIncomingAsync(Guid id, Guid expectedVersion, string? comment)
+    {
+        using var response = await _api.PostResponseAsync($"api/documents/{id}/incoming-submit", new { expectedVersion, comment });
+        await EnsureDocumentActionAsync(response);
+    }
+
+    public async Task SignIncomingAsync(Guid id, string action, object request)
+    {
+        using var response = await _api.PostResponseAsync($"api/signatures/incoming/{id}/{action}", request);
+        await EnsureDocumentActionAsync(response);
+    }
+
     private static async Task EnsureDocumentActionAsync(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode) return;
@@ -129,8 +141,9 @@ public class DocumentService
     public Task<byte[]?> GetFileAsync(Guid id)
         => _api.GetBytesAsync($"api/documents/{id}/file");
 
-    public Task<List<AssigneeDto>?> GetAssigneesAsync(string search)
-        => _api.GetAsync<List<AssigneeDto>>($"api/users/assignees?search={Uri.EscapeDataString(search)}");
+    public Task<List<AssigneeDto>?> GetAssigneesAsync(string search, Guid? departmentId = null)
+        => _api.GetAsync<List<AssigneeDto>>($"api/users/assignees?search={Uri.EscapeDataString(search)}"
+            + (departmentId.HasValue ? $"&departmentId={departmentId}&role=Specialist" : ""));
 
     public async Task<DocumentDto?> UploadFileAsync(Guid id, System.IO.Stream fileStream, string fileName)
     {

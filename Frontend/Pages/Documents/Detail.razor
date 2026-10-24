@@ -6,6 +6,7 @@
 @inject IToastService Toast
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject AdminService AdminService
 @implements IAsyncDisposable
 
 <PageTitle>@(_document?.Title ?? "Chi tiết Công văn") - HAU</PageTitle>
@@ -61,7 +62,7 @@ else
         {
             <button class="btn btn-outline" @onclick="OpenEditModal" disabled="@_isActionLoading">Sửa thông tin</button>
         }
-        @if (_role is "Admin" or "Clerk" or "Manager" or "BoardOfDirectors")
+        @if (CanAssign)
         {
             <button class="btn btn-outline" @onclick="OpenAssignModal" disabled="@_isActionLoading">Phân công xử lý</button>
         }
@@ -69,14 +70,26 @@ else
         {
             <button class="btn btn-outline" @onclick="DownloadFile" disabled="@(_isActionLoading || _fileUrl == null)">@(IsImageFile ? "Tải ảnh" : "Tải PDF")</button>
         }
-        @if (_document.Status == "Draft" && (_role == "Clerk" || _role == "Specialist"))
+        @if (IsIncoming && _document.Status == "Draft" && _role == "Clerk")
         {
+            <button type="button" class="btn btn-primary" @onclick='() => ShowActionModal("incoming-submit")'
+                    disabled="@(_isActionLoading || _document.MinioPath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) != true)">Trình BGH chỉ đạo</button>
+        }
+        @if (IsIncoming && _document.Status == "PendingDirection" && _role == "BoardOfDirectors")
+        {
+            <button type="button" class="btn btn-primary" @onclick="OpenDirectionModal" disabled="@_isActionLoading">Ký chỉ đạo</button>
+        }
+        @if (_document.Status == "Draft" && (_role == "Clerk" || (!IsIncoming && _role == "Specialist")))
+        {
+            @if (!IsIncoming)
+            {
             <button class="btn btn-primary" @onclick='() => ShowActionModal("submit")'>
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
                 Nộp trình duyệt
             </button>
+            }
             <button type="button" class="btn btn-outline" @onclick="ChoosePdf" disabled="@_isActionLoading">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -97,7 +110,7 @@ else
             }
         }
 
-        @if (_document.Status == "PendingDeptReview" && _role == "Manager")
+        @if (!IsIncoming && _document.Status == "PendingDeptReview" && _role == "Manager")
         {
             <button class="btn btn-success" @onclick='() => ShowActionModal("dept-sign")'>
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -113,14 +126,14 @@ else
             </button>
         }
 
-        @if (_document.Status == "DeptSigned" && _role == "Manager")
+        @if (!IsIncoming && _document.Status == "DeptSigned" && _role == "Manager")
         {
             <button class="btn btn-primary" @onclick='() => ShowActionModal("submit-director")'>
                 Trình BGH ký
             </button>
         }
 
-        @if ((_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned") && _role == "BoardOfDirectors")
+        @if (!IsIncoming && (_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned") && _role == "BoardOfDirectors")
         {
             <button class="btn btn-success" @onclick='() => ShowActionModal("director-sign")'>
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -131,7 +144,7 @@ else
             <button class="btn btn-danger" @onclick='() => ShowActionModal("reject")'>Từ chối</button>
         }
 
-        @if (_document.Status == "DirectorSigned" && (_role == "Clerk" || _role == "Admin"))
+        @if (!IsIncoming && _document.Status == "DirectorSigned" && (_role == "Clerk" || _role == "Admin"))
         {
             <button class="btn btn-success" @onclick="() => PublishDocument()">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -159,6 +172,15 @@ else
         </a>
     </div>
 
+    @if (IsIncoming && _document.Status == "Draft" && _role == "Clerk" && _document.MinioPath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) != true)
+    {
+        <p class="form-hint">Tải bản PDF trước khi trình lãnh đạo ký. Ảnh vẫn có thể dùng để OCR.</p>
+    }
+    @if (IsIncoming && _document.Status is "PendingDeptReview" or "DeptSigned" or "PendingDirectorSign" or "DirectorSigned" or "Published" or "Rejected")
+    {
+        <p class="alert alert-warning" role="status">Hồ sơ công văn đến này đang có trạng thái của quy trình cũ. Cần đối soát trước khi chuyển sang quy trình mới.</p>
+    }
+
     <div class="document-detail-layout">
         <div class="document-detail-column">
             <!-- Document Info -->
@@ -182,6 +204,14 @@ else
                             <div class="detail-label">Phòng ban</div>
                             <div class="detail-value">@(_document.DepartmentName ?? "—")</div>
                         </div>
+                        @if (IsIncoming && _document.ProcessingDepartmentId.HasValue)
+                        {
+                            <div class="detail-item"><div class="detail-label">Đơn vị xử lý</div><div class="detail-value">@_document.ProcessingDepartmentName</div></div>
+                        }
+                        @if (IsIncoming && _document.AssignedToId.HasValue)
+                        {
+                            <div class="detail-item"><div class="detail-label">Chuyên viên được phân công</div><div class="detail-value">@_document.AssignedToName</div></div>
+                        }
                         <div class="detail-item">
                             <div class="detail-label">Người tạo</div>
                             <div class="detail-value">@(_document.CreatedByName ?? "—")</div>
@@ -348,7 +378,7 @@ else
     <div class="modal-overlay">
         <div class="modal" role="dialog" aria-modal="true" aria-label="Phân công xử lý">
             <div class="modal-header">
-                <span class="modal-title">Phân công xử lý</span>
+                <span class="modal-title">@(IsIncoming ? "Ký phân công chuyên viên" : "Phân công xử lý")</span>
                 <button class="modal-close" @onclick="() => _showAssignModal = false" disabled="@_isActionLoading" aria-label="Đóng">&times;</button>
             </div>
             <div class="modal-body">
@@ -365,14 +395,34 @@ else
                     <CustomSelect Id="assignee-select" AriaLabel="Người nhận" Options="AssigneeOptions" @bind-Value="_assigneeId" MaxOptionsHeight="160" Disabled="@_isSearching" />
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="assign-comment">Ghi chú</label>
-                    <textarea id="assign-comment" class="form-control" rows="3" @bind="_assignComment"></textarea>
+                    <label class="form-label" for="assign-comment">@(IsIncoming ? "Ý kiến phân công (bắt buộc)" : "Ghi chú")</label>
+                    <textarea id="assign-comment" class="form-control" rows="3" maxlength="1000" @bind="_assignComment" disabled="@_isActionLoading"></textarea>
+                    @if (IsIncoming) { <p class="form-hint">Ký số ý kiến phân công trên bản PDF đã có chữ ký chỉ đạo của Ban Giám hiệu.</p> }
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" @onclick="() => _showAssignModal = false" disabled="@_isActionLoading">Hủy</button>
-                <button class="btn btn-primary" @onclick="SaveAssignment" disabled="@(_isActionLoading || _isSearching || string.IsNullOrEmpty(_assigneeId))">Xác nhận phân công</button>
+                <button class="btn btn-primary" @onclick="SaveAssignment" disabled="@(_isActionLoading || _isSearching || string.IsNullOrEmpty(_assigneeId))">@(_isActionLoading ? "Đang xử lý..." : IsIncoming ? "Ký và phân công" : "Xác nhận phân công")</button>
             </div>
+        </div>
+    </div>
+}
+@if (_showDirectionModal)
+{
+    <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Ký chỉ đạo công văn đến">
+            <div class="modal-header"><span class="modal-title">Ký chỉ đạo công văn đến</span>
+                <button type="button" class="modal-close" aria-label="Đóng" disabled="@_isActionLoading" @onclick="() => _showDirectionModal = false">&times;</button></div>
+            <div class="modal-body">
+                @if (_formError != null) { <div class="alert alert-danger" role="alert">@_formError</div> }
+                <div class="form-group"><label class="form-label" for="incoming-department">Đơn vị xử lý</label>
+                    <CustomSelect Id="incoming-department" AriaLabel="Đơn vị xử lý" Options="DirectionDepartmentOptions" @bind-Value="_directionDepartmentId" Disabled="@_isActionLoading" MaxOptionsHeight="180" /></div>
+                <div class="form-group"><label class="form-label" for="incoming-comment">Ý kiến chỉ đạo (bắt buộc)</label>
+                    <textarea id="incoming-comment" class="form-control" rows="4" maxlength="1000" @bind="_directionComment" disabled="@_isActionLoading"></textarea></div>
+                <p class="form-hint">Chữ ký số ghi nhận ý kiến chỉ đạo và đơn vị nhận. Chỉ chuyển đơn vị sau khi ký thành công.</p>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline" disabled="@_isActionLoading" @onclick="() => _showDirectionModal = false">Hủy</button>
+                <button type="button" class="btn btn-primary" disabled="@_isActionLoading" @onclick="SaveDirection">@(_isActionLoading ? "Đang ký..." : "Ký và chuyển đơn vị")</button></div>
         </div>
     </div>
 }
@@ -386,8 +436,13 @@ else
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Ghi chú (tùy chọn)</label>
-                    <textarea class="form-control" placeholder="Nhập ghi chú..." @bind="_actionComment" rows="3"></textarea>
+                    <label class="form-label" for="workflow-action-comment">Ghi chú (tùy chọn)</label>
+                    <textarea id="workflow-action-comment" class="form-control" placeholder="Nhập ghi chú..." @bind="_actionComment" rows="3"
+                              aria-describedby="@(_currentAction == "receive" ? "receive-action-note" : null)"></textarea>
+                    @if (_currentAction == "receive")
+                    {
+                        <p id="receive-action-note" class="form-hint">Sau khi tiếp nhận chính thức, công văn không được xóa.</p>
+                    }
                 </div>
             </div>
             <div class="modal-footer">
@@ -400,7 +455,7 @@ else
                     }
                     else
                     {
-                        <span>@GetActionModalTitle()</span>
+                        <span>@(_currentAction == "receive" ? "Xác nhận tiếp nhận" : GetActionModalTitle())</span>
                     }
                 </button>
             </div>
@@ -420,6 +475,16 @@ else
     private bool CanDeleteDraft => _document?.CanDeleteDraft == true && _hasDeleteRole
         && (_isAdmin || _document.CreatedById == _actorId);
     private string? _role;
+    private Guid? _actorDepartmentId;
+    private bool IsIncoming => _document?.DocTypeName == "CongVanDen";
+    private bool CanAssign => IsIncoming
+        ? _role == "Manager" && _document?.Status == "PendingAssignment" && _actorDepartmentId.HasValue && _actorDepartmentId == _document.ProcessingDepartmentId
+        : _role is "Admin" or "Manager" or "BoardOfDirectors";
+    private bool _showDirectionModal;
+    private string _directionDepartmentId = "", _directionComment = "";
+    private List<DepartmentDto> _directionDepartments = new();
+    private IReadOnlyList<SelectOption> DirectionDepartmentOptions => new[] { new SelectOption("", "Chọn đơn vị xử lý") }
+        .Concat(_directionDepartments.Select(d => new SelectOption(d.Id.ToString(), $"{d.DeptName} ({d.DeptCode})"))).ToList();
     private string? _fileUrl;
     private string? _fileError;
     private bool _disposed;
@@ -429,7 +494,8 @@ else
     private string _editTypeId = "", _assigneeSearch = "", _assigneeId = "", _assignComment = "";
     private List<DocumentTypeDto> _documentTypes = new();
     private List<AssigneeDto> _assignees = new();
-    private bool CanEdit => _document?.Status is "Draft" or "Rejected" && _role is "Admin" or "Clerk" or "Specialist";
+    private bool CanEdit => _document?.Status is "Draft" or "Rejected" && _role is "Admin" or "Clerk" or "Specialist"
+        && (!IsIncoming || _role is "Admin" or "Clerk");
     private bool CanOperateOcr => _role is "Admin" or "Clerk";
     private bool IsImageFile => _document?.FileContentType?.StartsWith("image/", StringComparison.Ordinal) == true;
     private IReadOnlyList<SelectOption> EditTypeOptions => _documentTypes.Select(type => new SelectOption(type.Id.ToString(), type.DisplayName)).ToList();
@@ -455,6 +521,8 @@ else
     {
         _isLoading = true;
         _document = await DocumentService.GetDocumentAsync(Id);
+        if (IsIncoming && _role == "Manager")
+            _actorDepartmentId = (await AdminService.GetUserAsync(_actorId))?.DepartmentId;
         if (_fileUrl != null) await JS.InvokeVoidAsync("documentFiles.releaseUrl", _fileUrl);
         _fileUrl = null;
         _fileError = null;
@@ -513,6 +581,41 @@ else
         finally { _isActionLoading = false; }
     }
 
+    private async Task OpenDirectionModal()
+    {
+        if (_isActionLoading || !IsIncoming || _role != "BoardOfDirectors") return;
+        _formError = null;
+        _directionDepartmentId = _directionComment = "";
+        _showDirectionModal = true;
+        try
+        {
+            var departments = await AdminService.GetDepartmentsAsync();
+            _directionDepartments = departments ?? new();
+            if (departments == null) _formError = "Không tải được đơn vị xử lý. Hãy thử lại.";
+        }
+        catch { _formError = "Không tải được đơn vị xử lý. Hãy thử lại."; }
+    }
+
+    private async Task SaveDirection()
+    {
+        if (_isActionLoading || _document == null) return;
+        if (!Guid.TryParse(_directionDepartmentId, out var departmentId) || string.IsNullOrWhiteSpace(_directionComment))
+        { _formError = "Chọn đơn vị xử lý và nhập ý kiến chỉ đạo."; return; }
+        _isActionLoading = true;
+        _formError = null;
+        try
+        {
+            await DocumentService.SignIncomingAsync(Id, "direction", new { DepartmentId = departmentId,
+                Comment = _directionComment, ExpectedVersion = _document.ConcurrencyVersion });
+            _showDirectionModal = false;
+            Toast.ShowSuccess("Đã ký chỉ đạo và chuyển đơn vị xử lý.");
+            await LoadDocument();
+        }
+        catch (HttpRequestException ex) { _formError = ex.Message; }
+        catch { _formError = "Chưa ký được chỉ đạo. Vui lòng thử lại."; }
+        finally { _isActionLoading = false; }
+    }
+
     private async Task OpenAssignModal()
     {
         _formError = null;
@@ -531,7 +634,7 @@ else
         var search = _assigneeSearch;
         try
         {
-            var result = await DocumentService.GetAssigneesAsync(search);
+            var result = await DocumentService.GetAssigneesAsync(search, IsIncoming ? _document?.ProcessingDepartmentId : null);
             if (search != _assigneeSearch) return;
             _assignees = result ?? new();
             if (result == null) _formError = "Không tải được danh sách người nhận.";
@@ -543,17 +646,22 @@ else
 
     private async Task SaveAssignment()
     {
+        if (_isActionLoading || _document == null) return;
+        if (IsIncoming && string.IsNullOrWhiteSpace(_assignComment)) { _formError = "Nhập ý kiến phân công."; return; }
         if (!Guid.TryParse(_assigneeId, out var userId) || !_assignees.Any(user => user.Id == userId))
         { _formError = "Vui lòng chọn người nhận trong danh sách."; return; }
         _isActionLoading = true;
         try
         {
-            if (!await DocumentService.AssignDocumentAsync(Id, userId, _assignComment))
+            if (IsIncoming)
+                await DocumentService.SignIncomingAsync(Id, "assignment", new { ToUserId = userId, Comment = _assignComment, ExpectedVersion = _document.ConcurrencyVersion });
+            else if (!await DocumentService.AssignDocumentAsync(Id, userId, _assignComment))
             { _formError = "Phân công thất bại. Vui lòng thử lại."; return; }
             _showAssignModal = false;
             Toast.ShowSuccess("Đã phân công xử lý.");
             await LoadDocument();
         }
+        catch (HttpRequestException ex) { _formError = ex.Message; }
         catch { _formError = "Phân công thất bại. Vui lòng thử lại."; }
         finally { _isActionLoading = false; }
     }
@@ -568,7 +676,15 @@ else
 
     private async Task ExecuteAction()
     {
+        if (_isActionLoading) return;
         _isActionLoading = true;
+        if (_currentAction == "incoming-submit" && _document != null)
+        {
+            try { await DocumentService.SubmitIncomingAsync(Id, _document.ConcurrencyVersion, _actionComment); Toast.ShowSuccess("Đã trình Ban Giám hiệu ký chỉ đạo."); }
+            catch (HttpRequestException ex) { Toast.ShowError(ex.Message); }
+            finally { _showActionModal = false; _isActionLoading = false; await LoadDocument(); }
+            return;
+        }
         if (_currentAction == "receive")
         {
             try { await DocumentService.ReceiveDocumentAsync(Id); Toast.ShowSuccess("Đã tiếp nhận chính thức công văn đến."); }
@@ -653,7 +769,8 @@ else
 
     private string GetActionModalTitle() => _currentAction switch
     {
-        "receive" => "Tiếp nhận chính thức công văn đến (sau bước này không được xóa)",
+        "receive" => "Tiếp nhận chính thức công văn đến",
+        "incoming-submit" => "Trình BGH chỉ đạo",
         "submit" => "Nộp trình duyệt",
         "dept-sign" => "Ký nháy",
         "submit-director" => "Trình BGH ký",
@@ -675,6 +792,8 @@ else
         "Receive" => "Tiếp nhận chính thức",
         "SoftDelete" => "Xóa bản nháp",
         "Restore" => "Khôi phục bản nháp",
+        "SubmitIncoming" => "Trình Ban Giám hiệu chỉ đạo",
+        "DirectIncoming" => "Ký chỉ đạo",
         "Submit" => "Nộp trình duyệt",
         "DeptSign" => "Ký nháy",
         "SubmitDirector" => "Trình BGH ký",

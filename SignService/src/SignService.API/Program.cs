@@ -26,6 +26,14 @@ builder.Host.UseSerilog();
 // Infrastructure
 // ──────────────────────────────────────────────────────────────────────────────
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient("workflow-directory", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["IdentityService:BaseUrl"] ?? "http://localhost:5048/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+builder.Services.AddScoped<IWorkflowDirectory, SignService.API.Services.WorkflowDirectory>();
+builder.Services.AddScoped<IIncomingWorkflow, SignService.Infrastructure.Services.IncomingWorkflow>();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // JWT Authentication (validate only — IdentityService issues tokens)
@@ -140,6 +148,10 @@ app.UseExceptionHandler(errApp =>
         (int statusCode, string message) = ex switch
         {
             DocumentNotFoundException => (StatusCodes.Status404NotFound, ex.Message),
+            IncomingConflictException => (StatusCodes.Status409Conflict, ex.Message),
+            DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Công văn đã thay đổi. Hãy tải lại và thử lại."),
+            IncomingAccessException => (StatusCodes.Status403Forbidden, ex.Message),
+            WorkflowDirectoryUnavailableException => (StatusCodes.Status503ServiceUnavailable, ex.Message),
             CertificateNotFoundException => (StatusCodes.Status404NotFound, ex.Message),
             CertificateExpiredException => (StatusCodes.Status422UnprocessableEntity, ex.Message),
             AlreadySignedException => (StatusCodes.Status409Conflict, ex.Message),

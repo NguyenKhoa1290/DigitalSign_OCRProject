@@ -15,6 +15,10 @@ public class DocumentDto
     public Guid? DeletedById { get; set; }
     public string? DeleteReason { get; set; }
     public DateTime? OfficiallyReceivedAt { get; set; }
+    public Guid? ProcessingDepartmentId { get; set; }
+    public string? ProcessingDepartmentName { get; set; }
+    public Guid? AssignedToId { get; set; }
+    public string? AssignedToName { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string MinioPath { get; set; } = string.Empty;
     public string? FileName { get; set; }

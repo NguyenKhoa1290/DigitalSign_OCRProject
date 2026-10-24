@@ -99,6 +99,9 @@ public class DocumentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 201)]
     public async Task<IActionResult> Create([FromBody] CreateDocumentDto dto)
     {
+        if (!User.IsInRole("Clerk") && !User.IsInRole("Admin")
+            && (await _documentService.GetDocumentTypesAsync()).Any(t => t.Id == dto.DocTypeId && t.TypeName == "CongVanDen"))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse<object>.Fail(
                 ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
@@ -145,6 +148,11 @@ public class DocumentsController : ControllerBase
     [Authorize(Roles = "Admin,Clerk,Specialist")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDocumentDto dto)
     {
+        if (!User.IsInRole("Clerk") && !User.IsInRole("Admin"))
+        {
+            if ((await _documentService.GetDocumentByIdAsync(id)).DocTypeName == "CongVanDen"
+                || (await _documentService.GetDocumentTypesAsync()).Any(t => t.Id == dto.DocTypeId && t.TypeName == "CongVanDen")) return Forbid();
+        }
         var result = await _documentService.UpdateDocumentAsync(id, dto, GetCurrentUserId());
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Đã cập nhật công văn."));
     }
@@ -215,6 +223,9 @@ public class DocumentsController : ControllerBase
             return StatusCode(StatusCodes.Status413PayloadTooLarge,
                 ApiResponse<object>.Fail("File vượt quá giới hạn 50 MB."));
 
+        if (!User.IsInRole("Clerk") && !User.IsInRole("Admin")
+            && (await _documentService.GetDocumentByIdAsync(id)).DocTypeName == "CongVanDen") return Forbid();
+
         var userId = GetCurrentUserId();
 
         using var stream = file.OpenReadStream();
@@ -272,6 +283,12 @@ public class DocumentsController : ControllerBase
         var result = await _documentService.SubmitForReviewAsync(id, userId, dto?.Comment);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Đã trình duyệt văn bản."));
     }
+
+    [HttpPost("{id:guid}/incoming-submit")]
+    [Authorize(Roles = "Clerk")]
+    public async Task<IActionResult> SubmitIncoming(Guid id, [FromBody] WorkflowActionDto dto)
+        => Ok(ApiResponse<DocumentDto>.Ok(await _documentService.SubmitIncomingAsync(id, CurrentActor(), dto.ExpectedVersion, dto.Comment),
+            "Đã trình Ban Giám hiệu ký chỉ đạo công văn đến."));
 
     /// <summary>
     /// POST /api/documents/{id}/dept-sign - Lãnh đạo phòng ký nháy (PendingDeptReview → DeptSigned)
@@ -346,7 +363,7 @@ public class DocumentsController : ControllerBase
     /// POST /api/documents/{id}/assign - Phân công xử lý văn bản
     /// </summary>
     [HttpPost("{id:guid}/assign")]
-    [Authorize(Roles = "Admin,Clerk,Manager,BoardOfDirectors")]
+    [Authorize(Roles = "Admin,Manager,BoardOfDirectors")]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> Assign(Guid id, [FromBody] WorkflowActionDto dto)

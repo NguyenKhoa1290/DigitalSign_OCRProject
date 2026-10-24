@@ -103,6 +103,10 @@ build_metadata.AdditionalFiles.CssScope = b-qvzh2rxx4c
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXENyZWF0ZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-cyyrdxj2jb
 
+[E:/DigitalSign_OCRProject/Frontend/Pages/Documents/Deleted.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXERlbGV0ZWQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-4egyuhlqi1
+
 [E:/DigitalSign_OCRProject/Frontend/Pages/Documents/Detail.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXERldGFpbC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-eo4s0izygq
@@ -158,6 +162,10 @@ build_metadata.AdditionalFiles.CssScope = b-50bx6f3t73
 [E:/DigitalSign_OCRProject/Frontend/Shared/DepartmentAssignmentPicker.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERlcGFydG1lbnRBc3NpZ25tZW50UGlja2VyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = b-szu893nhvk
+
+[E:/DigitalSign_OCRProject/Frontend/Shared/DocumentDeletionDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXERvY3VtZW50RGVsZXRpb25EaWFsb2cucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-zzbzwbvsud
 
 [E:/DigitalSign_OCRProject/Frontend/Shared/EventJournal.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEV2ZW50Sm91cm5hbC5yYXpvcg==

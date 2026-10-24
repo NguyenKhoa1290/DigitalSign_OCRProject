@@ -42,6 +42,8 @@ public class SignService : ISignService
 
     public async Task<SignResultDto> LegalSealAsync(SignRequestDto request)
     {
+        if (await _documentFileRepository.IsIncomingAsync(request.DocId))
+            throw new IncomingConflictException("Công văn đến dùng ký chỉ đạo và ký phân công, không dùng ký pháp nhân của chiều đi.");
         // Yêu cầu phải có PersonalSignature trước
         bool hasPersonal = await _signatureRepo.HasSignatureAsync(request.DocId, SignatureType.PersonalSignature);
         if (!hasPersonal)
@@ -52,6 +54,8 @@ public class SignService : ISignService
 
     private async Task<SignResultDto> SignInternalAsync(SignRequestDto request, string signatureType, string? requireExisting)
     {
+        if (await _documentFileRepository.IsIncomingAsync(request.DocId))
+            throw new IncomingConflictException("Công văn đến dùng ký chỉ đạo và ký phân công, không dùng ký nháy của chiều đi.");
         _logger.LogInformation("Bắt đầu ký {Type} cho văn bản {DocId} bởi {SignerId}",
             signatureType, request.DocId, request.SignerId);
 
@@ -158,6 +162,8 @@ public class SignService : ISignService
             TotalSignatures = pdfVerifyResult.SignatureCount,
             HasPersonalSignature = hasPersonal,
             HasLegalSeal = hasLegalSeal,
+            HasIncomingDirectionSignature = dbSignatures.Any(s => s.SignatureType == SignatureType.IncomingDirection),
+            HasIncomingAssignmentSignature = dbSignatures.Any(s => s.SignatureType == SignatureType.IncomingAssignment),
             Signatures = verifyInfoList
         };
     }
@@ -230,6 +236,8 @@ public class SignService : ISignService
     {
         SignatureType.PersonalSignature => "Ký nháy (Lãnh đạo Phòng)",
         SignatureType.LegalSeal => "Ký pháp nhân (Ban Giám hiệu)",
+        SignatureType.IncomingDirection => "Ký chỉ đạo (Ban Giám hiệu)",
+        SignatureType.IncomingAssignment => "Ký phân công (Lãnh đạo phòng)",
         _ => signatureType
     };
 

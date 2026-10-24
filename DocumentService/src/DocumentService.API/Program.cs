@@ -179,6 +179,8 @@ try
                 (int statusCode, string message) = ex switch
                 {
                     DocumentNotFoundException => (404, ex.Message),
+                    DocumentConflictException => (409, ex.Message),
+                    DbUpdateConcurrencyException => (409, "Công văn đã thay đổi. Hãy tải lại và thử lại."),
                     InvalidWorkflowTransitionException => (422, ex.Message),
                     UnauthorizedDocumentAccessException => (403, ex.Message),
                     DocumentServiceException => (400, ex.Message),

@@ -17,6 +17,11 @@ public class DocumentDto
     public string? CreatedByName { get; set; }
     public Guid? CreatedById { get; set; }
     public bool CanDeleteDraft { get; set; }
+    public Guid ConcurrencyVersion { get; set; }
+    public Guid? ProcessingDepartmentId { get; set; }
+    public string? ProcessingDepartmentName { get; set; }
+    public Guid? AssignedToId { get; set; }
+    public string? AssignedToName { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public Guid? DeletedById { get; set; }

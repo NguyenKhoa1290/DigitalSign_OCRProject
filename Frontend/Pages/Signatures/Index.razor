@@ -222,11 +222,11 @@ else
     private string _signComment = "";
 
     private bool CanPersonalSign =>
-        _document != null &&
+        _document != null && _document.DocTypeName != "CongVanDen" &&
         ((_role == "Manager" && _document.Status == "PendingDeptReview") || _role == "Admin");
 
     private bool CanLegalSeal =>
-        _document != null &&
+        _document != null && _document.DocTypeName != "CongVanDen" &&
         ((_role == "BoardOfDirectors" && (_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned")) ||
          _role == "Admin");
 

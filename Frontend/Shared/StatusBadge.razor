@@ -4,6 +4,9 @@
     private (string CssClass, string Label) GetBadgeInfo() => Status switch
     {
         "Draft" => ("badge badge-gray", "Nháp"),
+        "PendingDirection" => ("badge badge-yellow", "Chờ BGH ký chỉ đạo"),
+        "PendingAssignment" => ("badge badge-blue", "Chờ ký phân công"),
+        "IncomingAssigned" => ("badge badge-green", "Đã phân công xử lý"),
         "PendingDeptReview" => ("badge badge-yellow", "Chờ duyệt phòng"),
         "DeptSigned" => ("badge badge-blue", "Đã ký nháy"),
         "PendingDirectorSign" => ("badge badge-orange", "Chờ BGH ký"),

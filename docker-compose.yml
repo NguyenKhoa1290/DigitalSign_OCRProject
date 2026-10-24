@@ -164,6 +164,7 @@ services:
     container_name: hau_sign_service
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
+      IdentityService__BaseUrl: http://identity-service:8080/
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-DigitalSign_OCR};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-1111};SSL Mode=Disable"
       JwtSettings__Key: ${JWT_SECRET_KEY:-HAU-IdentityService-SuperSecret-Key-2024-MustBe32CharsOrMore!!}

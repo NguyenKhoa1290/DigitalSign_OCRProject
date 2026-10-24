@@ -108,6 +108,9 @@ public class DocumentRepository : IDocumentRepository
             _context.Entry(document).Property(d => d.FirstSubmittedAt).IsModified = false;
         foreach (var property in new[] { nameof(Document.CreatedById), nameof(Document.CreatedAt),
             nameof(Document.DeletionEligibilityConfirmed), nameof(Document.FirstAssignedAt),
+            nameof(Document.ProcessingDepartmentId), nameof(Document.ProcessingDepartmentName),
+            nameof(Document.AssignedToId), nameof(Document.AssignedToName),
+            nameof(Document.IncomingOriginalPath), nameof(Document.IncomingDirectionPath),
             nameof(Document.OfficiallyReceivedAt), nameof(Document.SigningStartedAt), nameof(Document.IsDeleted),
             nameof(Document.DeletedAt), nameof(Document.DeletedById), nameof(Document.DeleteReason) })
             _context.Entry(document).Property(property).IsModified = false;
@@ -219,6 +222,37 @@ public class DocumentRepository : IDocumentRepository
         await transaction.CommitAsync();
     }
 
+    public async Task SubmitIncomingAsync(Guid id, Guid actorId, Guid expectedVersion, string? comment)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await LockAsync(id);
+        var document = await _context.Documents.Include(d => d.DocType).SingleOrDefaultAsync(d => d.Id == id)
+            ?? throw new DocumentNotFoundException(id);
+        if (document.DocType?.TypeName != "CongVanDen" || document.Status != DocumentStatus.Draft)
+            throw new DocumentConflictException("Chỉ trình chỉ đạo công văn đến đang ở trạng thái Nháp.");
+        if (expectedVersion == Guid.Empty || expectedVersion != document.ConcurrencyVersion)
+            throw new DocumentConflictException("Công văn đã thay đổi. Hãy tải lại trước khi trình chỉ đạo.");
+        if (await _context.SignatureEvidence.AnyAsync(s => s.DocId == id))
+            throw new DocumentConflictException("Hồ sơ đang Nháp nhưng đã có bằng chứng ký theo quy trình cũ. Cần đối soát trước khi trình lại.");
+        if (!document.MinioPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            throw new DocumentServiceException("Cần tải bản PDF để lãnh đạo ký chỉ đạo và ký phân công. Ảnh vẫn có thể dùng để OCR.");
+        if (comment?.Length > 1000) throw new DocumentServiceException("Ghi chú tối đa 1000 ký tự.");
+        var now = DateTime.UtcNow;
+        if (!document.OfficiallyReceivedAt.HasValue)
+        {
+            document.OfficiallyReceivedAt = now;
+            _context.DocumentProcesses.Add(new DocumentProcess { Id = Guid.NewGuid(), DocId = id, FromUserId = actorId,
+                Action = DocumentAction.Receive, Timestamp = now, Comment = "Tiếp nhận công văn đến trước khi trình Ban Giám hiệu." });
+        }
+        document.Status = DocumentStatus.PendingDirection;
+        document.FirstSubmittedAt ??= now.AddTicks(10);
+        document.ConcurrencyVersion = Guid.NewGuid();
+        _context.DocumentProcesses.Add(new DocumentProcess { Id = Guid.NewGuid(), DocId = id, FromUserId = actorId,
+            Action = "SubmitIncoming", Timestamp = now.AddTicks(10), Comment = string.IsNullOrWhiteSpace(comment) ? "Trình Ban Giám hiệu ký chỉ đạo công văn đến." : comment.Trim() });
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+    }
+
     public async Task<bool> ExistsAsync(Guid id)
     {
         return await _context.Documents.AnyAsync(d => d.Id == id);
@@ -241,12 +275,14 @@ public class DocumentRepository : IDocumentRepository
             TotalDocuments = group.Count(),
             TodayDocuments = group.Count(d => d.CreatedAt >= todayStartUtc && d.CreatedAt < tomorrowStartUtc),
             PendingDocuments = group.Count(d => d.Status == DocumentStatus.PendingDeptReview || d.Status == DocumentStatus.DeptSigned
-                || d.Status == DocumentStatus.PendingDirectorSign || d.Status == DocumentStatus.DirectorSigned),
+                || d.Status == DocumentStatus.PendingDirectorSign || d.Status == DocumentStatus.DirectorSigned
+                || d.Status == DocumentStatus.PendingDirection || d.Status == DocumentStatus.PendingAssignment || d.Status == DocumentStatus.IncomingAssigned),
             PublishedDocuments = group.Count(d => d.Status == DocumentStatus.Published),
             PendingOcrDocuments = group.Count(d => d.MinioPath.Trim() != "" && d.OcrDataRaw == null),
             MyDraftDocuments = group.Count(d => d.Status == DocumentStatus.Draft && d.CreatedBy == userId),
             MyPendingDocuments = group.Count(d => d.CreatedBy == userId && (d.Status == DocumentStatus.PendingDeptReview
-                || d.Status == DocumentStatus.DeptSigned || d.Status == DocumentStatus.PendingDirectorSign)),
+                || d.Status == DocumentStatus.DeptSigned || d.Status == DocumentStatus.PendingDirectorSign
+                || d.Status == DocumentStatus.PendingDirection || d.Status == DocumentStatus.PendingAssignment || d.Status == DocumentStatus.IncomingAssigned)),
             PendingDeptDocuments = group.Count(d => d.Status == DocumentStatus.PendingDeptReview),
             PendingDirectorDocuments = group.Count(d => d.Status == DocumentStatus.PendingDirectorSign),
             DirectorSignedDocuments = group.Count(d => d.Status == DocumentStatus.DirectorSigned || d.Status == DocumentStatus.Published),

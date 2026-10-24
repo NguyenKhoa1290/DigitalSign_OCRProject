@@ -1,9 +1,35 @@
+.search-box {
+    isolation: isolate;
+}
+
+.search-box-icon {
+    z-index: 1;
+}
+
 .actions-heading {
     text-align: right;
 }
 
 .user-modal {
     overflow: visible;
+}
+
+.user-form-fields {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.user-form-error {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-surface);
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 @media (min-width: 1201px) and (min-height: 651px) {

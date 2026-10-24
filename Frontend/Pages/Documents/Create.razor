@@ -1,6 +1,7 @@
 @page "/documents/create"
 @attribute [Authorize(Roles = "Clerk,Specialist")]
 @inject DocumentService DocumentService
+@inject AuthService AuthService
 @inject NavigationManager NavManager
 @inject IToastService Toast
 @inject IJSRuntime JS
@@ -151,6 +152,8 @@
     protected override async Task OnInitializedAsync()
     {
         _documentTypes = await DocumentService.GetDocumentTypesAsync();
+        if (await AuthService.GetRoleAsync() == "Specialist")
+            _documentTypes = _documentTypes?.Where(type => type.TypeName != "CongVanDen").ToList();
     }
 
     private async Task HandleCreate()

@@ -26,6 +26,7 @@ DECLARE
  event_message text;
  event_action text;
  recipient_role text;
+ recipient_department uuid;
 BEGIN
  SELECT "Status" INTO doc_status FROM "Documents" WHERE "Id"=NEW."DocId";
  SELECT "FromUserId" INTO creator FROM "DocumentProcesses"
@@ -37,6 +38,11 @@ BEGIN
 
  IF NEW."Action"='Assign' THEN
    event_kind := 'Assignment'; event_message := 'Bạn được phân công xử lý công văn.';
+ ELSIF NEW."Action"='SubmitIncoming' THEN
+   event_kind := 'ReviewRequested'; event_message := 'Có công văn đến chờ Ban Giám hiệu ký chỉ đạo.'; recipient_role := 'BoardOfDirectors';
+ ELSIF NEW."Action"='DirectIncoming' THEN
+   event_kind := 'ReviewRequested'; event_message := 'Có công văn đến đã ký chỉ đạo, chờ phân công chuyên viên.'; recipient_role := 'Manager';
+   SELECT "ProcessingDepartmentId" INTO recipient_department FROM "Documents" WHERE "Id"=NEW."DocId";
  ELSIF NEW."Action"='Submit' AND doc_status='PendingDeptReview' THEN
    event_kind := 'ReviewRequested'; event_message := 'Có công văn đang chờ ký nháy.'; recipient_role := 'Manager';
  ELSIF NEW."Action"='SubmitDirector' THEN
@@ -57,7 +63,7 @@ BEGIN
    '/documents/'||NEW."DocId"::text,NEW."DocId",NEW."Timestamp"
  FROM "AppUsers" u WHERE u."IsActive" AND (
    (NEW."Action"='Assign' AND u."Id"=NEW."ToUserId") OR
-   (recipient_role IS NOT NULL AND EXISTS (
+   (recipient_role IS NOT NULL AND (recipient_department IS NULL OR u."DepartmentId"=recipient_department) AND EXISTS (
      SELECT 1 FROM "AppUserRoles" ur JOIN "AppRoles" r ON r."Id"=ur."RoleId"
      WHERE ur."UserId"=u."Id" AND r."RoleName"=recipient_role)) OR
    (recipient_role IS NULL AND NEW."Action"<>'Assign' AND u."Id"=creator) OR

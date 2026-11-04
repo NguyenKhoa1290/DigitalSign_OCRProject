@@ -127,7 +127,7 @@
                                 </div>
                                 <div class="sig-info">
                                     <div class="sig-name">@GetSignatureSignerText(sig)</div>
-                                    <div class="sig-meta">@GetSignatureTypeText(sig) • @sig.SignedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="sig-meta">@GetSignatureTypeText(sig) • @VietnamTime.Format(sig.SignedAt)</div>
                                     @if (!string.IsNullOrEmpty(sig.CertificateSubject))
                                     {
                                         <div class="sig-meta">@sig.CertificateSubject</div>

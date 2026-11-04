@@ -103,20 +103,31 @@ export class GlassRenderer {
   }
 
   resize(rect, dark, direction, blue = false) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const sizeChanged = this.width !== rect.width || this.dpr !== dpr;
+    const labelsChanged = sizeChanged || this.dark !== dark || this.blue !== blue
+      || this.direction !== direction || this.renderedCount !== this.count;
     this.width = rect.width;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = dpr;
     this.rect = rect;
     this.dark = dark;
     this.blue = blue;
     this.direction = direction;
-    this.canvas.width = Math.round((this.width + PADDING * 2) * this.dpr);
-    this.canvas.height = Math.round((64 + PADDING * 2) * this.dpr);
-    this.canvas.style.width = `${this.width + PADDING * 2}px`;
-    this.canvas.style.height = `${64 + PADDING * 2}px`;
-    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    // Assigning even the same canvas dimensions clears its drawing buffer. Mobile
+    // browser chrome emits resize events while scrolling; update position only then.
+    if (sizeChanged) {
+      this.canvas.width = Math.round((this.width + PADDING * 2) * this.dpr);
+      this.canvas.height = Math.round((64 + PADDING * 2) * this.dpr);
+      this.canvas.style.width = `${this.width + PADDING * 2}px`;
+      this.canvas.style.height = `${64 + PADDING * 2}px`;
+      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    }
     this.viewport = [window.innerWidth, window.innerHeight];
-    this.makeLabels(1, dark || blue ? '#eaf7ff' : '#000000');
-    this.makeLabels(2, blue ? '#aee8ff' : '#0088ff');
+    if (labelsChanged) {
+      this.makeLabels(1, dark || blue ? '#eaf7ff' : '#000000');
+      this.makeLabels(2, blue ? '#aee8ff' : '#0088ff');
+      this.renderedCount = this.count;
+    }
     this.refreshBackdrop();
   }
 
@@ -159,12 +170,22 @@ export class GlassRenderer {
   }
 
   refreshBackdrop(source = this.backdropSource) {
+    // A shared texture stays valid when only the taskbar position/viewport height
+    // changes. Re-upload only when its source or pixel dimensions change.
+    // Keep the existing CSS-pixel texture budget, rather than duplicating the
+    // shared canvas's device-pixel resolution on high-DPI phones.
+    const dimensions = source
+      ? [this.viewport[0], this.viewport[0] * source.height / source.width]
+      : this.viewport;
+    const key = dimensions.join(':');
+    if (this.backdropSource === source && this.backdropKey === key) return;
     this.backdropSource = source;
+    this.backdropKey = key;
     const canvas = document.createElement('canvas');
     // Background capture is shared across the panel and selection lens, never recursive.
-    const scale = Math.min(1, 2048 / Math.max(...this.viewport));
-    canvas.width = Math.max(1, Math.round(this.viewport[0] * scale));
-    canvas.height = Math.max(1, Math.round(this.viewport[1] * scale));
+    const scale = Math.min(1, 2048 / Math.max(...dimensions));
+    canvas.width = Math.max(1, Math.round(dimensions[0] * scale));
+    canvas.height = Math.max(1, Math.round(dimensions[1] * scale));
     const ctx = canvas.getContext('2d');
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, '#9ad7ff');

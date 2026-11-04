@@ -13,7 +13,10 @@
 
 .gemini-scan-form .form-group {
     margin-bottom: 0;
+    min-width: 0;
 }
+.gemini-scan-form ::deep input[type="file"] { width: 100%; max-width: 100%; min-width: 0; }
+.gemini-ocr-dialog .modal-footer .btn { max-width: 100%; min-width: 0; white-space: normal; }
 
 .gemini-selected-file {
     display: block;

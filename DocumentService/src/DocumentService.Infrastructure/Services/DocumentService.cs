@@ -4,6 +4,7 @@ using DocumentService.Core.Entities;
 using DocumentService.Core.Exceptions;
 using DocumentService.Core.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Text.Json.Nodes;
 
 namespace DocumentService.Infrastructure.Services;
 
@@ -88,6 +89,20 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id)
             ?? throw new DocumentNotFoundException(id);
+        return await UpdateDocumentCoreAsync(document, dto, userId);
+    }
+
+    public async Task<DocumentDto> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto, DocumentActor actor)
+    {
+        var document = await _documentRepository.GetByIdAsync(id) ?? throw new DocumentNotFoundException(id);
+        if (!DocumentWorkflowAccess.CanAuthor(document.DocType?.TypeName, document.CreatedById, actor))
+            throw new UnauthorizedDocumentAccessException();
+        return await UpdateDocumentCoreAsync(document, dto, actor.UserId);
+    }
+
+    private async Task<DocumentDto> UpdateDocumentCoreAsync(Document document, UpdateDocumentDto dto, Guid userId)
+    {
+        var id = document.Id;
         if (document.Status != DocumentStatus.Draft && document.Status != DocumentStatus.Rejected)
             throw new InvalidWorkflowTransitionException(document.Status, "Update (chỉ sửa Draft hoặc Rejected)");
         if (document.DocType?.TypeName == "CongVanDen" && document.OfficiallyReceivedAt.HasValue && dto.DocTypeId != document.DocTypeId)
@@ -208,10 +223,26 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        return await UploadFileCoreAsync(document, fileStream, fileName, contentType, userId);
+    }
+
+    public async Task<DocumentDto> UploadFileAsync(Guid id, Stream fileStream, string fileName, string contentType, DocumentActor actor)
+    {
+        var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false) ?? throw new DocumentNotFoundException(id);
+        if (!DocumentWorkflowAccess.CanAuthor(document.DocType?.TypeName, document.CreatedById, actor))
+            throw new UnauthorizedDocumentAccessException();
+        return await UploadFileCoreAsync(document, fileStream, fileName, contentType, actor.UserId);
+    }
+
+    private async Task<DocumentDto> UploadFileCoreAsync(Document document, Stream fileStream, string fileName, string contentType, Guid userId)
+    {
+        var id = document.Id;
 
         var originalFileName = Path.GetFileName(fileName.Replace('\\', '/'));
         if (document.DocType?.TypeName == "CongVanDen" && document.Status != DocumentStatus.Draft)
             throw new DocumentConflictException("Không thay tệp công văn đến đã trình chỉ đạo hoặc đã ký.");
+        if (document.Status is not (DocumentStatus.Draft or DocumentStatus.Rejected))
+            throw new DocumentConflictException("Chỉ thay tệp khi công văn còn nháp hoặc được trả lại để sửa.");
         if (string.IsNullOrWhiteSpace(originalFileName) || originalFileName.Length > 255
             || originalFileName.Any(char.IsControl))
             throw new DocumentServiceException("Tên file không hợp lệ hoặc dài quá 255 ký tự.");
@@ -225,11 +256,11 @@ public class DocumentService : IDocumentService
         var oldPath = document.MinioPath;
         var newPath = $"{BucketName}/{storedFileName}";
         // On a database exception, keep both objects: the commit outcome may be unknown.
-        var replaced = await _documentRepository.ReplaceFileAsync(id, oldPath, newPath, originalFileName);
+        var replaced = await _documentRepository.ReplaceFileAsync(id, oldPath, newPath, originalFileName, document.ConcurrencyVersion);
         if (!replaced)
         {
             await DeleteFileWithRetryAsync(storedFileName);
-            throw new DocumentServiceException("Công văn đã thay đổi trong khi tải PDF. Hãy mở lại và thử tải lên.");
+            throw new DocumentConflictException("Công văn đã thay đổi trong khi tải tệp. Hãy mở lại và thử tải lên.");
         }
         document.MinioPath = newPath;
         document.FileName = originalFileName;
@@ -238,15 +269,8 @@ public class DocumentService : IDocumentService
 
         _logger.LogInformation("Upload file cho văn bản ID={Id}, path={Path}", id, document.MinioPath);
 
-        // 3. Đẩy event lên Kafka → OCR Service tự động xử lý (bất đồng bộ)
-        //    - Không throw nếu Kafka lỗi (upload vẫn thành công)
-        //    - minioPath chỉ là objectName (không có bucket prefix) cho OCR Service
-        // Word is an edited draft, not an OCR input. Do not queue it for Paddle.
-        if (!originalFileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
-        await _kafkaProducer.PublishDocumentUploadedAsync(
-            docId:     document.Id,
-            minioPath: storedFileName,          // objectName trên MinIO
-            authToken: string.Empty);           // token sẽ được OCR Service lấy riêng
+        // Upload only saves the source. OCR requires an explicit model/page selection
+        // through OcrJobs; never publish the legacy automatic Paddle command.
 
         var full = await _documentRepository.GetByIdAsync(document.Id, includeProcesses: true)
                    ?? document;
@@ -299,7 +323,12 @@ public class DocumentService : IDocumentService
             document.IssuedDate = dto.IssuedDate;
 
         if (dto.OcrDataRaw is not null)
-            document.OcrDataRaw = dto.OcrDataRaw;
+        {
+            var raw = JsonNode.Parse(dto.OcrDataRaw);
+            document.OcrDataRaw = raw is JsonObject incoming
+                ? OcrEditMetadata.Protect(incoming, JsonNode.Parse(document.OcrDataRaw ?? "null"), document.MinioPath).ToJsonString()
+                : dto.OcrDataRaw;
+        }
 
         var updated = await _documentRepository.UpdateAsync(document);
 
@@ -330,7 +359,7 @@ public class DocumentService : IDocumentService
             ?? throw new DocumentNotFoundException(id);
         RequireOutgoingWorkflow(document);
 
-        if (document.Status != DocumentStatus.Draft)
+        if (document.Status is not (DocumentStatus.Draft or DocumentStatus.Rejected))
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.PendingDeptReview);
 
         document.Status = DocumentStatus.PendingDeptReview;

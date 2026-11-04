@@ -13,6 +13,7 @@ async function check(browser, role, width) {
       role, exp: Math.floor(Date.now()/1000) + 3600 })).toString('base64url'), 'fixture'].join('.');
   await context.addInitScript(token => localStorage.setItem('auth_token', token), token);
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     assert.equal(route.request().method(), 'GET', 'No live creation or uploads');
     assert.equal(new URL(route.request().url()).pathname, '/api/documents/types');
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data: types }) });

@@ -19,6 +19,8 @@ async function check(browser, width) {
   }, token);
   let document, uploads = 0, ocrCalls = 0, exports = 0;
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
+    if (new URL(route.request().url()).pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     const req = route.request(), url = new URL(req.url()); let data;
     if (req.method() === 'GET' && url.pathname === '/api/documents/types') data = [{ id: typeId, typeName: 'CongVanDen' }];
     else if (req.method() === 'POST' && url.pathname === '/api/documents') {

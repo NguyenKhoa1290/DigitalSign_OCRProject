@@ -10,19 +10,21 @@ async function check(browser, width, issuedDate, failUpload) {
   const token = [Buffer.from('{"alg":"none"}').toString('base64url'), Buffer.from(JSON.stringify({
     sub: 'cccccccc-0000-0000-0000-000000000001', name: 'Fixture specialist', role: 'Specialist',
     exp: Math.floor(Date.now()/1000) + 3600 })).toString('base64url'), 'fixture'].join('.');
-  await context.addInitScript(token => localStorage.setItem('auth_token', token), token);
+  await context.addInitScript(token => { if (window === window.top) localStorage.setItem('auth_token', token); }, token);
   let document, creates = 0, uploads = 0;
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
+    if (new URL(route.request().url()).pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     const req = route.request(), url = new URL(req.url()); let data, status = 200;
     if (req.method() === 'GET' && url.pathname === '/api/documents/types')
-      data = [{ id: typeId, typeName: 'CongVanDen' }];
+      data = [{ id: typeId, typeName: 'CongVanDi' }];
     else if (req.method() === 'POST' && url.pathname === '/api/documents') {
       creates++;
       const body = req.postDataJSON();
       assert.equal(body.IssuedDate, issuedDate);
       assert(!body.DocNumber, 'Document number is optional during creation');
       document = { id: docId, title: body.Title, docNumber: null, issuedDate, docTypeId: typeId,
-        docTypeName: 'CongVanDen', status: 'Draft', statusDisplay: 'Nháp', minioPath: '',
+        docTypeName: 'CongVanDi', status: 'Draft', statusDisplay: 'Nháp', minioPath: '',
         createdAt: '2026-10-14T09:10:41Z', updatedAt: '2026-10-14T09:10:41Z', processes: [] };
       data = document; status = 201;
     } else if (req.method() === 'POST' && url.pathname === `/api/documents/${docId}/upload`) {
@@ -46,7 +48,7 @@ async function check(browser, width, issuedDate, failUpload) {
   await page.locator('input[placeholder="Nhập tiêu đề công văn..."]').fill('Fixture optional metadata');
   if (issuedDate) { await page.locator('input[type="date"]').fill(issuedDate); await page.locator('input[type="date"]').press('Tab'); }
   await page.locator('#document-type-select').click();
-  await page.getByRole('option', { name: 'Công văn đến', exact: true }).click();
+  await page.getByRole('option', { name: 'Công văn đi', exact: true }).click();
   const largePdf = Buffer.alloc(9 * 1024 * 1024, 32); pdf.copy(largePdf);
   await page.locator('input[type="file"]').setInputFiles({ name: 'fixture.pdf', mimeType: 'application/pdf', buffer: largePdf });
   await page.getByText('File sẵn sàng tải lên', { exact: true }).waitFor();

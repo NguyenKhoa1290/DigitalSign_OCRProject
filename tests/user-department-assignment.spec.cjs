@@ -26,6 +26,7 @@ async function check(browser, viewport) {
   page.setDefaultTimeout(15000);
   let users = [], departmentFailure = false, emptyDepartments = false;
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     const req = route.request(), url = new URL(req.url()), method = req.method();
     const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*',
       'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS' };

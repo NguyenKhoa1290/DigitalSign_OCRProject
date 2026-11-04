@@ -28,6 +28,8 @@ try
         ?? "Host=localhost;Port=5432;Database=DigitalSign_OCR;Username=postgres;Password=1111;SSL Mode=Disable") { Timeout = 3 };
     builder.Services.AddSingleton(NpgsqlDataSource.Create(monitoringConnection.ConnectionString));
     builder.Services.AddSingleton<EventStore>();
+    builder.Services.AddSingleton<NotificationSignals>();
+    builder.Services.AddHostedService<NotificationListener>();
     builder.Services.AddControllers();
     builder.Services.AddHttpClient("notification-certificates",client =>
     {

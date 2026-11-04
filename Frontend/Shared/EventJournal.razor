@@ -24,7 +24,7 @@ else if (_data != null)
         <article class="card journal-entry">
             <div class="card-body">
                 <div class="journal-entry-top"><strong>@entry.Service · @ActionLabel(entry.Action)</strong><span class="badge">@entry.Level · @(entry.Method == "" ? "Thành công" : $"HTTP {entry.StatusCode}")</span></div>
-                <p>@entry.Timestamp.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss") · @(entry.ActorName ?? entry.ActorId?.ToString() ?? "Không xác định")</p>
+                <p>@VietnamTime.Format(entry.Timestamp, "dd/MM/yyyy HH:mm:ss") · @(entry.ActorName ?? entry.ActorId?.ToString() ?? "Không xác định")</p>
                 @if (entry.Path != "") { <p class="journal-path">@entry.Method @entry.Path · @entry.ElapsedMs.ToString("F1") ms</p> }
                 @if (entry.ResourceId.HasValue) { <p>Đối tượng: @entry.ResourceId</p> }
                 <p class="journal-trace">Trace ID: @entry.TraceId</p>
@@ -67,7 +67,7 @@ else if (_data != null)
     private Task Next() {_page++;return Load();}
     private static string ActionLabel(string action)=>action switch
     {
-        "Create"=>"Tạo công văn", "Update"=>"Sửa công văn", "Submit"=>"Trình duyệt", "Assign"=>"Phân công", "UpdateOCR"=>"Cập nhật OCR", "Cancel"=>"Hủy công văn", "PurgeDocument"=>"Xóa vĩnh viễn công văn",
+        "Create"=>"Tạo công văn", "Update"=>"Sửa công văn", "Submit"=>"Trình duyệt", "Assign"=>"Phân công", "UpdateOCR"=>"Cập nhật OCR", "GeminiOcrCompleted"=>"OCR Gemini hoàn tất", "OcrEdited"=>"Hiệu chỉnh kết quả OCR", "Cancel"=>"Hủy công văn", "PurgeDocument"=>"Xóa vĩnh viễn công văn",
         "DeptSign"=>"Ký nháy", "SubmitDirector"=>"Trình BGH", "DirectorSign"=>"Ký pháp nhân", "Reject"=>"Từ chối", "Publish"=>"Phát hành", "UploadDocument"=>"Tải PDF lên",
         "Login"=>"Đăng nhập", "Logout"=>"Đăng xuất", "Request"=>"Truy cập API", "Startup"=>"Khởi tạo Gateway", "IssueCertificate"=>"Cấp chứng thư", "RevokeCertificate"=>"Thu hồi chứng thư",
         _=>action

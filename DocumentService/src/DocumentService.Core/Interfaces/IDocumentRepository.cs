@@ -10,7 +10,7 @@ public interface IDocumentRepository
     Task<(IEnumerable<Document> Documents, int Total)> GetAllAsync(DocumentQueryParams query);
     Task<Document> CreateAsync(Document document);
     Task<Document> UpdateAsync(Document document);
-    Task<bool> ReplaceFileAsync(Guid id, string expectedPath, string newPath, string fileName);
+    Task<bool> ReplaceFileAsync(Guid id, string expectedPath, string newPath, string fileName, Guid expectedVersion);
     Task<Document?> GetIncludingDeletedAsync(Guid id);
     Task<(IEnumerable<Document> Documents, int Total)> GetDeletedAsync(DocumentQueryParams query);
     Task SetDeletedAsync(Guid id, DocumentActor actor, string? reason, bool deleted);

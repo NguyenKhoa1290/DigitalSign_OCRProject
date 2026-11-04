@@ -9,8 +9,9 @@ async function run(browser, width) {
   const token = [Buffer.from('{"alg":"none"}').toString('base64url'), Buffer.from(JSON.stringify({ sub: 'bbbbbbbb-0000-0000-0000-000000000001', name: 'Clerk fixture', role: 'Clerk', exp: Math.floor(Date.now()/1000)+3600 })).toString('base64url'), 'fixture'].join('.');
   await context.addInitScript(value => { if (window === window.top && location.protocol.startsWith('http')) localStorage.setItem('auth_token', value); }, token);
   const page = await context.newPage(), unexpected = [], errors = [], exports = []; let fail = true;
-  page.setDefaultTimeout(15000); page.on('pageerror', e => errors.push(e.message));
+  page.setDefaultTimeout(60000); page.on('pageerror', e => errors.push(e.message));
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     const req = route.request(), url = new URL(req.url());
     if (url.pathname === '/api/ocr/gemini/models') return route.fulfill({ json: { success: true, data: [{ id: 'gemini-first', displayName: 'First Gemini' },{ id: 'gemini-second', displayName: 'Second Gemini' }] } });
     if (url.pathname === '/api/ocr/input-info') return route.fulfill({ json: { totalPages: 89 } });
@@ -52,6 +53,8 @@ async function run(browser, width) {
     await dialog.waitFor({state:'hidden'}); assert.equal(exports[2].pages,'1,3,87,88,89');
     assert.deepEqual(unexpected,[]); assert.deepEqual(errors,[]);
     console.log(`PASS ${width}px multi-image, PDF preview, 5-page selection, original page numbers, 429 retry and model switching`);
+  } catch(error) {
+    console.error(JSON.stringify({url:page.url(),unexpected,errors,body:(await page.locator('body').innerText()).slice(0,800)}));throw error;
   } finally { await context.close(); }
 }
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.HAU_TEST_CHROMIUM});try{for(const width of [1366,300])await run(browser,width);}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -35,6 +35,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XEVtcHR5TGF5b3V0LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[E:/DigitalSign_OCRProject/Frontend/Pages/Documents/GeminiOcrScan.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEdlbWluaU9jclNjYW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/DigitalSign_OCRProject/Frontend/Pages/Documents/OcrResult.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXE9jclJlc3VsdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [E:/DigitalSign_OCRProject/Frontend/Shared/ConfirmDialog.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXENvbmZpcm1EaWFsb2cucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
@@ -115,17 +123,9 @@ build_metadata.AdditionalFiles.CssScope = b-4egyuhlqi1
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXERldGFpbC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-eo4s0izygq
 
-[E:/DigitalSign_OCRProject/Frontend/Pages/Documents/GeminiOcrScan.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEdlbWluaU9jclNjYW4ucmF6b3I=
-build_metadata.AdditionalFiles.CssScope = b-1047pwfhxs
-
 [E:/DigitalSign_OCRProject/Frontend/Pages/Documents/Index.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXEluZGV4LnJhem9y
 build_metadata.AdditionalFiles.CssScope = b-d8mo7dzw3u
-
-[E:/DigitalSign_OCRProject/Frontend/Pages/Documents/OcrResult.razor]
-build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRG9jdW1lbnRzXE9jclJlc3VsdC5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = b-oq8bwp72ju
 
 [E:/DigitalSign_OCRProject/Frontend/Pages/FirstLogin.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRmlyc3RMb2dpbi5yYXpvcg==
@@ -174,3 +174,23 @@ build_metadata.AdditionalFiles.CssScope = b-zzbzwbvsud
 [E:/DigitalSign_OCRProject/Frontend/Shared/EventJournal.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEV2ZW50Sm91cm5hbC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-4hnpj70mj3
+
+[E:/DigitalSign_OCRProject/Frontend/Shared/GeminiLayoutBlock.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEdlbWluaUxheW91dEJsb2NrLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-0c3hsuhdpk
+
+[E:/DigitalSign_OCRProject/Frontend/Shared/GeminiOcrPanel.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEdlbWluaU9jclBhbmVsLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-wywqwzf8ox
+
+[E:/DigitalSign_OCRProject/Frontend/Shared/GeminiOcrResultView.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEdlbWluaU9jclJlc3VsdFZpZXcucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-b690bkax79
+
+[E:/DigitalSign_OCRProject/Frontend/Shared/NotificationBell.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXE5vdGlmaWNhdGlvbkJlbGwucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-mjljfc52zf
+
+[E:/DigitalSign_OCRProject/Frontend/Shared/UploadProgressToast.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXFVwbG9hZFByb2dyZXNzVG9hc3QucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-memccp2b67

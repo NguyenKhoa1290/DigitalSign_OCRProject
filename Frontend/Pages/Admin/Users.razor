@@ -91,7 +91,7 @@ else
                             else
                             { <span class="badge badge-gray">Vô hiệu</span> }
                         </td>
-                        <td>@user.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td>@VietnamTime.Format(user.CreatedAt, "dd/MM/yyyy")</td>
                         <td class="actions-column actions-cell">
                             <div class="row-actions">
                                 <button type="button" class="row-action-trigger"
@@ -152,7 +152,7 @@ else
                     </div>
                     <div>
                         <dt>Ngày tạo</dt>
-                        <dd>@user.CreatedAt.ToString("dd/MM/yyyy")</dd>
+                        <dd>@VietnamTime.Format(user.CreatedAt, "dd/MM/yyyy")</dd>
                     </div>
                 </dl>
             </article>

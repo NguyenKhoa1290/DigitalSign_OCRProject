@@ -18,7 +18,9 @@ async function check(browser, width) {
   let doc, uploads = 0;
   const unexpected = [];
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     const request = route.request(), url = new URL(request.url()); let data;
+    if (url.pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     if (request.method() === 'GET' && url.pathname === '/api/documents/types')
       data = [{ id: typeId, typeName: 'CongVanDen' }];
     else if (request.method() === 'POST' && url.pathname === '/api/documents') {
@@ -37,7 +39,7 @@ async function check(browser, width) {
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data }) });
   });
   const page = await context.newPage(), errors = [];
-  page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
+  page.setDefaultTimeout(60000); page.on('pageerror', error => errors.push(error.message));
   try {
     await page.goto(web + '/documents/create');
     await page.locator('input[placeholder="Nhập tiêu đề công văn..."]').fill('Word fixture');

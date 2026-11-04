@@ -1,0 +1,7 @@
+.layout-paragraph { white-space: pre-wrap; overflow-wrap: anywhere; line-height: calc(1.4em + 2px); }
+.layout-columns { display: grid; gap: 12px; margin-bottom: 12px; }
+.layout-column { min-width: 0; }
+.layout-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 12px 0; }
+.layout-table th, .layout-table td { border: 1px solid #64748b; padding: 6px; white-space: pre-wrap; overflow-wrap: anywhere; height: 28px; line-height: calc(1.5em + 2px); }
+.layout-page-break { margin: 24px 0; border: 0; border-top: 2px dashed var(--color-border); }
+@media (max-width: 600px) { .layout-columns { gap: 6px; } .layout-table th, .layout-table td { padding: 4px; font-size: 12px; } }

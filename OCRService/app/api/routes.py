@@ -5,12 +5,19 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 import io
+import json
+import hmac
+from datetime import datetime, timezone
 from pydantic import BaseModel
+from uuid import UUID
+from minio.error import S3Error
 from typing import Optional
 import httpx
 
 from app.services import ocr_processor
 from app.services import gemini_service
+from app.services import document_service, minio_service
+from app.config import get_settings
 from app.services.document_service import DocumentUnavailableError
 from app.services.layout_exporter import create_layout_docx
 from app.services.document_input import load_document_images, document_page_count, select_pages, DocumentInputError
@@ -150,6 +157,7 @@ async def gemini_export_word_upload(
     files: list[UploadFile] | None = File(None),
     model_id: str = Query(..., min_length=5, max_length=100),
     pages: str | None = Query(None, max_length=200),
+    result_format: str = Query("word", pattern="^(word|json)$"),
 ):
     inputs = ([file] if file else []) + (files or [])
     if not inputs or len(inputs) > 100:
@@ -195,6 +203,10 @@ async def gemini_export_word_upload(
             if page_number:
                 combined["blocks"].append({"type": "page_break"})
             combined["blocks"].extend(layout["blocks"])
+        if result_format == "json":
+            return {"provider": "gemini", "schemaVersion": 1, "modelId": model_id,
+                    "selectedPages": selected, "sourceFileNames": [item.filename or "" for item in inputs],
+                    "createdAt": datetime.now(timezone.utc).isoformat(), "layout": combined}
         docx_bytes = create_layout_docx(combined)
         headers = {"Content-Disposition": 'attachment; filename="ban-nhap-ocr-gemini.docx"', "X-OCR-Pages": ",".join(map(str, selected))}
         return StreamingResponse(io.BytesIO(docx_bytes), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
@@ -212,6 +224,140 @@ async def gemini_export_word_upload(
     except Exception as exc:
         logger.error("Gemini Word export failed (%s)", type(exc).__name__)
         raise HTTPException(status_code=500, detail="Không thể tạo Word từ bản quét.") from exc
+
+
+@router.post("/gemini/recognize-upload", summary="Nhận diện bố cục để lưu và hiển thị trong công văn")
+async def gemini_recognize_upload(
+    file: UploadFile | None = File(None),
+    files: list[UploadFile] | None = File(None),
+    model_id: str = Query(..., min_length=5, max_length=100),
+    pages: str | None = Query(None, max_length=200),
+):
+    return await gemini_export_word_upload(file=file, files=files, model_id=model_id,
+                                          pages=pages, result_format="json")
+
+
+class LayoutExportRequest(BaseModel):
+    layout: dict
+
+
+@router.post("/gemini/export-layout", summary="Tạo Word từ kết quả đã lưu, không gọi lại AI")
+async def gemini_export_layout(request: LayoutExportRequest):
+    layout = request.layout
+    blocks = layout.get("blocks")
+    if not isinstance(blocks, list) or not blocks or len(blocks) > 500 or len(json.dumps(layout)) > 2_000_000:
+        raise HTTPException(status_code=400, detail="Bố cục OCR trống hoặc vượt giới hạn xuất Word.")
+    try:
+        pages = [[]]
+        cells = 0
+        paragraphs = 0
+        for block in blocks:
+            if not isinstance(block, dict):
+                raise ValueError("Invalid block")
+            if block.get("type") == "page_break":
+                pages.append([])
+            else:
+                pages[-1].append(block)
+            if block.get("type") == "columns":
+                columns = block.get("columns", [])
+                if not isinstance(columns, list) or not 1 <= len(columns) <= 4 or any(not isinstance(column, list) or len(column) > 200 for column in columns):
+                    raise ValueError("Invalid columns")
+                paragraphs += sum(len(column) for column in columns)
+            elif block.get("type") == "table":
+                headers, rows, blank = block.get("headers", []), block.get("rows", []), block.get("blank_rows", 0)
+                if not isinstance(headers, list) or not 1 <= len(headers) <= 12 or not isinstance(rows, list) or len(rows) > 200 or not isinstance(blank, int) or not 0 <= blank <= 100:
+                    raise ValueError("Invalid table size")
+                cells += len(headers) * (1 + len(rows) + blank)
+            elif block.get("type") == "paragraph":
+                paragraphs += 1
+            if cells > 10_000 or paragraphs > 2_000:
+                raise ValueError("Layout exceeds document budget")
+        if len(pages) > 5:
+            raise ValueError("Too many pages")
+        for page in pages:
+            gemini_service.validate_layout({"blocks": page})
+        content = create_layout_docx(layout)
+    except (ValueError, TypeError, KeyError, AttributeError, gemini_service.GeminiRequestError) as exc:
+        raise HTTPException(status_code=400, detail="Bố cục OCR không hợp lệ để xuất Word.") from exc
+    return StreamingResponse(io.BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": 'attachment; filename="ket-qua-ocr.docx"'})
+
+
+class AttachedOcrInput(BaseModel):
+    expectedVersion: UUID
+
+
+class AttachedOcrRun(AttachedOcrInput):
+    modelId: str
+    pages: str
+
+
+async def _attached_input(doc_id: UUID, request: AttachedOcrInput, authorization: str):
+    try:
+        path = await document_service.attached_ocr_path(str(doc_id), request.expectedVersion, authorization)
+        content = minio_service.download_file(path, max_bytes=25 * 1024 * 1024)
+        return path, content
+    except DocumentUnavailableError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+    except S3Error as exc:
+        status = 404 if exc.code in ("NoSuchKey", "NoSuchObject") else 503
+        raise HTTPException(status_code=status, detail="Không đọc được tệp đính kèm. Hãy kiểm tra hoặc tải tệp lên trước khi chạy OCR.") from exc
+
+
+@router.post("/gemini/documents/{doc_id}/input-info", summary="Đếm trang tệp đã đính kèm công văn, không gọi AI")
+async def attached_input_info(doc_id: UUID, request: AttachedOcrInput, authorization: str = Header("")):
+    filename, content = await _attached_input(doc_id, request, authorization)
+    try:
+        return {"totalPages": document_page_count(content, filename)}
+    except DocumentInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/gemini/documents/{doc_id}/recognize", summary="Nhận diện chính tệp đã lưu của công văn bằng Gemini")
+async def attached_recognize(doc_id: UUID, request: AttachedOcrRun, authorization: str = Header("")):
+    if not 5 <= len(request.modelId) <= 100 or len(request.pages) > 200:
+        raise HTTPException(status_code=400, detail="Model hoặc lựa chọn trang không hợp lệ.")
+    filename, content = await _attached_input(doc_id, request, authorization)
+    source = UploadFile(filename=filename, file=io.BytesIO(content))
+    try:
+        return await gemini_export_word_upload(file=source, files=None, model_id=request.modelId,
+                                              pages=request.pages, result_format="json")
+    finally:
+        await source.close()
+
+
+class InternalGeminiJob(BaseModel):
+    docId: UUID
+    sourcePath: str
+    modelId: str
+    pages: str
+
+
+@router.post("/internal/gemini-job", include_in_schema=False)
+async def internal_gemini_job(request: InternalGeminiJob, x_service_token: str = Header("")):
+    expected = get_settings().service_token
+    if not expected or not hmac.compare_digest(x_service_token, expected):
+        raise HTTPException(status_code=401, detail="Không xác nhận được tác vụ OCR nội bộ.")
+    if not 5 <= len(request.modelId) <= 100 or len(request.pages) > 200 or len(request.sourcePath) > 2000:
+        raise HTTPException(status_code=400, detail="Yêu cầu OCR không hợp lệ.")
+    try:
+        await document_service.require_active_document(str(request.docId), request.sourcePath, expected, True)
+        path = request.sourcePath.lstrip("/").removeprefix(get_settings().minio_bucket + "/")
+        content = minio_service.download_file(path, max_bytes=25 * 1024 * 1024)
+    except DocumentUnavailableError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+    except S3Error as exc:
+        raise HTTPException(status_code=404 if exc.code == "NoSuchKey" else 503, detail="Không đọc được tệp đính kèm để OCR.") from exc
+    source = UploadFile(filename=path, file=io.BytesIO(content))
+    try:
+        return await gemini_export_word_upload(file=source, files=None, model_id=request.modelId, pages=request.pages, result_format="json")
+    finally:
+        await source.close()
 
 
 @router.get("/health", summary="Health check")

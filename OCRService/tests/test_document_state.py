@@ -20,7 +20,7 @@ class DocumentStateTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_deleted_stale_unauthorized_and_malformed_states_are_rejected(self):
         for status, data, expected in [
-            (404, {}, 404), (401, {}, 503),
+            (404, {}, 404), (401, {}, 401),
             (200, {"data": {"minioPath": "documents/replaced.pdf", "concurrencyVersion": "v1"}}, 409),
             (200, {"data": {}}, 503),
         ]:

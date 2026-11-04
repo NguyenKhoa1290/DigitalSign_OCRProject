@@ -1,0 +1,121 @@
+@inject ApiService Api
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<section class="card gemini-result-card" id="document-ocr-result">
+    <div class="card-header">
+        <span class="card-title">Kết quả OCR</span>
+        @if (Result != null)
+        {
+            <AuthorizeView Roles="Admin,Clerk" Context="ocrUser"><div class="ocr-result-actions">
+                <button class="btn btn-outline btn-sm" disabled="@(_downloading || _uploading)" @onclick="DownloadWord">@(_downloading ? "Đang tải Word..." : "Tải Word")</button>
+                @if (DocumentId.HasValue && (IsIncoming || ocrUser.User.IsInRole("Admin")))
+                {
+                    <button class="btn btn-outline btn-sm" disabled="@(_uploading || _downloading || IsProcessing || IsBusy)" @onclick="PickEditedFile">Tải lên bản chỉnh sửa</button>
+                    <InputFile id="@_inputId" style="display:none" OnChange="UploadEditedFile" accept=".docx" disabled="@(_uploading || IsProcessing || IsBusy)" />
+                }
+            </div></AuthorizeView>
+        }
+    </div>
+    <div class="card-body">
+        @if (Result != null)
+        {
+            <p class="form-hint">Trang/ảnh @string.Join(", ", Result.SelectedPages) · @VietnamTime.Format(Result.CreatedAt)</p>
+            <p class="form-hint">Bản nháp cần đối chiếu với bản gốc trước khi sử dụng.</p>
+            @if (!string.IsNullOrWhiteSpace(SaveError)) { <div class="alert alert-warning" role="alert">Kết quả chưa được lưu. @SaveError Bạn vẫn có thể tải Word để giữ kết quả này.</div> }
+            @if (Edited != null)
+            {
+                <div class="ocr-edited-summary" role="status">
+                    <strong>Đã chỉnh sửa bởi @(Edited.EditorRole == "Admin" ? "Quản trị viên" : "Văn thư") @Edited.EditedByName</strong>
+                    <p>@Edited.FileName · Lần @Edited.Revision · @VietnamTime.Format(Edited.EditedAt)</p>
+                    <p>Bản Word chỉnh sửa được lưu riêng để đối chiếu với tệp gốc.</p>
+                </div>
+            }
+            <details class="ocr-original-result" open="@(Edited == null)">
+            <summary class="btn btn-outline btn-sm"><svg class="ocr-content-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" /></svg>Nội dung</summary>
+            @if (Edited != null) { <p class="form-hint">Nội dung OCR tự động để đối chiếu với bản Word đã chỉnh sửa.</p> }
+            <article class="ocr-document" aria-label="Nội dung">
+                @foreach (var block in Result.Layout.GetProperty("blocks").EnumerateArray()) { <GeminiLayoutBlock Block="block" /> }
+            </article>
+            @if (Result.Layout.TryGetProperty("uncertain_fields", out var uncertainties) && uncertainties.ValueKind == JsonValueKind.Array && uncertainties.GetArrayLength() > 0)
+            {
+                <details class="ocr-review-notes"><summary>Nội dung cần rà soát</summary><ul>@foreach (var item in uncertainties.EnumerateArray()) { <li>@item.ToString()</li> }</ul></details>
+            }
+            </details>
+        }
+        else if (IsProcessing) { <p>Kết quả sẽ hiển thị sau khi OCR hoàn tất. Bạn có thể tiếp tục thao tác hoặc rời trang.</p> }
+        else { <p>Chưa có kết quả OCR. Văn thư hoặc Admin chọn Chạy OCR để nhận diện tài liệu.</p> }
+        @if (_error != null) { <div class="alert alert-danger" role="alert">@_error</div> }
+    </div>
+</section>
+
+@code {
+    [Parameter] public GeminiOcrResult? Result { get; set; }
+    [Parameter] public string? SaveError { get; set; }
+    [Parameter] public bool IsProcessing { get; set; }
+    [Parameter] public Guid? DocumentId { get; set; }
+    [Parameter] public bool IsIncoming { get; set; }
+    [Parameter] public Guid ExpectedVersion { get; set; }
+    [Parameter] public string? SourcePath { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback OnEdited { get; set; }
+    [Parameter] public EventCallback<bool> BusyChanged { get; set; }
+    private readonly string _inputId = "ocr-edited-" + Guid.NewGuid().ToString("N");
+    private OcrEditedDocument? Edited => Result?.EditedDocument is {} edited && (SourcePath == null || edited.SourcePath == SourcePath) ? edited : null;
+    private bool _uploading, _disposed;
+    private bool _downloading;
+    private string? _error;
+    private async Task DownloadWord()
+    {
+        if (Result == null || _downloading) return;
+        _downloading = true; _error = null;
+        var edited = Edited; var documentId = DocumentId;
+        string? url = null;
+        try
+        {
+            byte[]? bytes;
+            if (edited != null && documentId.HasValue)
+                bytes = await Api.GetBytesAsync($"api/documents/{documentId}/ocr-edited-file?revisionId={edited.Id}");
+            else
+            {
+                using var response = await Api.PostResponseAsync("api/ocr/gemini/export-layout", new { layout = Result.Layout });
+                if (!response.IsSuccessStatusCode) throw new HttpRequestException();
+                bytes = await response.Content.ReadAsByteArrayAsync();
+            }
+            if (bytes == null) throw new HttpRequestException();
+            url = await JS.InvokeAsync<string>("documentFiles.createDownloadUrl", bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            await JS.InvokeVoidAsync("documentFiles.download", url, edited?.FileName ?? "ket-qua-ocr.docx");
+        }
+        catch (Exception) { _error = "Không tải được Word. Hãy thử lại; không cần chạy lại OCR."; }
+        finally { if (url != null) await JS.InvokeVoidAsync("documentFiles.releaseUrl", url); _downloading = false; }
+    }
+    private async Task PickEditedFile() => await JS.InvokeVoidAsync("documentFiles.pickFile", _inputId);
+    private async Task UploadEditedFile(InputFileChangeEventArgs args)
+    {
+        if (_uploading || IsBusy || IsProcessing || !DocumentId.HasValue) return;
+        var file = args.File;
+        if (!file.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) || file.Size is <= 0 or > 52428800)
+        { _error = "Chọn tệp Word .docx, tối đa 50 MB."; return; }
+        _uploading = true; _error = null;
+        await BusyChanged.InvokeAsync(true);
+        try
+        {
+            using var response = await Api.UploadInputAsync($"api/documents/{DocumentId}/ocr-edited-file?expectedVersion={ExpectedVersion}", _inputId, file.Name);
+            if (_disposed) return;
+            if (!response.IsSuccessStatusCode)
+            {
+                try { using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync()); _error = json.RootElement.GetProperty("message").GetString(); }
+                catch { _error = "Chưa lưu được bản chỉnh sửa. Hãy tải lại kết quả và thử lại."; }
+                return;
+            }
+            await OnEdited.InvokeAsync();
+        }
+        catch { if (!_disposed) _error = "Không tải lên được bản chỉnh sửa. Hãy kiểm tra kết quả trước khi gửi lại."; }
+        finally
+        {
+            _uploading = false; await BusyChanged.InvokeAsync(false);
+            if (!_disposed) await JS.InvokeVoidAsync("documentFiles.clearFileInput", _inputId);
+        }
+    }
+    public ValueTask DisposeAsync() { _disposed = true; return ValueTask.CompletedTask; }
+}

@@ -85,6 +85,7 @@
 }
 
 @media (max-width: 600px) {
+    .document-image { max-height: 80svh; }
     .document-actions {
         align-items: stretch;
         flex-direction: column;

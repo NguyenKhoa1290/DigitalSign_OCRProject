@@ -1,5 +1,6 @@
 import logging
 import httpx
+from uuid import UUID
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -11,6 +12,37 @@ class DocumentUnavailableError(RuntimeError):
         self.status_code = status_code
 
 
+async def attached_ocr_path(doc_id: str, expected_version: UUID, authorization: str) -> str:
+    """Resolve the active attachment on the server; never accept an object path from the browser."""
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise DocumentUnavailableError("Cần đăng nhập để chạy OCR công văn.", 401)
+    settings = get_settings()
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(f"{settings.document_service_url}/api/documents/{doc_id}/ocr-state",
+                                        headers={"Authorization": authorization})
+    except httpx.RequestError as exc:
+        raise DocumentUnavailableError("Chưa kiểm tra được tệp công văn. Hãy thử lại.", 503) from exc
+    if response.status_code in (401, 403, 404):
+        raise DocumentUnavailableError("Không có quyền hoặc công văn không còn tồn tại.", response.status_code)
+    if response.status_code != 200:
+        raise DocumentUnavailableError("Chưa kiểm tra được trạng thái công văn.", 503)
+    try:
+        state = response.json()["data"]
+        version = UUID(state["concurrencyVersion"])
+        stored = state.get("minioPath")
+        if version != expected_version:
+            raise DocumentUnavailableError("Tệp hoặc công văn đã thay đổi. Hãy tải lại công văn trước khi chạy OCR.", 409)
+        if not isinstance(stored, str) or not stored.strip():
+            raise DocumentUnavailableError("Vui lòng tải tệp lên trước khi chạy OCR.", 400)
+        path = stored.strip().lstrip("/").removeprefix(settings.minio_bucket + "/")
+        if not path.lower().endswith((".pdf", ".png", ".jpg", ".jpeg", ".webp")):
+            raise DocumentUnavailableError("Chỉ quét OCR tệp PDF hoặc ảnh đã đính kèm. Word không cần OCR.", 400)
+        return path
+    except (KeyError, TypeError, ValueError) as exc:
+        raise DocumentUnavailableError("Trạng thái tệp công văn không hợp lệ.", 503) from exc
+
+
 async def require_active_document(doc_id: str, minio_path: str, token: str, use_service_token: bool) -> str:
     """Reject deleted documents and stale Kafka events before downloading or running OCR."""
     settings = get_settings()
@@ -20,8 +52,8 @@ async def require_active_document(doc_id: str, minio_path: str, token: str, use_
             response = await client.get(f"{settings.document_service_url}/api/documents/{doc_id}/ocr-state", headers=headers)
     except httpx.RequestError as exc:
         raise DocumentUnavailableError("Chưa kiểm tra được trạng thái công văn.", 503) from exc
-    if response.status_code == 404:
-        raise DocumentUnavailableError("Công văn không tồn tại hoặc đã bị xóa.", 404)
+    if response.status_code in (401, 403, 404):
+        raise DocumentUnavailableError("Không có quyền hoặc công văn không còn tồn tại.", response.status_code)
     if response.status_code != 200:
         raise DocumentUnavailableError("Chưa xác nhận được quyền và trạng thái công văn.", 503)
     try:

@@ -1,10 +1,11 @@
 @page "/documents/create"
-@attribute [Authorize(Roles = "Clerk,Specialist")]
+@attribute [Authorize(Roles = "Admin,Clerk,Specialist")]
 @inject DocumentService DocumentService
 @inject AuthService AuthService
 @inject NavigationManager NavManager
 @inject IToastService Toast
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>Tạo Công văn mới - HAU</PageTitle>
 
@@ -82,7 +83,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card @(_imagePreviewUrl != null ? "document-preview-card" : "")">
         <div class="card-header">
             <span class="card-title">Tải lên PDF, Word hoặc ảnh</span>
         </div>
@@ -114,7 +115,7 @@
                 <div class="file-upload-hint">PDF, Word (.docx), PNG, JPG/JPEG hoặc WEBP (tối đa 50 MB). OCR chỉ nhận PDF/ảnh, tối đa 5 trang mỗi lượt. Word cần xuất PDF trước khi ký số. Tệp tải lên sẽ thay thế tệp hiện tại.</div>
             </div>
             <div class="file-input-wrapper" hidden>
-                <InputFile id="fileInput" OnChange="OnFileSelected" accept="@DocumentFileFormats.Accept" />
+                <InputFile id="fileInput" OnChange="OnFileSelected" accept="@DocumentFileFormats.Accept" disabled="@_isSubmitting" />
             </div>
 
             @if (_selectedFile != null)
@@ -124,6 +125,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span class="file-ready-text">File sẵn sàng tải lên</span>
+                </div>
+            }
+            @if (_imagePreviewUrl != null)
+            {
+                <div class="selected-image-preview">
+                    <p class="form-label">Xem trước ảnh</p>
+                    <img src="@_imagePreviewUrl" alt="@_selectedFile?.Name" />
+                    <p class="form-hint">Ảnh sẽ được lưu khi tạo công văn và tải tệp thành công.</p>
                 </div>
             }
         </div>
@@ -146,14 +155,17 @@
     }
     private DateOnly? _issuedDate;
     private IBrowserFile? _selectedFile;
+    private string? _imagePreviewUrl;
     private bool _isSubmitting;
     private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
         _documentTypes = await DocumentService.GetDocumentTypesAsync();
-        if (await AuthService.GetRoleAsync() == "Specialist")
-            _documentTypes = _documentTypes?.Where(type => type.TypeName != "CongVanDen").ToList();
+        var user = await AuthService.GetCurrentUserAsync();
+        if (user?.IsInRole("Admin") != true)
+            _documentTypes = _documentTypes?.Where(type => type.TypeName == "CongVanDen"
+                ? user?.IsInRole("Clerk") == true : user?.IsInRole("Specialist") == true).ToList();
     }
 
     private async Task HandleCreate()
@@ -192,8 +204,7 @@
             {
                 try
                 {
-                    using var stream = _selectedFile.OpenReadStream(maxAllowedSize: 52428800);
-                    if (await DocumentService.UploadFileAsync(created.Id, stream, _selectedFile.Name) is null)
+                    if (await DocumentService.UploadFileAsync(created.Id, "fileInput", _selectedFile.Name) is null)
                         throw new InvalidOperationException("API chưa xác nhận tải file thành công.");
                 }
                 catch (Exception ex)
@@ -215,15 +226,31 @@
         }
     }
 
-    private void OnFileSelected(InputFileChangeEventArgs e)
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
+        if (_isSubmitting) return;
+        await ReleaseImagePreview();
         _selectedFile = null;
         _errorMessage = null;
         if (DocumentFileFormats.GetContentType(e.File.Name) is null)
             _errorMessage = "Chỉ hỗ trợ PDF, Word (.docx), PNG, JPG/JPEG hoặc WEBP.";
         else if (e.File.Size > 52428800)
             _errorMessage = "File vượt quá giới hạn 50 MB.";
-        else _selectedFile = e.File;
+        else
+        {
+            _selectedFile = e.File;
+            if (DocumentFileFormats.GetContentType(e.File.Name)?.StartsWith("image/", StringComparison.Ordinal) == true)
+            {
+                try { _imagePreviewUrl = (await JS.InvokeAsync<string[]>("documentFiles.previewFiles", "fileInput")).FirstOrDefault(); }
+                catch (JSException) { Toast.ShowWarning("Không tạo được ảnh xem trước. Bạn vẫn có thể tải tệp gốc lên."); }
+            }
+        }
     }
+    private async Task ReleaseImagePreview()
+    {
+        if (_imagePreviewUrl != null) await JS.InvokeVoidAsync("documentFiles.releaseUrl", _imagePreviewUrl);
+        _imagePreviewUrl = null;
+    }
+    public async ValueTask DisposeAsync() => await ReleaseImagePreview();
     private async Task TriggerFileInput() => await JS.InvokeVoidAsync("documentFiles.pickFile", "fileInput");
 }

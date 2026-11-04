@@ -1,0 +1,11 @@
+.upload-toasts { position: fixed; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); z-index: 31000; width: min(340px, calc(100vw - 32px)); display: grid; gap: 10px; max-height: calc(100dvh - 32px); overflow-y: auto; pointer-events: none; }
+.upload-toast { padding: 14px 16px; border: 1px solid #d6e2eb; border-top: 4px solid #0879bd; border-radius: 10px; background: rgba(248,252,255,.98); box-shadow: 0 8px 24px rgba(15,45,65,.2); color: #17384d; pointer-events: auto; }
+.upload-heading, .upload-status { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.upload-name { margin: 6px 0 10px; overflow-wrap: anywhere; font-size: 12px; color: #526f83; }
+.upload-status { font-size: 12px; margin-bottom: 8px; }
+.upload-close { border: 0; background: transparent; color: #526f83; font-size: 22px; width: 28px; height: 28px; cursor: pointer; }
+progress { display: block; width: 100%; height: 8px; accent-color: #0879bd; border: none; border-radius: 10px; overflow: hidden; }
+progress::-webkit-progress-bar { background: #dce7ed; }
+progress::-webkit-progress-value { background: #0879bd; }
+.upload-success { border-top-color: #00963f; }
+.upload-error { border-top-color: #dc2626; }

@@ -5,7 +5,8 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run
+    # TCP transport avoids the intermittent QUIC/UDP timeouts observed on this host.
+    command: tunnel --no-autoupdate --protocol http2 run
     env_file:
       - .env.tunnel
     depends_on:

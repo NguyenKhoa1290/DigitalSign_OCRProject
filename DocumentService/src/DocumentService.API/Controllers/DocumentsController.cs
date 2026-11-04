@@ -96,12 +96,16 @@ public class DocumentsController : ControllerBase
     /// POST /api/documents - Tạo văn bản mới (status = Draft)
     /// </summary>
     [HttpPost]
+    [Authorize(Roles = "Admin,Clerk,Specialist")]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 201)]
     public async Task<IActionResult> Create([FromBody] CreateDocumentDto dto)
     {
-        if (!User.IsInRole("Clerk") && !User.IsInRole("Admin")
-            && (await _documentService.GetDocumentTypesAsync()).Any(t => t.Id == dto.DocTypeId && t.TypeName == "CongVanDen"))
-            return Forbid();
+        if (!User.IsInRole("Admin"))
+        {
+            var type = (await _documentService.GetDocumentTypesAsync()).FirstOrDefault(t => t.Id == dto.DocTypeId);
+            if (type == null) return BadRequest(ApiResponse<object>.Fail("Loại văn bản không tồn tại."));
+            if (type.TypeName == "CongVanDen" ? !User.IsInRole("Clerk") : !User.IsInRole("Specialist")) return Forbid();
+        }
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse<object>.Fail(
                 ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
@@ -148,12 +152,16 @@ public class DocumentsController : ControllerBase
     [Authorize(Roles = "Admin,Clerk,Specialist")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDocumentDto dto)
     {
-        if (!User.IsInRole("Clerk") && !User.IsInRole("Admin"))
+        if (!User.IsInRole("Admin"))
         {
-            if ((await _documentService.GetDocumentByIdAsync(id)).DocTypeName == "CongVanDen"
-                || (await _documentService.GetDocumentTypesAsync()).Any(t => t.Id == dto.DocTypeId && t.TypeName == "CongVanDen")) return Forbid();
+            var current = await _documentService.GetDocumentByIdAsync(id);
+            if (!DocumentWorkflowAccess.CanAuthor(current.DocTypeName, current.CreatedById, CurrentActor())) return Forbid();
+            var target = (await _documentService.GetDocumentTypesAsync()).FirstOrDefault(t => t.Id == dto.DocTypeId);
+            if (target == null) return BadRequest(ApiResponse<object>.Fail("Loại văn bản không tồn tại."));
+            var incoming = current.DocTypeName == "CongVanDen";
+            if (incoming != (target.TypeName == "CongVanDen") || (incoming && !User.IsInRole("Clerk"))) return Forbid();
         }
-        var result = await _documentService.UpdateDocumentAsync(id, dto, GetCurrentUserId());
+        var result = await _documentService.UpdateDocumentAsync(id, dto, CurrentActor());
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Đã cập nhật công văn."));
     }
 
@@ -218,6 +226,7 @@ public class DocumentsController : ControllerBase
     /// POST /api/documents/{id}/upload - Văn thư upload file PDF lên MinIO
     /// </summary>
     [HttpPost("{id:guid}/upload")]
+    [Authorize(Roles = "Admin,Clerk,Specialist")]
     [RequestSizeLimit(64L * 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = 64L * 1024 * 1024)]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
@@ -231,14 +240,12 @@ public class DocumentsController : ControllerBase
             return StatusCode(StatusCodes.Status413PayloadTooLarge,
                 ApiResponse<object>.Fail("File vượt quá giới hạn 50 MB."));
 
-        if (!User.IsInRole("Clerk") && !User.IsInRole("Admin")
-            && (await _documentService.GetDocumentByIdAsync(id)).DocTypeName == "CongVanDen") return Forbid();
-
-        var userId = GetCurrentUserId();
+        var document = await _documentService.GetDocumentByIdAsync(id);
+        if (!DocumentWorkflowAccess.CanAuthor(document.DocTypeName, document.CreatedById, CurrentActor())) return Forbid();
 
         using var stream = file.OpenReadStream();
         var result = await _documentService.UploadFileAsync(
-            id, stream, file.FileName, file.ContentType, userId);
+            id, stream, file.FileName, file.ContentType, CurrentActor());
 
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Upload file thành công."));
     }
@@ -260,6 +267,11 @@ public class DocumentsController : ControllerBase
         if (!TryGetOcrCallerUserId(out var userId, out var errorMessage))
             return Unauthorized(ApiResponse<object>.Fail(errorMessage!));
 
+        var document = await _documentService.GetDocumentByIdAsync(id);
+        if (User.Identity?.IsAuthenticated == true
+            ? !DocumentWorkflowAccess.CanOcr(document.DocTypeName, CurrentActor())
+            : document.DocTypeName != "CongVanDen") return Forbid();
+
         var result = await _documentService.UpdateOcrDataAsync(id, dto, userId);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Cập nhật OCR thành công."));
     }
@@ -272,7 +284,8 @@ public class DocumentsController : ControllerBase
             return Unauthorized(ApiResponse<object>.Fail(errorMessage!));
         Response.Headers.CacheControl = "no-store";
         var document = await _documentService.GetDocumentByIdAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { document.MinioPath, document.ConcurrencyVersion }));
+        if (User.Identity?.IsAuthenticated == true && !DocumentWorkflowAccess.CanOcr(document.DocTypeName, CurrentActor())) return Forbid();
+        return Ok(ApiResponse<object>.Ok(new { document.MinioPath, document.ConcurrencyVersion, document.DocTypeName }));
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -283,11 +296,14 @@ public class DocumentsController : ControllerBase
     /// POST /api/documents/{id}/submit - Trình duyệt (Draft → PendingDeptReview)
     /// </summary>
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Roles = "Admin,Specialist")]
     [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
     [ProducesResponseType(422)]
     public async Task<IActionResult> Submit(Guid id, [FromBody] WorkflowActionDto? dto)
     {
         var userId = GetCurrentUserId();
+        var document = await _documentService.GetDocumentByIdAsync(id);
+        if (!User.IsInRole("Admin") && document.CreatedById != userId) return Forbid();
         var result = await _documentService.SubmitForReviewAsync(id, userId, dto?.Comment);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Đã trình duyệt văn bản."));
     }

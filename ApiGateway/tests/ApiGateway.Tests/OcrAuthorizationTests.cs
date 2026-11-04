@@ -50,7 +50,11 @@ public class OcrAuthorizationTests
             (HttpMethod.Post, "/api/ocr/process-upload"),
             (HttpMethod.Post, "/api/ocr/export-word-upload"),
             (HttpMethod.Get, "/api/ocr/gemini/models"),
-            (HttpMethod.Post, "/api/ocr/gemini/export-word-upload")
+            (HttpMethod.Post, "/api/ocr/gemini/export-word-upload"),
+            (HttpMethod.Post, "/api/ocr/gemini/recognize-upload"),
+            (HttpMethod.Post, "/api/ocr/gemini/export-layout"),
+            (HttpMethod.Post, "/api/ocr/gemini/documents/bbbbbbbb-0000-0000-0000-000000000001/input-info"),
+            (HttpMethod.Post, "/api/ocr/gemini/documents/bbbbbbbb-0000-0000-0000-000000000001/recognize")
         })
         {
             using var response = await client.SendAsync(new HttpRequestMessage(method, path));

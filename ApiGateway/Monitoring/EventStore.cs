@@ -6,6 +6,25 @@ namespace ApiGateway.Monitoring;
 
 public class EventStore(NpgsqlDataSource dataSource)
 {
+    public async Task<Guid?> GetDocumentVersionAsync(Guid document, Guid user, CancellationToken token)
+    {
+        await using var cmd = dataSource.CreateCommand("""
+            SELECT d."ConcurrencyVersion" FROM "Documents" d
+            WHERE d."Id"=@document AND NOT d."IsDeleted"
+              AND EXISTS (SELECT 1 FROM "AppUsers" u WHERE u."Id"=@user AND u."IsActive")
+            """);
+        Add(cmd,"document",document); Add(cmd,"user",user);
+        return await cmd.ExecuteScalarAsync(token) is Guid version ? version : null;
+    }
+    public async Task<long> GetUnreadCountAsync(Guid user, CancellationToken token)
+    {
+        await using var cmd = dataSource.CreateCommand("""
+            SELECT count(*) FROM "UserNotifications" n WHERE n."UserId"=@user AND n."ReadAt" IS NULL
+            AND (n."DocumentId" IS NULL OR EXISTS (SELECT 1 FROM "Documents" d WHERE d."Id"=n."DocumentId" AND NOT d."IsDeleted"))
+            """);
+        Add(cmd,"user",user);
+        return (long)(await cmd.ExecuteScalarAsync(token))!;
+    }
     public async Task InitializeAsync()
     {
         using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("ApiGateway.Monitoring.schema.sql")!;

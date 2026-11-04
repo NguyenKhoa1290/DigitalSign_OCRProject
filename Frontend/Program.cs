@@ -39,5 +39,8 @@ builder.Services.AddScoped<DocumentService>();
 builder.Services.AddScoped<SignatureService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<MonitoringService>();
+builder.Services.AddScoped<NotificationRealtimeService>();
+builder.Services.AddScoped<UploadProgressService>();
+builder.Services.AddScoped<BrowserUploadService>();
 
 await builder.Build().RunAsync();

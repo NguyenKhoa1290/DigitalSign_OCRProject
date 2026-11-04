@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SignService.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8efe76d4618295af23f8f027b085b9ae8fab926")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cff7cafa1c6247b05d95290c48e53c4d72621c04")]
 [assembly: System.Reflection.AssemblyProductAttribute("SignService.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SignService.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

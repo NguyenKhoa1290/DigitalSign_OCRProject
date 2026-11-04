@@ -23,8 +23,78 @@ using Service = DocumentService.Infrastructure.Services.DocumentService;
 
 namespace DocumentService.Tests;
 
-public class DocumentDeletionApiTests
+public partial class DocumentDeletionApiTests
 {
+    [Theory]
+    [InlineData("Admin", true, 201)]
+    [InlineData("Admin", false, 201)]
+    [InlineData("Clerk", true, 201)]
+    [InlineData("Clerk", false, 403)]
+    [InlineData("Specialist", true, 403)]
+    [InlineData("Specialist", false, 201)]
+    [InlineData("Manager", true, 403)]
+    [InlineData("Manager", false, 403)]
+    [InlineData("BoardOfDirectors", true, 403)]
+    [InlineData("BoardOfDirectors", false, 403)]
+    [InlineData("", false, 401)]
+    public async Task CreateDocumentEnforcesRoleAndDirection(string role, bool incoming, int expected)
+    {
+        var actor = Guid.NewGuid(); var type = Guid.NewGuid(); var id = Guid.NewGuid();
+        var service = new Mock<IDocumentService>();
+        service.Setup(s => s.GetDocumentTypesAsync()).ReturnsAsync(new[] { new DocumentService.Core.DTOs.DocumentTypeDto { Id = type, TypeName = incoming ? "CongVanDen" : "CongVanDi" } });
+        service.Setup(s => s.CreateDocumentAsync(It.IsAny<DocumentService.Core.DTOs.CreateDocumentDto>(), actor))
+            .ReturnsAsync(new DocumentService.Core.DTOs.DocumentDto { Id = id, Title = "Create permission fixture" });
+        var builder = WebApplication.CreateBuilder(); builder.WebHost.UseTestServer();
+        builder.Services.AddAuthentication("fixture").AddScheme<AuthenticationSchemeOptions, FixtureAuth>("fixture", _ => { });
+        builder.Services.AddAuthorization(); builder.Services.AddHttpClient(); builder.Services.AddSingleton(service.Object);
+        builder.Services.AddControllers().AddApplicationPart(typeof(DocumentsController).Assembly);
+        await using var app = builder.Build(); app.UseAuthentication(); app.UseAuthorization(); app.MapControllers(); await app.StartAsync();
+        using var client = app.GetTestClient();
+        if (role != "") { client.DefaultRequestHeaders.Add("Fixture-User", actor.ToString()); client.DefaultRequestHeaders.Add("Fixture-Roles", role); }
+        var response = await client.PostAsJsonAsync("/api/documents", new { Title = "Create permission fixture", DocTypeId = type, UserId = Guid.NewGuid(), Roles = new[] { "Admin" } });
+        Assert.Equal(expected, (int)response.StatusCode);
+        service.Verify(s => s.CreateDocumentAsync(It.IsAny<DocumentService.Core.DTOs.CreateDocumentDto>(), actor), expected == 201 ? Times.Once() : Times.Never());
+    }
+
+    [Theory]
+    [InlineData("Specialist",true,200)][InlineData("Specialist",false,403)]
+    [InlineData("Clerk",true,403)][InlineData("Admin",false,200)]
+    [InlineData("Manager",true,403)][InlineData("BoardOfDirectors",true,403)][InlineData("",true,401)]
+    public async Task OutgoingSubmitRequiresSpecialistOwnerOrAdmin(string role,bool owns,int expected)
+    {
+        var actor=Guid.NewGuid();var id=Guid.NewGuid();var service=new Mock<IDocumentService>();
+        service.Setup(s=>s.GetDocumentByIdAsync(id)).ReturnsAsync(new DocumentService.Core.DTOs.DocumentDto{Id=id,DocTypeName="CongVanDi",CreatedById=owns?actor:Guid.NewGuid(),Status="Draft"});
+        service.Setup(s=>s.SubmitForReviewAsync(id,actor,It.IsAny<string?>())).ReturnsAsync(new DocumentService.Core.DTOs.DocumentDto{Id=id,Status="PendingDeptReview"});
+        var builder=WebApplication.CreateBuilder();builder.WebHost.UseTestServer();
+        builder.Services.AddAuthentication("fixture").AddScheme<AuthenticationSchemeOptions,FixtureAuth>("fixture",_=>{});
+        builder.Services.AddAuthorization();builder.Services.AddHttpClient();builder.Services.AddSingleton(service.Object);
+        builder.Services.AddControllers().AddApplicationPart(typeof(DocumentsController).Assembly);
+        await using var app=builder.Build();app.UseAuthentication();app.UseAuthorization();app.MapControllers();await app.StartAsync();
+        using var client=app.GetTestClient();if(role!=""){client.DefaultRequestHeaders.Add("Fixture-User",actor.ToString());client.DefaultRequestHeaders.Add("Fixture-Roles",role);}
+        using var response=await client.PostAsJsonAsync($"/api/documents/{id}/submit",new{comment="Fixture",userId=Guid.NewGuid(),roles=new[]{"Admin"}});
+        Assert.Equal(expected,(int)response.StatusCode);
+        service.Verify(s=>s.SubmitForReviewAsync(id,actor,It.IsAny<string?>()),expected==200?Times.Once():Times.Never());
+    }
+
+    [Theory]
+    [InlineData("Clerk","CongVanDen","CongVanDi")]
+    [InlineData("Specialist","CongVanDi","CongVanDen")]
+    public async Task EditingCannotSwitchDirectionToBypassCreationRole(string role,string original,string target)
+    {
+        var actor=Guid.NewGuid();var id=Guid.NewGuid();var type=Guid.NewGuid();var service=new Mock<IDocumentService>();
+        service.Setup(s=>s.GetDocumentByIdAsync(id)).ReturnsAsync(new DocumentService.Core.DTOs.DocumentDto{Id=id,DocTypeName=original});
+        service.Setup(s=>s.GetDocumentTypesAsync()).ReturnsAsync(new[]{new DocumentService.Core.DTOs.DocumentTypeDto{Id=type,TypeName=target}});
+        var builder=WebApplication.CreateBuilder();builder.WebHost.UseTestServer();
+        builder.Services.AddAuthentication("fixture").AddScheme<AuthenticationSchemeOptions,FixtureAuth>("fixture",_=>{});
+        builder.Services.AddAuthorization();builder.Services.AddHttpClient();builder.Services.AddSingleton(service.Object);
+        builder.Services.AddControllers().AddApplicationPart(typeof(DocumentsController).Assembly);
+        await using var app=builder.Build();app.UseAuthentication();app.UseAuthorization();app.MapControllers();await app.StartAsync();
+        using var client=app.GetTestClient();client.DefaultRequestHeaders.Add("Fixture-User",actor.ToString());client.DefaultRequestHeaders.Add("Fixture-Roles",role);
+        using var response=await client.PutAsJsonAsync($"/api/documents/{id}",new{Title="Fixture",DocTypeId=type});
+        Assert.Equal(403,(int)response.StatusCode);
+        service.Verify(s=>s.UpdateDocumentAsync(It.IsAny<Guid>(),It.IsAny<DocumentService.Core.DTOs.UpdateDocumentDto>(),It.IsAny<Guid>()),Times.Never());
+    }
+
     [Fact]
     public async Task PurgeEndpointRequiresAdmin_ValidatedConfirmation_AndJwtActor()
     {

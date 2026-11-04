@@ -14,6 +14,26 @@ namespace DocumentService.Tests;
 public class IncomingDocumentWorkflowTests
 {
     [Fact]
+    public async Task RejectedOutgoingReturnsToItsAuthorAndCanBeRevisedAndSubmittedAgain()
+    {
+        await using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
+        await using var db=new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+        await db.Database.EnsureCreatedAsync();var id=Guid.NewGuid();var owner=Guid.NewGuid();
+        var type=Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002");
+        db.Add(new Document{Id=id,CreatedById=owner,Title="Draft",DocTypeId=type,Status=DocumentStatus.PendingDeptReview,FirstSubmittedAt=DateTime.UtcNow});
+        await db.SaveChangesAsync();db.ChangeTracker.Clear();
+        var service=new Service(new DocumentRepository(db),new DocumentTypeRepository(db),new DocumentProcessRepository(db),
+            Mock.Of<IFileStorageService>(),Mock.Of<IKafkaProducerService>(),NullLogger<Service>.Instance);
+        await service.RejectAsync(id,Guid.NewGuid(),"Please revise");
+        db.ChangeTracker.Clear();
+        var revised=await service.UpdateDocumentAsync(id,new Core.DTOs.UpdateDocumentDto{Title="Revised",DocTypeId=type},owner);
+        Assert.Equal("Revised",revised.Title);Assert.Equal(DocumentStatus.Rejected,revised.Status);
+        db.ChangeTracker.Clear();
+        var submitted=await service.SubmitForReviewAsync(id,owner,"Revised by author");
+        Assert.Equal(DocumentStatus.PendingDeptReview,submitted.Status);Assert.Equal(owner,submitted.CreatedById);
+    }
+
+    [Fact]
     public async Task OutgoingWorkflowStillRunsThroughTheOriginalFiveTransitions()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();

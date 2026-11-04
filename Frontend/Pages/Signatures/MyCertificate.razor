@@ -57,7 +57,7 @@ else
             </div>
             <div class="detail-item">
                 <div class="detail-label">Hiệu lực</div>
-                <div class="detail-value">@_certificate.NotBefore.ToLocalTime().ToString("dd/MM/yyyy") – @_certificate.NotAfter.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                <div class="detail-value">@VietnamTime.Format(_certificate.NotBefore, "dd/MM/yyyy") – @VietnamTime.Format(_certificate.NotAfter, "dd/MM/yyyy")</div>
             </div>
             <div class="detail-item certificate-thumbprint">
                 <div class="detail-label">Thumbprint</div>

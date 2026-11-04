@@ -25,11 +25,11 @@ else if (_result?.Items.Count > 0)
                     <h2 class="deleted-title">@doc.Title</h2>
                     @if (doc.IsCancelled) { <span class="badge badge-danger">Đã hủy</span> }
                     <p>@doc.DocumentTypeDisplayName · @(doc.DocNumber ?? "Chưa có số hiệu")</p>
-                    <p>Ngày xóa: @doc.DeletedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                    <p>Ngày xóa: @VietnamTime.Format(doc.DeletedAt)</p>
                     <p class="deleted-reason">Lý do: @(doc.DeleteReason ?? "Người tạo xóa bản nháp.")</p>
                     <details><summary>Lịch sử xử lý</summary>
                         @foreach (var process in doc.Processes)
-                        { <p>@process.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @ActionLabel(process.Action): @process.Comment</p> }
+                        { <p>@VietnamTime.Format(process.Timestamp) · @ActionLabel(process.Action): @process.Comment</p> }
                     </details>
                     <div class="deleted-actions">
                         @if (!doc.IsCancelled)

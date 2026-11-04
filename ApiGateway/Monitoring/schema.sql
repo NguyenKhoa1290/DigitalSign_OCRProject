@@ -76,4 +76,44 @@ $$;
 DROP TRIGGER IF EXISTS hau_document_activity_trigger ON "DocumentProcesses";
 CREATE TRIGGER hau_document_activity_trigger AFTER INSERT ON "DocumentProcesses"
  FOR EACH ROW EXECUTE FUNCTION hau_document_activity();
+-- PostgreSQL publishes only after commit, including writes made by other services.
+CREATE OR REPLACE FUNCTION hau_notification_changed() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ PERFORM pg_notify('hau_notifications', CASE WHEN TG_OP='DELETE' THEN OLD."UserId" ELSE NEW."UserId" END::text);
+ RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS hau_notification_changed_trigger ON "UserNotifications";
+CREATE TRIGGER hau_notification_changed_trigger AFTER INSERT OR UPDATE OR DELETE ON "UserNotifications"
+ FOR EACH ROW EXECUTE FUNCTION hau_notification_changed();
+
+CREATE OR REPLACE FUNCTION hau_notification_visibility_changed() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE recipient uuid;
+BEGIN
+ IF NEW."IsDeleted" IS DISTINCT FROM OLD."IsDeleted" THEN
+   FOR recipient IN SELECT DISTINCT "UserId" FROM "UserNotifications" WHERE "DocumentId"=NEW."Id" LOOP
+     PERFORM pg_notify('hau_notifications', recipient::text);
+   END LOOP;
+ END IF;
+ RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS hau_notification_visibility_trigger ON "Documents";
+CREATE TRIGGER hau_notification_visibility_trigger AFTER UPDATE OF "IsDeleted" ON "Documents"
+ FOR EACH ROW EXECUTE FUNCTION hau_notification_visibility_changed();
+-- Invalidate only clients watching this document. No OCR contents or user data travel in NOTIFY.
+CREATE OR REPLACE FUNCTION hau_document_result_changed() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP='DELETE' THEN
+   PERFORM pg_notify('hau_document_updates', OLD."Id"::text);
+ ELSIF NEW."OcrDataRaw" IS DISTINCT FROM OLD."OcrDataRaw"
+       OR NEW."IsDeleted" IS DISTINCT FROM OLD."IsDeleted" THEN
+   PERFORM pg_notify('hau_document_updates', NEW."Id"::text);
+ END IF;
+ RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS hau_document_result_trigger ON "Documents";
+CREATE TRIGGER hau_document_result_trigger AFTER UPDATE OF "OcrDataRaw","IsDeleted" OR DELETE ON "Documents"
+ FOR EACH ROW EXECUTE FUNCTION hau_document_result_changed();
 COMMIT;

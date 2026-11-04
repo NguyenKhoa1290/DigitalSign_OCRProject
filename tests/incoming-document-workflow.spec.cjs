@@ -27,6 +27,8 @@ async function check(browser, width, role, status, type = 'CongVanDen', wrongUni
     assignedToName: status === 'IncomingAssigned' ? 'Chuyên viên fixture' : null, processes: [] };
   let failSigning = true;
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
+    if (new URL(route.request().url()).pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     const req = route.request(), url = new URL(req.url()), method = req.method();
     let data, responseStatus = 200;
     if (method === 'GET' && url.pathname === `/api/documents/${id}`) data = document;

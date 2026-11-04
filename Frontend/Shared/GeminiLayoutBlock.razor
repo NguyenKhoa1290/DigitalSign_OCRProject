@@ -1,0 +1,78 @@
+@if (Block.ValueKind == JsonValueKind.Object)
+{
+    @switch (Text(Block, "type"))
+    {
+        case "paragraph":
+            <p class="layout-paragraph" style="@ParagraphStyle(Block)">
+                @if (Block.TryGetProperty("runs", out var runs) && runs.ValueKind == JsonValueKind.Array && runs.GetArrayLength() > 0)
+                {
+                    @foreach (var run in runs.EnumerateArray())
+                    { <span style="@Emphasis(run, Block)">@Text(run, "text")</span> }
+                }
+                else { @Text(Block, "text") }
+            </p>
+            break;
+        case "columns":
+            @if (Block.TryGetProperty("columns", out var columns) && columns.ValueKind == JsonValueKind.Array)
+            {
+                <div class="layout-columns" style="@ColumnStyle(columns.GetArrayLength())">
+                    @foreach (var column in columns.EnumerateArray().Take(4))
+                    {
+                        <div class="layout-column">
+                            @if (column.ValueKind == JsonValueKind.Array)
+                            { @foreach (var paragraph in column.EnumerateArray()) { <GeminiLayoutBlock Block="paragraph" /> } }
+                        </div>
+                    }
+                </div>
+            }
+            break;
+        case "table":
+            @if (Block.TryGetProperty("headers", out var headers) && headers.ValueKind == JsonValueKind.Array)
+            {
+                <table class="layout-table">
+                    <thead><tr>@foreach (var header in headers.EnumerateArray()) { <th>@header.ToString()</th> }</tr></thead>
+                    <tbody>
+                        @if (Block.TryGetProperty("rows", out var rows) && rows.ValueKind == JsonValueKind.Array)
+                        {
+                            @foreach (var row in rows.EnumerateArray().Take(200))
+                            {
+                                <tr>@if (row.ValueKind == JsonValueKind.Array) { @foreach (var cell in row.EnumerateArray()) { <td>@cell.ToString()</td> } }</tr>
+                            }
+                        }
+                        @for (var r = 0; r < Number(Block, "blank_rows", 0, 0, 100); r++)
+                        { <tr>@foreach (var header in headers.EnumerateArray()) { <td>&nbsp;</td> }</tr> }
+                    </tbody>
+                </table>
+            }
+            break;
+        case "page_break":
+            <hr class="layout-page-break" aria-label="Sang trang" />
+            break;
+    }
+}
+
+@code {
+    [Parameter] public JsonElement Block { get; set; }
+    private static string Text(JsonElement element, string key) => element.ValueKind == JsonValueKind.Object
+        && element.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? "" : "";
+    private static double Number(JsonElement element, string key, double fallback, double min, double max)
+        => element.TryGetProperty(key, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) && double.IsFinite(number)
+            ? Math.Clamp(number, min, max) : fallback;
+    private static bool Flag(JsonElement element, string key, bool fallback = false)
+        => element.ValueKind == JsonValueKind.Object && element.TryGetProperty(key, out var value)
+            && value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : fallback;
+    private static string Emphasis(JsonElement element, JsonElement parent)
+        => $"font-weight:{(Flag(element, "bold", Flag(parent, "bold")) ? 700 : 400)};font-style:{(Flag(element, "italic", Flag(parent, "italic")) ? "italic" : "normal")}";
+    private static string ParagraphStyle(JsonElement block)
+    {
+        var align = Text(block, "align");
+        if (align is not ("left" or "right" or "center" or "justify")) align = "left";
+        return FormattableString.Invariant($"text-align:{align};font-size:{Number(block, "font_size", 12, 9, 24)}pt;margin-top:{Number(block, "space_before_pt", 0, 0, 72)}pt;margin-bottom:{Number(block, "space_after_pt", 6, 0, 72)}pt;") + Emphasis(block, block);
+    }
+    private string ColumnStyle(int count)
+    {
+        var widths = Block.TryGetProperty("widths", out var values) && values.ValueKind == JsonValueKind.Array ? values.EnumerateArray().ToArray() : Array.Empty<JsonElement>();
+        return "grid-template-columns:" + string.Join(" ", Enumerable.Range(0, Math.Min(count, 4)).Select(i =>
+            FormattableString.Invariant($"minmax(0,{(i < widths.Length && widths[i].ValueKind == JsonValueKind.Number && widths[i].TryGetDouble(out var w) && double.IsFinite(w) ? Math.Clamp(w, .01, 100) : 1)}fr)")));
+    }
+}

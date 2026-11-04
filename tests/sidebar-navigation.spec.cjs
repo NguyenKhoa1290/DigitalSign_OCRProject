@@ -11,6 +11,7 @@ async function check(browser, role, width) {
   await context.addInitScript(token => { localStorage.setItem('auth_token', token); window.fixtureDocument = Math.random(); }, token);
   let modelRequests = 0;
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     const url = new URL(route.request().url());
     assert.equal(route.request().method(), 'GET');
     let data;

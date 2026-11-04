@@ -18,6 +18,8 @@ async function run(browser, width, role) {
     docTypeId: actor, concurrencyVersion: version, processes: [], createdByName: 'Fixture', minioPath: 'original.pdf' };
   let cancelled = false, fail = true;
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
+    if (new URL(route.request().url()).pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     const request = route.request(), url = new URL(request.url()); let data;
     if (request.method() === 'GET' && url.pathname === '/api/documents/types') data = [{ id: actor, typeName: 'CongVanDi' }];
     else if (request.method() === 'GET' && url.pathname === '/api/documents') data = { items: cancelled ? [] : [doc], totalCount: cancelled ? 0 : 1, page: 1, pageSize: 15 };

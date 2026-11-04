@@ -12,6 +12,8 @@ async function run(browser, width) {
   page.on('pageerror', e => errors.push(e.message)); page.setDefaultTimeout(15000);
   const doc = { id: actor, title: 'Công văn fixture', status: 'Draft', isDeleted: true, concurrencyVersion: '00000000-0000-0000-0000-000000000000', processes: [] };
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
+    if (new URL(route.request().url()).pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     const req = route.request(), url = new URL(req.url()); let data;
     if (req.method() === 'GET' && url.pathname === '/api/documents/deleted') data = { items: removed ? [] : [doc, {...doc, id: 'bbbbbbbb-0000-0000-0000-000000000002', title: 'Đã hủy fixture', isCancelled: true}], totalCount: removed ? 0 : 2, page: 1, pageSize: 15 };
     else if (req.method() === 'POST' && url.pathname === `/api/documents/${actor}/purge`) {

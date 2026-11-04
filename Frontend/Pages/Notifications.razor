@@ -1,11 +1,13 @@
 @page "/notifications"
 @attribute [Authorize]
 @inject MonitoringService MonitoringService
+@inject NotificationRealtimeService Realtime
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>Trung tâm thông báo - HAU Công văn</PageTitle>
 <div class="page-header notification-header">
-    <div><h1 class="page-title">Trung tâm thông báo</h1><p class="page-subtitle">Thông báo của bạn · Tự cập nhật mỗi 30 giây khi mở trang.</p></div>
+    <div><h1 class="page-title">Trung tâm thông báo</h1><p class="page-subtitle">Thông báo của bạn · @(Realtime.Connected ? "Đang nhận thông báo realtime" : "Đang kết nối lại thông báo realtime")</p></div>
     <a href="/" class="btn btn-outline">Quay lại Dashboard</a>
 </div>
 <div class="card notification-controls"><div class="card-body">
@@ -29,9 +31,9 @@ else if (_data != null)
         <article class="card notification-entry @(item.ReadAt == null ? "notification-new" : "")" data-notification-id="@item.Id">
             <div class="card-body">
                 <div class="notification-entry-top"><strong>@KindLabel(item.Kind)</strong><span class="badge">@(item.ReadAt == null ? "Chưa đọc" : "Đã đọc")</span></div>
-                <p>@item.Message</p><p class="notification-time">@item.Timestamp.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss") (Việt Nam)</p>
+                <p>@item.Message</p><p class="notification-time">@VietnamTime.Format(item.Timestamp, "dd/MM/yyyy HH:mm:ss") (Việt Nam)</p>
                 <div class="notification-buttons">
-                    <a href="@item.TargetUrl" class="btn btn-outline btn-sm">Xem chi tiết</a>
+                    <button class="btn btn-outline btn-sm" @onclick="() => Open(item)" disabled="@_marking">Xem chi tiết</button>
                     @if (item.ReadAt == null) { <button class="btn btn-primary btn-sm" @onclick="() => MarkRead(item.Id)" disabled="@_marking">Đánh dấu đã đọc</button> }
                 </div>
             </div>
@@ -50,16 +52,11 @@ else if (_data != null)
     private int _page=1;
     private string? _error;
     private readonly CancellationTokenSource _pollCancellation=new();
-    private Task? _poll;
     private static readonly IReadOnlyList<SelectOption> KindOptions=new[] {new SelectOption("","Tất cả thông báo")}
-        .Concat(new[]{"Assignment","OcrCompleted","ReviewRequested","Rejected","Signed","Published","CertificateExpiring"}.Select(k=>new SelectOption(k,KindLabel(k)))).ToList();
-    protected override async Task OnInitializedAsync() {await Load();_poll=Poll();}
-    private async Task Poll()
-    {
-        using var timer=new PeriodicTimer(TimeSpan.FromSeconds(30));
-        try {while(await timer.WaitForNextTickAsync(_pollCancellation.Token)) if(!_marking) await InvokeAsync(async()=>{await Load(false);if(!_pollCancellation.IsCancellationRequested)StateHasChanged();});}
-        catch(OperationCanceledException) { }
-    }
+        .Concat(new[]{"Assignment","OcrCompleted","OcrFailed","ReviewRequested","Rejected","Signed","Published","CertificateExpiring"}.Select(k=>new SelectOption(k,KindLabel(k)))).ToList();
+    protected override async Task OnInitializedAsync() { Realtime.Received += OnRealtime; Realtime.Changed += OnConnectionChanged; await Load(); }
+    private void OnConnectionChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnRealtime() => _ = InvokeAsync(async () => { await Load(false); if (!_pollCancellation.IsCancellationRequested) StateHasChanged(); });
     private async Task Load(bool showLoading=true)
     {
         if(_fetching) {_reloadRequested=true;return;}
@@ -78,6 +75,16 @@ else if (_data != null)
     private Task ApplyFilters() {_page=1;return Load();}
     private Task Previous() {_page--;return Load();}
     private Task Next() {_page++;return Load();}
+    private async Task Open(NotificationDto item)
+    {
+        if (_marking) return;
+        if (item.ReadAt == null)
+        {
+            await MarkRead(item.Id);
+            if (_error != null) return;
+        }
+        Navigation.NavigateTo(item.TargetUrl);
+    }
     private async Task MarkRead(Guid id)
     {
         _marking=true;
@@ -92,10 +99,10 @@ else if (_data != null)
         catch {_error="Không cập nhật được thông báo. Hãy thử lại.";}
         finally {_marking=false;}
     }
-    public async ValueTask DisposeAsync() {_pollCancellation.Cancel();if(_poll!=null)await _poll;_pollCancellation.Dispose();}
+    public ValueTask DisposeAsync() {Realtime.Received -= OnRealtime;Realtime.Changed -= OnConnectionChanged;_pollCancellation.Cancel();_pollCancellation.Dispose();return ValueTask.CompletedTask;}
     private static string KindLabel(string kind)=>kind switch
     {
-        "Assignment"=>"Công văn được giao", "OcrCompleted"=>"OCR hoàn tất", "ReviewRequested"=>"Yêu cầu ký",
+        "Assignment"=>"Công văn được giao", "OcrCompleted"=>"OCR hoàn tất", "OcrFailed"=>"OCR thất bại", "ReviewRequested"=>"Yêu cầu ký",
         "Rejected"=>"Công văn bị từ chối", "Signed"=>"Công văn đã ký", "Published"=>"Công văn phát hành", "CertificateExpiring"=>"Chứng thư sắp hết hạn", _=>kind
     };
 }

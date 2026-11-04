@@ -1,16 +1,14 @@
 import io
-import json
 import logging
 import os
 import tempfile
-from datetime import date
 from typing import Optional
 
 from app.services.document_input import load_document_images
 
 from app.ocr.engine import OcrEngine
 from app.ocr.extractor import extract_fields
-from app.services import minio_service, document_service
+from app.services import document_service
 from app.services.word_exporter import create_editable_docx, extract_document
 from app.config import get_settings
 
@@ -43,104 +41,7 @@ def get_engine() -> OcrEngine:
 
 
 async def process_document(doc_id: str, minio_path: str, token: str) -> dict:
-    """
-    Pipeline OCR hoàn chỉnh:
-    1. Tải PDF từ MinIO
-    2. Chuyển PDF → ảnh (pdf2image)
-    3. Chạy PaddleOCR từng trang
-    4. Bóc tách các trường: doc_number, title, issued_date
-    5. Gọi DocumentService cập nhật kết quả
-    6. Trả về kết quả
-    """
-    settings = get_settings()
-
-    update_token = token or settings.service_token
-    version = await document_service.require_active_document(
-        doc_id, minio_path, update_token, use_service_token=not bool(token)
+    """Retired automatic Paddle path, including already queued legacy commands."""
+    raise document_service.DocumentUnavailableError(
+        "OCR tự động sau upload đã dừng. Hãy chọn model và tối đa 5 trang tại chi tiết công văn.", 410
     )
-
-    # 1. Tải PDF
-    logger.info("Bắt đầu OCR cho document: %s (path=%s)", doc_id, minio_path)
-    pdf_bytes = minio_service.download_file(minio_path)
-
-    # 2. Chuyển PDF → ảnh
-    with tempfile.TemporaryDirectory() as tmpdir:
-        images = load_document_images(pdf_bytes, minio_path)
-        logger.info("Tài liệu có %d trang, bắt đầu nhận diện...", len(images))
-
-        all_lines = []
-        raw_pages = []
-
-        for page_num, image in enumerate(images, start=1):
-            img_path = os.path.join(tmpdir, f"page_{page_num}.png")
-            image.save(img_path, "PNG")
-
-            # 3. Chạy OCR
-            engine = get_engine()
-            lines = engine.extract_lines(img_path)
-            all_lines.extend(lines)
-
-            raw_pages.append({
-                "page": page_num,
-                "lines": lines,
-            })
-            logger.info("Trang %d: nhận diện %d dòng text", page_num, len(lines))
-
-    # 4. Bóc tách trường
-    fields = extract_fields(all_lines)
-
-    # Chuyển issued_date thành string ISO
-    issued_date_str: Optional[str] = None
-    if isinstance(fields.get("issued_date"), date):
-        issued_date_str = fields["issued_date"].isoformat()
-
-    # 5. Chuẩn bị payload gửi DocumentService
-    ocr_payload = {
-        "expectedVersion": version,
-        "docNumber": fields.get("doc_number"),
-        "title": fields.get("title"),
-        "issuedDate": issued_date_str,
-        "ocrDataRaw": json.dumps(
-            {
-                "pages": raw_pages,
-                "extracted": {
-                    "doc_number": fields.get("doc_number"),
-                    "issued_date": issued_date_str,
-                    "title": fields.get("title"),
-                    "issuing_org": fields.get("issuing_org"),
-                },
-            },
-            ensure_ascii=False,
-        ),
-    }
-
-    # 6. Gọi DocumentService
-    update_token = token or settings.service_token
-    if update_token:
-        updated = await document_service.update_ocr_result(
-            doc_id,
-            ocr_payload,
-            update_token,
-            use_service_token=not bool(token),
-        )
-        if not updated:
-            raise document_service.DocumentUnavailableError("Không ghi kết quả OCR: công văn đã thay đổi hoặc không còn khả dụng.")
-    else:
-        logger.warning("Khong co JWT hoac SERVICE_TOKEN, bo qua buoc cap nhat DocumentService.")
-
-    logger.info(
-        "OCR hoàn tất: doc=%s | doc_number=%s | date=%s",
-        doc_id,
-        fields.get("doc_number"),
-        issued_date_str,
-    )
-
-    return {
-        "doc_id": doc_id,
-        "doc_number": fields.get("doc_number"),
-        "title": fields.get("title"),
-        "issued_date": issued_date_str,
-        "issuing_org": fields.get("issuing_org"),
-        "total_pages": len(images),
-        "total_lines": len(all_lines),
-    }

@@ -126,6 +126,7 @@ services:
     image: ${IMAGE_PREFIX:-hau}/document-service:${IMAGE_TAG:-local}
     container_name: hau_document_service
     environment:
+      OcrService__BaseUrl: http://ocr-service:5051/
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-DigitalSign_OCR};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-1111};SSL Mode=Disable"
@@ -143,6 +144,8 @@ services:
       KafkaSettings__Enabled: "true"
       KafkaSettings__BootstrapServers: kafka:9092
       KafkaSettings__TopicDocumentUploaded: document.uploaded
+      KafkaSettings__TopicOcrRequested: ocr.gemini.requested.v1
+      KafkaSettings__OcrConsumerGroup: document-gemini-ocr-v1
     depends_on:
       postgres:
         condition: service_healthy

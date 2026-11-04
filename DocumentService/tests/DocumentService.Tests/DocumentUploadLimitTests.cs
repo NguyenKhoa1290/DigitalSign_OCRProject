@@ -1,3 +1,4 @@
+using DocumentService.Core.Entities;
 using System.Security.Claims;
 using DocumentService.API.Controllers;
 using DocumentService.Core.DTOs;
@@ -21,20 +22,20 @@ public class DocumentUploadLimitTests
     {
         var actor = Guid.NewGuid(); var id = Guid.NewGuid();
         var service = new Mock<IDocumentService>();
-        service.Setup(s => s.GetDocumentByIdAsync(id)).ReturnsAsync(new DocumentDto { Id = id, DocTypeName = "CongVanDi" });
-        service.Setup(s => s.UploadFileAsync(id, It.IsAny<Stream>(), "test.pdf", "application/pdf", actor))
+        service.Setup(s => s.GetDocumentByIdAsync(id)).ReturnsAsync(new DocumentDto { Id = id, DocTypeName = "CongVanDi", CreatedById = actor });
+        service.Setup(s => s.UploadFileAsync(id, It.IsAny<Stream>(), "test.pdf", "application/pdf", It.Is<DocumentActor>(a=>a.UserId==actor)))
             .ReturnsAsync(new DocumentDto { Id = id });
         var controller = new DocumentsController(service.Object, NullLogger<DocumentsController>.Instance,
             new ConfigurationBuilder().Build(), Mock.Of<IHttpClientFactory>());
         controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext
         {
-            User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, actor.ToString()) }, "fixture"))
+            User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, actor.ToString()), new Claim(ClaimTypes.Role, "Specialist") }, "fixture"))
         }};
         var file = new FormFile(Stream.Null, 0, length, "file", "test.pdf")
         { Headers = new HeaderDictionary(), ContentType = "application/pdf" };
         var result = (ObjectResult)await controller.UploadFile(id, file);
         result.StatusCode.Should().Be(expectedStatus);
-        service.Verify(s => s.UploadFileAsync(id, It.IsAny<Stream>(), "test.pdf", "application/pdf", actor),
+        service.Verify(s => s.UploadFileAsync(id, It.IsAny<Stream>(), "test.pdf", "application/pdf", It.Is<DocumentActor>(a=>a.UserId==actor)),
             expectedStatus == 200 ? Times.Once() : Times.Never());
     }
 }

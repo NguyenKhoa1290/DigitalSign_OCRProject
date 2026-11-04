@@ -6,6 +6,8 @@ import { setGlassBackdrop } from '../lib/flight/components/backdrop.js';
 
 const backdrop = document.createElement('canvas');
 const context = backdrop.getContext('2d');
+let backdropViewport = null;
+let backdropResizeFrame = 0;
 let navigationReference = null;
 const taskbarSettings = fetch(new URL('./flight-taskbar-config.json', import.meta.url), { cache: 'no-store' })
     .then(response => {
@@ -47,12 +49,16 @@ export function syncTaskbarSelection() {
 
 function drawBackdrop() {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    if (backdropViewport && backdropViewport.width === width && backdropViewport.ratio === ratio
+        && (backdropViewport.height === height || (width <= 960 && Math.abs(backdropViewport.height - height) <= 160)))
+        return; // Mobile browser chrome changes height while scrolling; keep the existing texture.
+    backdropViewport = { width, height, ratio };
     backdrop.width = Math.max(1, Math.round(window.innerWidth * ratio));
     backdrop.height = Math.max(1, Math.round(window.innerHeight * ratio));
 
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const width = window.innerWidth;
-    const height = window.innerHeight;
     const base = context.createLinearGradient(0, 0, width, height);
     base.addColorStop(0, '#e8f7ff');
     base.addColorStop(.45, '#eef5fb');
@@ -103,4 +109,7 @@ function configureTaskbars() {
 drawBackdrop();
 configureTaskbars();
 new MutationObserver(configureTaskbars).observe(document.body, { childList: true, subtree: true });
-window.addEventListener('resize', drawBackdrop, { passive: true });
+window.addEventListener('resize', () => {
+    if (backdropResizeFrame) return;
+    backdropResizeFrame = requestAnimationFrame(() => { backdropResizeFrame = 0; drawBackdrop(); });
+}, { passive: true });

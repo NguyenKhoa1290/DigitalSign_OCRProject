@@ -72,14 +72,14 @@ else
                                 @(cert.CertificateType == "Organization" ? "Pháp nhân" : "Cá nhân")
                             </span>
                         </td>
-                        <td>@cert.NotBefore.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        <td>@VietnamTime.Format(cert.NotBefore, "dd/MM/yyyy")</td>
                         <td>
                             @{
                                 var isExpiring = cert.NotAfter < DateTime.UtcNow.AddDays(30);
                                 var isExpired = cert.NotAfter < DateTime.UtcNow;
                             }
                             <span style="color: @(isExpired ? "var(--color-danger)" : isExpiring ? "var(--color-warning)" : "inherit")">
-                                @cert.NotAfter.ToLocalTime().ToString("dd/MM/yyyy")
+                                @VietnamTime.Format(cert.NotAfter, "dd/MM/yyyy")
                             </span>
                         </td>
                         <td>
@@ -143,12 +143,12 @@ else
                     </div>
                     <div>
                         <dt>Hiệu lực từ</dt>
-                        <dd>@cert.NotBefore.ToLocalTime().ToString("dd/MM/yyyy")</dd>
+                        <dd>@VietnamTime.Format(cert.NotBefore, "dd/MM/yyyy")</dd>
                     </div>
                     <div>
                         <dt>Hết hạn</dt>
                         <dd class="@(mobileIsExpired ? "certificate-date-expired" : mobileIsExpiring ? "certificate-date-expiring" : "")">
-                            @cert.NotAfter.ToLocalTime().ToString("dd/MM/yyyy")
+                            @VietnamTime.Format(cert.NotAfter, "dd/MM/yyyy")
                         </dd>
                     </div>
                 </dl>

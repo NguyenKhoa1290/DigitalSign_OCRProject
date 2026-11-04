@@ -10,6 +10,7 @@ public interface IDocumentService
     // CRUD
     Task<DocumentDto> CreateDocumentAsync(CreateDocumentDto dto, Guid userId);
     Task<DocumentDto> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto, Guid userId);
+    Task<DocumentDto> UpdateDocumentAsync(Guid id, UpdateDocumentDto dto, DocumentActor actor);
     Task<DocumentDto> GetDocumentByIdAsync(Guid id);
     Task<PagedResult<DocumentDto>> GetAllDocumentsAsync(DocumentQueryParams query);
     Task DeleteDocumentAsync(Guid id, DocumentActor actor, string? reason);
@@ -22,6 +23,7 @@ public interface IDocumentService
     // File
     Task<DocumentFileDto> GetFileAsync(Guid id);
     Task<DocumentDto> UploadFileAsync(Guid id, Stream fileStream, string fileName, string contentType, Guid userId);
+    Task<DocumentDto> UploadFileAsync(Guid id, Stream fileStream, string fileName, string contentType, DocumentActor actor);
 
     // OCR
     Task<DocumentDto> UpdateOcrDataAsync(Guid id, UpdateOcrDto dto, Guid userId);

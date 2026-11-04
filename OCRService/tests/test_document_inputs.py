@@ -79,6 +79,49 @@ class DocumentInputsTests(unittest.TestCase):
         app.include_router(routes.router)
         self.client = TestClient(app)
 
+    def test_recognize_returns_layout_without_exporting_or_overwriting_document_fields(self):
+        engine = Mock(); engine.extract_lines.return_value = []
+        layout = {"blocks": [{"type": "paragraph", "text": "Nội dung nhận diện"}]}
+        with patch.object(ocr_processor, "get_engine", return_value=engine), \
+             patch.object(routes.gemini_service, "get_gemini_api_key", new_callable=AsyncMock, return_value="fixture"), \
+             patch.object(routes.gemini_service, "list_gemini_models", new_callable=AsyncMock, return_value=[{"id": "gemini-fixture"}]), \
+             patch.object(routes.gemini_service, "generate_layout", new_callable=AsyncMock, return_value=layout) as generate, \
+             patch.object(routes, "create_layout_docx") as export:
+            response = self.client.post("/api/ocr/gemini/recognize-upload?model_id=gemini-fixture&pages=2", files=[
+                ("files", ("first.png", picture(), "image/png")), ("files", ("second.png", picture(), "image/png"))])
+            self.assertEqual(response.status_code, 200, response.text)
+            result = response.json()
+            self.assertEqual(result["provider"], "gemini")
+            self.assertEqual(result["selectedPages"], [2])
+            self.assertEqual(result["layout"]["blocks"][0]["text"], "Nội dung nhận diện")
+            self.assertEqual(result["modelId"], "gemini-fixture")
+            self.assertNotIn("docNumber", result); self.assertNotIn("issuedDate", result)
+            generate.assert_awaited_once(); export.assert_not_called()
+
+    def test_saved_layout_exports_word_with_tables_and_page_break_without_cloud(self):
+        import zipfile
+        layout = {"blocks": [{"type": "paragraph", "text": "Kết quả đã lưu"},
+            {"type": "table", "headers": ["A", "B"], "column_widths": [.5, .5], "rows": [], "blank_rows": 7},
+            {"type": "page_break"}, {"type": "paragraph", "text": "Trang tiếp theo"}]}
+        with patch.object(routes.gemini_service, "get_gemini_api_key", new_callable=AsyncMock) as key, \
+             patch.object(routes.gemini_service, "generate_layout", new_callable=AsyncMock) as generate:
+            response = self.client.post("/api/ocr/gemini/export-layout", json={"layout": layout})
+            self.assertEqual(response.status_code, 200, response.text)
+            with zipfile.ZipFile(io.BytesIO(response.content)) as word:
+                xml = word.read("word/document.xml").decode()
+                self.assertIn("Kết quả đã lưu", xml); self.assertIn('w:type="page"', xml)
+                self.assertEqual(xml.count("<w:tr>"), 8)
+            key.assert_not_awaited(); generate.assert_not_awaited()
+
+    def test_invalid_or_more_than_five_saved_pages_do_not_export(self):
+        with patch.object(routes, "create_layout_docx") as export:
+            for blocks in [[], [{"type": "unknown"}],
+                           [{"type": "table", "headers": [str(i) for i in range(12)], "rows": [], "blank_rows": 100}] * 9,
+                           [{"type": "paragraph", "text": "x"}, {"type": "page_break"}] * 5 + [{"type": "paragraph", "text": "six"}]]:
+                response = self.client.post("/api/ocr/gemini/export-layout", json={"layout": {"blocks": blocks}})
+                self.assertEqual(response.status_code, 400, response.text)
+            export.assert_not_called()
+
     def test_pdf_count_is_checked_before_rendering_over_limit(self):
         with patch.object(document_input, "convert_from_bytes") as render:
             with self.assertRaisesRegex(document_input.DocumentInputError, "6 trang"):
@@ -120,34 +163,14 @@ class DocumentInputsTests(unittest.TestCase):
                     self.assertIn("5 trang", response.json()["detail"])
             engine.assert_not_called(); key.assert_not_awaited(); generate.assert_not_awaited()
 
-    def test_stored_document_over_limit_does_not_ocr_or_update_database(self):
-        with patch.object(ocr_processor.minio_service, "download_file", return_value=pdf(6)), \
-             patch.object(ocr_processor.document_service, "require_active_document", new_callable=AsyncMock, return_value="fixture-version"), \
-             patch.object(ocr_processor, "get_engine") as engine, \
+    def test_legacy_stored_document_and_queued_commands_never_run_ocr(self):
+        with patch.object(ocr_processor, "get_engine") as engine, \
+             patch.object(ocr_processor.document_service, "require_active_document", new_callable=AsyncMock) as state, \
              patch.object(ocr_processor.document_service, "update_ocr_result", new_callable=AsyncMock) as update:
-            response = self.client.post("/api/ocr/process", json={"doc_id": "fixture", "minio_path": "documents/input.pdf"})
-            self.assertEqual(response.status_code, 400, response.text)
-            engine.assert_not_called(); update.assert_not_awaited()
-
-    def test_deleted_document_is_rejected_before_minio_or_ocr(self):
-        with patch.object(ocr_processor.document_service, "require_active_document", new_callable=AsyncMock,
-                          side_effect=ocr_processor.document_service.DocumentUnavailableError("Đã xóa", 404)), \
-             patch.object(ocr_processor.minio_service, "download_file") as download, \
-             patch.object(ocr_processor, "get_engine") as engine:
-            response = self.client.post("/api/ocr/process", json={"doc_id": "fixture", "minio_path": "input.pdf"})
-            self.assertEqual(response.status_code, 404, response.text)
-            download.assert_not_called(); engine.assert_not_called()
-
-    def test_callback_failure_returns_conflict_and_includes_original_version(self):
-        engine = Mock(); engine.extract_lines.return_value = []
-        with patch.object(ocr_processor.document_service, "require_active_document", new_callable=AsyncMock, return_value="original-version"), \
-             patch.object(ocr_processor.minio_service, "download_file", return_value=picture()), \
-             patch.object(ocr_processor, "get_engine", return_value=engine), \
-             patch.object(ocr_processor.document_service, "update_ocr_result", new_callable=AsyncMock, return_value=False) as update, \
-             patch.object(ocr_processor, "get_settings", return_value=Mock(service_token="fixture")):
-            response = self.client.post("/api/ocr/process", json={"doc_id": "fixture", "minio_path": "input.png"})
-            self.assertEqual(response.status_code, 409, response.text)
-            self.assertEqual(update.call_args.args[1]["expectedVersion"], "original-version")
+            for name in ["documents/input.pdf", "input.png", "deleted.pdf"]:
+                response = self.client.post("/api/ocr/process", json={"doc_id": "fixture", "minio_path": name})
+                self.assertEqual(response.status_code, 410, response.text)
+            engine.assert_not_called(); state.assert_not_awaited(); update.assert_not_awaited()
 
     def test_paddle_upload_recognizes_exactly_five_pages_or_one_image(self):
         engine = Mock(); engine.extract_lines.return_value = []

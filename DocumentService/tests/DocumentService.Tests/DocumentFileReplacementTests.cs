@@ -24,7 +24,7 @@ public class DocumentFileReplacementTests
     public DocumentFileReplacementTests()
     {
         _documents.Setup(r => r.GetByIdAsync(_document.Id, It.IsAny<bool>())).ReturnsAsync(_document);
-        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName))
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName, _document.ConcurrencyVersion))
             .ReturnsAsync(true);
         _files.Setup(f => f.UploadFileAsync(It.IsAny<Stream>(), OriginalName, "application/pdf", "documents"))
             .ReturnsAsync("new.pdf");
@@ -40,13 +40,37 @@ public class DocumentFileReplacementTests
     }
 
     [Theory]
+    [InlineData("Clerk")][InlineData("Specialist")]
+    public async Task AuthoringPermissionIsCheckedOnTheServiceSnapshotBeforeAnyWrite(string role)
+    {
+        _document.DocType=new DocumentType{TypeName="CongVanDi"};_document.CreatedById=Guid.NewGuid();
+        var actor=new DocumentActor(Guid.NewGuid(),new[]{role});using var file=new MemoryStream(new byte[]{1});
+        await Assert.ThrowsAsync<UnauthorizedDocumentAccessException>(()=>_service.UploadFileAsync(_document.Id,file,OriginalName,"application/pdf",actor));
+        await Assert.ThrowsAsync<UnauthorizedDocumentAccessException>(()=>_service.UpdateDocumentAsync(_document.Id,new Core.DTOs.UpdateDocumentDto{Title="Forged change"},actor));
+        _files.Verify(f=>f.UploadFileAsync(It.IsAny<Stream>(),It.IsAny<string>(),It.IsAny<string>(),It.IsAny<string>()),Times.Never());
+        _documents.Verify(d=>d.UpdateAsync(It.IsAny<Document>()),Times.Never());
+    }
+
+    [Theory]
+    [InlineData("CongVanDi",DocumentStatus.PendingDeptReview)]
+    [InlineData("CongVanDi",DocumentStatus.DirectorSigned)]
+    [InlineData("CongVanDi",DocumentStatus.Published)]
+    [InlineData("CongVanDen",DocumentStatus.IncomingAssigned)]
+    public async Task SubmittedOrSignedSourceCannotBeReplaced(string type,string status)
+    {
+        _document.DocType=new DocumentType{TypeName=type};_document.Status=status;
+        await Assert.ThrowsAsync<DocumentConflictException>(()=>Upload());
+        _files.Verify(f=>f.UploadFileAsync(It.IsAny<Stream>(),It.IsAny<string>(),It.IsAny<string>(),It.IsAny<string>()),Times.Never());
+    }
+
+    [Theory]
     [InlineData(OriginalName)]
     [InlineData("C:\\fakepath\\" + OriginalName)]
     [InlineData("/uploads/" + OriginalName)]
     public async Task Replacement_SwitchesPointerBeforeDeletingOldObject_AndKeepsOriginalName(string suppliedName)
     {
         var saved = false;
-        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName))
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName, _document.ConcurrencyVersion))
             .Callback(() => saved = true).ReturnsAsync(true);
         _files.Setup(f => f.DeleteFileAsync("old.pdf", "documents"))
             .Callback(() => saved.Should().BeTrue()).ReturnsAsync(true);
@@ -56,7 +80,7 @@ public class DocumentFileReplacementTests
         _files.Verify(f => f.DeleteFileAsync("old.pdf", "documents"), Times.Once);
         _files.Verify(f => f.DeleteFileAsync("new.pdf", "documents"), Times.Never);
         _documents.Verify(r => r.UpdateAsync(It.IsAny<Document>()), Times.Never);
-        _kafka.Verify(k => k.PublishDocumentUploadedAsync(_document.Id, "new.pdf", ""), Times.Once);
+        _kafka.Verify(k => k.PublishDocumentUploadedAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         var file = await _service.GetFileAsync(_document.Id);
         file.FileName.Should().Be(OriginalName);
     }
@@ -65,7 +89,7 @@ public class DocumentFileReplacementTests
     public async Task FirstUpload_DoesNotDeleteAnyObject()
     {
         _document.MinioPath = "";
-        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "", "documents/new.pdf", OriginalName)).ReturnsAsync(true);
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "", "documents/new.pdf", OriginalName, _document.ConcurrencyVersion)).ReturnsAsync(true);
         await Upload();
         _files.Verify(f => f.DeleteFileAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
@@ -78,14 +102,14 @@ public class DocumentFileReplacementTests
         await FluentActions.Awaiting(() => Upload()).Should().ThrowAsync<IOException>();
         _document.MinioPath.Should().Be("documents/old.pdf");
         _document.FileName.Should().Be("Công văn cũ.pdf");
-        _documents.Verify(r => r.ReplaceFileAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _documents.Verify(r => r.ReplaceFileAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()), Times.Never);
         _files.Verify(f => f.DeleteFileAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
     public async Task DatabaseFailure_DoesNotDeleteEitherObjectWithUnknownCommitOutcome()
     {
-        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName))
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName, _document.ConcurrencyVersion))
             .ThrowsAsync(new IOException("Database unavailable"));
         await FluentActions.Awaiting(() => Upload()).Should().ThrowAsync<IOException>();
         _files.Verify(f => f.DeleteFileAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -95,7 +119,7 @@ public class DocumentFileReplacementTests
     [Fact]
     public async Task ConcurrentReplacement_DeletesOnlyRejectedNewObject()
     {
-        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName))
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/new.pdf", OriginalName, _document.ConcurrencyVersion))
             .ReturnsAsync(false);
         await FluentActions.Awaiting(() => Upload()).Should().ThrowAsync<DocumentServiceException>();
         _files.Verify(f => f.DeleteFileAsync("new.pdf", "documents"), Times.Once);
@@ -137,7 +161,7 @@ public class DocumentFileReplacementTests
     {
         var objectName = "new" + Path.GetExtension(name);
         _files.Setup(f => f.UploadFileAsync(It.IsAny<Stream>(), name, mime, "documents")).ReturnsAsync(objectName);
-        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/" + objectName, name)).ReturnsAsync(true);
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/" + objectName, name, _document.ConcurrencyVersion)).ReturnsAsync(true);
         var result = await Upload(name); // Simulates an incorrect PDF header; type comes from allowed extension.
         result.FileContentType.Should().Be(mime);
         result.FileName.Should().Be(name);
@@ -166,7 +190,7 @@ public class DocumentFileReplacementTests
     {
         const string mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
         _files.Setup(f => f.UploadFileAsync(It.IsAny<Stream>(), name, mime, "documents")).ReturnsAsync("edited.docx");
-        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/edited.docx", name)).ReturnsAsync(true);
+        _documents.Setup(r => r.ReplaceFileAsync(_document.Id, "documents/old.pdf", "documents/edited.docx", name, _document.ConcurrencyVersion)).ReturnsAsync(true);
         var result = await Upload(name);
         result.FileContentType.Should().Be(mime);
         result.FileName.Should().Be(name);

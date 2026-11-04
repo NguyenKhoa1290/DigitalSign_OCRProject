@@ -142,7 +142,7 @@ public class DocumentDeletionTests
         await FluentActions.Invoking(() => f.Service.UploadFileAsync(doc.Id, Stream.Null, "new.pdf", "application/pdf", f.Owner)).Should().ThrowAsync<DocumentNotFoundException>();
         await FluentActions.Invoking(() => f.Service.SubmitForReviewAsync(doc.Id, f.Owner, null)).Should().ThrowAsync<DocumentNotFoundException>();
         await FluentActions.Invoking(() => f.Service.AssignAsync(doc.Id, f.Owner, Guid.NewGuid(), null)).Should().ThrowAsync<DocumentNotFoundException>();
-        (await f.Repository.ReplaceFileAsync(doc.Id, doc.MinioPath, "documents/new.pdf", "new.pdf")).Should().BeFalse();
+        (await f.Repository.ReplaceFileAsync(doc.Id, doc.MinioPath, "documents/new.pdf", "new.pdf", doc.ConcurrencyVersion)).Should().BeFalse();
         await FluentActions.Invoking(() => f.Repository.UpdateAsync(stale)).Should().ThrowAsync<DbUpdateConcurrencyException>();
         f.Db.ChangeTracker.Clear();
         (await f.Service.GetDeletedDocumentsAsync(new(), f.Actor("Admin"))).TotalCount.Should().Be(1);

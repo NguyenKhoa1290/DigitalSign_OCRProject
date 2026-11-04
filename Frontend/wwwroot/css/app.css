@@ -1198,8 +1198,38 @@ body {
 
 /* Mobile bottom navigation */
 @media (max-width: 960px) {
-    .app-layout { display: block; min-height: 100vh; overflow: hidden; }
-    .main-content { width: 100%; max-width: 100vw; height: 100vh; padding-bottom: 0; }
+    /* Large previews must not force a blurred repaint of every scrolling pixel. */
+    .document-preview-card,
+    .document-detail-layout .card {
+        background: rgb(247, 252, 255);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        isolation: isolate;
+        contain: paint;
+    }
+    .app-layout:has(.document-preview-card)::before,
+    .app-layout:has(.document-preview-card)::after,
+    .main-content:has(.document-preview-card)::before {
+        animation: none;
+        will-change: auto;
+    }
+    /* Keep touch scrolling without reserving an asymmetric scrollbar gutter. */
+    html, body, .page-container {
+        scrollbar-gutter: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    .page-container::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+    .app-layout { display: block; min-height: 100vh; overflow: clip; }
+    /* This shell never scrolls; only page-container does. Unlike hidden, clip
+       prevents focus/scrollIntoView from shifting it toward offscreen decoration. */
+    .main-content { width: 100%; max-width: 100vw; height: 100vh; padding-bottom: 0; overflow: clip; }
     .page-container {
         width: 100%;
         max-width: 100vw;

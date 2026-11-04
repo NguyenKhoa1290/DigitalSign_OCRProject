@@ -1,0 +1,28 @@
+@inject UploadProgressService Uploads
+@implements IDisposable
+
+<aside class="upload-toasts" aria-label="Tiến độ tải tệp">
+    @foreach (var item in Uploads.Items)
+    {
+        <section class="upload-toast @(item.State == "Error" ? "upload-error" : item.State == "Success" ? "upload-success" : "")" @key="item.Id" role="status" aria-live="polite">
+            <div class="upload-heading"><strong>Tải tệp lên</strong>
+                @if (item.State is "Success" or "Error") { <button type="button" class="upload-close" aria-label="Đóng tiến độ tải tệp" @onclick="() => Uploads.Dismiss(item.Id)">×</button> }
+            </div>
+            <p class="upload-name">@item.Name</p>
+            <div class="upload-status"><span>@(item.ErrorMessage ?? Label(item.State))</span><strong>@(item.Percent is int percent ? $"{percent}%" : "")</strong></div>
+            @if (item.Percent is int value) { <progress value="@value" max="100" aria-label="Tiến độ tải tệp"></progress> }
+            else { <progress aria-label="Đang chuẩn bị tải tệp"></progress> }
+        </section>
+    }
+</aside>
+
+@code {
+    protected override void OnInitialized() => Uploads.Changed += Refresh;
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => Uploads.Changed -= Refresh;
+    private static string Label(string state) => state switch
+    {
+        "Preparing" => "Đang chuẩn bị...", "Uploading" => "Đang tải lên...", "Processing" => "Đã tải lên, máy chủ đang xử lý...",
+        "Success" => "Tải lên thành công", "Error" => "Tải lên thất bại. Vui lòng thử lại.", _ => "Đang tải lên..."
+    };
+}

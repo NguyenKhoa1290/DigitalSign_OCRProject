@@ -122,12 +122,14 @@ public class DocumentRepository : IDocumentRepository
         return document;
     }
 
-    public async Task<bool> ReplaceFileAsync(Guid id, string expectedPath, string newPath, string fileName)
+    public async Task<bool> ReplaceFileAsync(Guid id, string expectedPath, string newPath, string fileName, Guid expectedVersion)
     {
         var version = Guid.NewGuid();
         // Compare the stored path so simultaneous uploads cannot delete the wrong PDF.
         var changed = await _context.Documents
-            .Where(document => document.Id == id && document.MinioPath == expectedPath)
+            .Where(document => document.Id == id && document.MinioPath == expectedPath && document.ConcurrencyVersion == expectedVersion
+                && (document.Status == DocumentStatus.Draft
+                    || document.Status == DocumentStatus.Rejected && document.DocType!.TypeName != "CongVanDen"))
             .ExecuteUpdateAsync(update => update
                 .SetProperty(document => document.MinioPath, newPath)
                 .SetProperty(document => document.FileName, fileName)

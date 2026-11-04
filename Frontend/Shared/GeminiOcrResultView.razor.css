@@ -1,0 +1,14 @@
+.gemini-result-card { min-width: 0; }
+.card-header { gap: 10px; flex-wrap: wrap; }
+.ocr-result-actions { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.ocr-edited-input { display: none; }
+.ocr-edited-summary { padding: 12px; margin-bottom: 14px; border: 1px solid var(--color-border); border-radius: 10px; overflow-wrap: anywhere; }
+.ocr-edited-summary p { margin: 6px 0 0; }
+.ocr-original-result > summary { cursor: pointer; margin-bottom: 10px; list-style: none; display: inline-flex; gap: 6px; align-items: center; }
+.ocr-original-result > summary::-webkit-details-marker { display: none; }
+.ocr-original-result[open] > summary .ocr-content-chevron { transform: rotate(90deg); }
+.form-hint, .ocr-edited-summary, .ocr-review-notes, .alert { line-height: calc(1.5em + 2px); }
+.ocr-document { padding: 18px; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; color: #17202d; font-family: 'Times New Roman', serif; min-width: 0; }
+.ocr-review-notes { margin-top: 16px; overflow-wrap: anywhere; }
+.ocr-review-notes ul { padding-left: 20px; }
+@media (max-width: 600px) { .ocr-document { padding: 10px; } }

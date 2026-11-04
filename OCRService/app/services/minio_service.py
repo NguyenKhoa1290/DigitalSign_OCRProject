@@ -19,15 +19,19 @@ def _get_client() -> Minio:
     )
 
 
-def download_file(object_name: str) -> bytes:
+def download_file(object_name: str, max_bytes: int | None = None) -> bytes:
     """Tải file từ MinIO, trả về bytes."""
     client = _get_client()
     settings = get_settings()
     try:
         response = client.get_object(settings.minio_bucket, object_name)
-        data = response.read()
-        response.close()
-        response.release_conn()
+        try:
+            data = response.read(max_bytes + 1) if max_bytes is not None else response.read()
+            if max_bytes is not None and len(data) > max_bytes:
+                raise ValueError("Tệp vượt quá giới hạn 25 MB cho mỗi lượt OCR.")
+        finally:
+            response.close()
+            response.release_conn()
         logger.info("Tải file từ MinIO: %s (%d bytes)", object_name, len(data))
         return data
     except S3Error as e:

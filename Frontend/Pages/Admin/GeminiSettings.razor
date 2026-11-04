@@ -29,7 +29,7 @@
                     <span>Khóa đang lưu: @_status.MaskedKey</span>
                     @if (_status.UpdatedAtUtc.HasValue)
                     {
-                        <span>Cập nhật: @_status.UpdatedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        <span>Cập nhật: @VietnamTime.Format(_status.UpdatedAtUtc.Value)</span>
                     }
                 }
                 else

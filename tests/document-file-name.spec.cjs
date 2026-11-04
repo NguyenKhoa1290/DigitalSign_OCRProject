@@ -18,6 +18,8 @@ async function check(browser, width) {
   let document = { id, title: 'Filename fixture', status: 'Draft', statusDisplay: 'Nháp',
     minioPath: 'documents/legacy.pdf', fileName: null, processes: [] };
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
+    if (new URL(route.request().url()).pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     const request = route.request(), url = new URL(request.url()); let data;
     if (request.method() === 'GET' && url.pathname === `/api/documents/${id}`) data = document;
     else if (request.method() === 'POST' && url.pathname === `/api/documents/${id}/upload`) {

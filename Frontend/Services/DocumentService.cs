@@ -19,8 +19,11 @@ public class DocumentService
         return await _api.GetAsync<PagedResult<DocumentDto>>(q);
     }
 
-    public async Task<DocumentDto?> GetDocumentAsync(Guid id)
-        => await _api.GetAsync<DocumentDto>($"api/documents/{id}");
+    public async Task<DocumentDto?> GetDocumentAsync(Guid id, CancellationToken token = default)
+        => await _api.GetAsync<DocumentDto>($"api/documents/{id}", token);
+
+    public Task<OcrJobDto?> GetLatestOcrJobAsync(Guid id, CancellationToken token = default)
+        => _api.GetAsync<OcrJobDto>($"api/documents/{id}/ocr-jobs/latest", token);
 
     public Task<PagedResult<DocumentDto>?> GetDeletedDocumentsAsync(int page = 1, string? search = null)
         => _api.GetAsync<PagedResult<DocumentDto>>($"api/documents/deleted?page={page}&pageSize=15&search={Uri.EscapeDataString(search ?? "")}");
@@ -98,7 +101,7 @@ public class DocumentService
         });
 
     public async Task<bool> SubmitDocumentAsync(Guid id, string? comment = null)
-    { try { await _api.PostAsync<object>($"api/documents/{id}/submit", new { comment }); return true; } catch { return false; } }
+    { try { using var response = await _api.PostResponseAsync($"api/documents/{id}/submit", new { comment }); return response.IsSuccessStatusCode; } catch { return false; } }
 
     public async Task<bool> DeptSignDocumentAsync(Guid id, string? comment = null)
     { try { await _api.PostAsync<object>($"api/documents/{id}/dept-sign", new { comment }); return true; } catch { return false; } }
@@ -118,37 +121,15 @@ public class DocumentService
     public async Task<bool> AssignDocumentAsync(Guid id, Guid assignedToId, string? comment = null)
     { try { return await _api.PostAsync<DocumentDto>($"api/documents/{id}/assign", new { toUserId = assignedToId, comment }) is not null; } catch { return false; } }
 
-    public async Task<bool> RunOcrAsync(Guid id)
+    public async Task<DocumentDto> SaveGeminiOcrAsync(Guid id, GeminiOcrResult result, Guid expectedVersion)
     {
-        var document = await GetDocumentAsync(id);
-        if (document is null || string.IsNullOrWhiteSpace(document.MinioObjectName))
-            return false;
-
-        if (document.MinioObjectName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
-            throw new HttpRequestException("Word không cần chạy OCR. Hãy tải PDF hoặc ảnh nếu cần nhận diện.");
-
-        using var response = await _api.PostResponseAsync("api/ocr/process", new
+        using var response = await _api.PatchResponseAsync($"api/documents/{id}/ocr", new
         {
-            doc_id = id.ToString(),
-            minio_path = document.MinioObjectName,
-            token = string.Empty
+            expectedVersion, ocrDataRaw = System.Text.Json.JsonSerializer.Serialize(result)
         });
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var message = "OCR thất bại. Vui lòng thử lại.";
-            try
-            {
-                using var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
-                    && body.RootElement.TryGetProperty("detail", out var detail)
-                    && detail.ValueKind == System.Text.Json.JsonValueKind.String)
-                    message = detail.GetString() ?? message;
-            }
-            catch (System.Text.Json.JsonException) { }
-            throw new HttpRequestException(message, null, response.StatusCode);
-        }
-        return true;
+        await EnsureDocumentActionAsync(response);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<DocumentDto>>();
+        return body?.Data ?? throw new HttpRequestException("Máy chủ chưa xác nhận lưu kết quả OCR.");
     }
 
     // GET api/documents/types  (route trong DocumentsController)
@@ -162,15 +143,10 @@ public class DocumentService
         => _api.GetAsync<List<AssigneeDto>>($"api/users/assignees?search={Uri.EscapeDataString(search)}"
             + (departmentId.HasValue ? $"&departmentId={departmentId}&role=Specialist" : ""));
 
-    public async Task<DocumentDto?> UploadFileAsync(Guid id, System.IO.Stream fileStream, string fileName)
+    public async Task<DocumentDto?> UploadFileAsync(Guid id, string inputId, string fileName)
     {
-        using var content = new MultipartFormDataContent();
-        var fileContent = new StreamContent(fileStream);
-        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
-            DocumentFileFormats.GetContentType(fileName)
-                ?? throw new ArgumentException("Chỉ hỗ trợ PDF, PNG, JPG/JPEG hoặc WEBP.", nameof(fileName)));
-        content.Add(fileContent, "file", fileName);
-        using var response = await _api.PostFormAsync($"api/documents/{id}/upload", content);
+        if (DocumentFileFormats.GetContentType(fileName) is null) throw new ArgumentException("Loại tệp không được hỗ trợ.", nameof(fileName));
+        using var response = await _api.UploadInputAsync($"api/documents/{id}/upload", inputId, fileName);
         if (!response.IsSuccessStatusCode)
         {
             var message = response.StatusCode == System.Net.HttpStatusCode.RequestEntityTooLarge

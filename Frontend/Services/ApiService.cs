@@ -12,13 +12,15 @@ public class ApiService
     private readonly HttpClient _httpClient;
     private readonly AuthService _authService;
     private readonly NavigationManager _navManager;
+    private readonly BrowserUploadService _uploads;
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    public ApiService(HttpClient httpClient, AuthService authService, NavigationManager navManager)
+    public ApiService(HttpClient httpClient, AuthService authService, NavigationManager navManager, BrowserUploadService uploads)
     {
         _httpClient = httpClient;
         _authService = authService;
         _navManager = navManager;
+        _uploads = uploads;
     }
 
     private static T? SmartDeserialize<T>(string json)
@@ -64,6 +66,21 @@ public class ApiService
         return SendWithRefreshAsync(HttpMethod.Post, url, () => JsonContent(json));
     }
 
+    public async Task<HttpResponseMessage> PostOcrResponseAsync(string url, object body)
+    {
+        var token = await _authService.GetValidAccessTokenAsync();
+        if (string.IsNullOrEmpty(token)) throw new HttpRequestException("Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.");
+        using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, url))
+            { Content = JsonContent(JsonSerializer.Serialize(body)) };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        HttpResponseMessage response;
+        try { response = await client.SendAsync(request); }
+        catch (TaskCanceledException ex) { throw new HttpRequestException("Máy chủ chưa trả kết quả OCR sau 3 phút. Kiểm tra trước khi chạy lại.", ex); }
+        if (response.StatusCode == HttpStatusCode.Unauthorized && string.IsNullOrEmpty(await _authService.RefreshAccessTokenAsync(token))) RedirectToLogin();
+        return response; // Never automatically replay an AI request.
+    }
+
     public Task<HttpResponseMessage> DeleteResponseAsync(string url, object body)
     {
         var json = JsonSerializer.Serialize(body);
@@ -79,6 +96,12 @@ public class ApiService
             json == null ? null : () => JsonContent(json));
         if (!response.IsSuccessStatusCode) return default;
         return SmartDeserialize<T>(await response.Content.ReadAsStringAsync());
+    }
+
+    public Task<HttpResponseMessage> PatchResponseAsync(string url, object body)
+    {
+        var json = JsonSerializer.Serialize(body);
+        return SendWithRefreshAsync(HttpMethod.Patch, url, () => JsonContent(json));
     }
 
     public async Task<T?> PatchAsync<T>(string url, object? body = null)
@@ -116,6 +139,18 @@ public class ApiService
         }
 
         return response;
+    }
+
+    public async Task<HttpResponseMessage> UploadInputAsync(string url, string inputId, string name, string fieldName = "file", long maxBytes = 52428800)
+    {
+        var response = await _uploads.SendAsync(new Uri(_httpClient.BaseAddress!, url).AbsoluteUri, inputId, name, fieldName, maxBytes,
+            () => _authService.GetValidAccessTokenAsync());
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            var token = await _authService.GetTokenAsync();
+            if (string.IsNullOrEmpty(await _authService.RefreshAccessTokenAsync(token))) RedirectToLogin();
+        }
+        return response; // Uploads are never silently replayed.
     }
 
     public async Task<T?> PostFormAsync<T>(string url, MultipartFormDataContent content)

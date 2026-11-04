@@ -1,5 +1,11 @@
 # OCR Service
 
+## Luồng hiện hành từ ngày 26/10/2026
+
+Tải tệp chỉ lưu nguồn; không còn tự chạy Paddle qua `document.uploaded`. Endpoint `/api/ocr/process` và callback xử lý thông điệp cũ trả 410 trước tải nguồn/gọi AI. Các mô tả Kafka tự động theo upload bên dưới là nhánh cũ, không dùng để triển khai mới.
+
+Trong chi tiết công văn, người dùng chọn model Gemini và tối đa 5 trang; DocumentService lưu OcrJobs và dùng Kafka `ocr.gemini.requested.v1`. OCRService nội bộ vẫn kết hợp bằng chứng Paddle với Gemini. Văn thư chỉ chạy/hiệu chỉnh chiều đến, Admin hỗ trợ; Chuyên viên không chạy OCR. Kiểm tra quyền/chiều ở DocumentService áp dụng cho attached input-info, nhận diện, job và kết quả. Giữ nguyên trang quét độc lập và quyền xem kết quả lịch sử.
+
 Microservice OCR cho hệ thống HAU DigitalSign OCR.
 
 ## Định dạng và giới hạn đầu vào
@@ -215,3 +221,25 @@ Endpoint nhận multipart `file` (tương thích cũ) hoặc danh sách `files`,
 Trang quét xem trước PDF bằng blob URL tại máy người dùng, có liên kết mở riêng nếu trình duyệt điện thoại không hỗ trợ iframe; ảnh hiển thị thumbnail theo thứ tự chọn. Bấm Chạy OCR mở hộp chọn trang (mặc định1), sau đó Tạo và tải Word mới chạy nhận diện. Nếu429/lỗi giữ lựa chọn để đổi model/thử lại. Nút gửi/chọn tệp khóa khi xử lý; blob URL được giải phóng khi thay tài liệu/rời trang. Chức năng nhiều ảnh/chọn trang mới thuộc trang Quét OCR và xuất Word; tệp gắn với một công văn và OCR thông tin ở trang chi tiết giữ nguyên.
 
  PaddleOCR hiện cung cấp các dòng OCR và tọa độ; Gemini đọc ảnh cùng bằng chứng này để trả layout JSON, sau đó OCRService tạo DOCX có thể sửa. PP-Structure chưa được tích hợp vào endpoint này. Đây là bản nháp, cần Văn thư kiểm tra; việc build/smoke test không xác nhận chất lượng nội dung hoặc bố cục trên mọi tài liệu.
+
+
+## Kết quả OCR gắn với công văn
+
+- `POST /api/ocr/gemini/recognize-upload`: cùng đầu vào `file`/`files`, `model_id`, `pages` như xuất Word; trả `{provider,schemaVersion,modelId,selectedPages,sourceFileNames,createdAt,layout}`. Chạy chung pipeline Paddle evidence + Gemini, tối đa5 trang đã chọn. Không bóc trường để tự ghi đè metadata hồ sơ.
+- `POST /api/ocr/gemini/export-layout`: body `{layout}`; tạo DOCX từ kết quả đã lưu mà không gọi lại Paddle/Google. Giới hạn5 trang,500 khối,10000 ô/2000 đoạn, JSON2MB; kiểm tra cấu trúc trước dựng Word. Hai route đều dùng policy Admin/Clerk của Gateway.
+- Luồng chi tiết hiện lưu JSON layout ở backend qua hàng đợi DocumentService (xem phần OCR nền bên dưới), không lưu bản DOCX phụ trong MinIO. Trang quét độc lập vẫn dùng export-word-upload như cũ. Paddle vẫn hỗ trợ Gemini ở backend; các trường/JSON Paddle cũ được bỏ khỏi giao diện công văn.
+
+
+## Nhận diện tệp đã đính kèm công văn (25/10/2026)
+
+`POST /api/ocr/gemini/documents/{id}/input-info` nhận `{expectedVersion}`, trả totalPages mà không gọi AI. `/recognize` nhận `{expectedVersion,modelId,pages}` để chạy chính tệp đã lưu, trả cùng cấu trúc layoutJSON như recognize-upload. Forward BearerJWT tới `/api/documents/{id}/ocr-state`; kiểm tra tồn tại/phiên bản, lấy MinIO object từ server, bỏ qua đường dẫn do client tự gửi. Thiếu tệp trả400, mất object404, phiên bản cũ409, quá25MB413; các trường hợp này không gọi Gemini. Giữ chính sách Admin/Clerk của Gateway.
+
+MinIO đọc tối đa25MB+1, luôn close/release_conn kể cả quá giới hạn. Bước đếm và bước chạy đều kiểm tra lại trạng thái tệp; chỉ render tối đa5 trang đã chọn. Hai route công khai này dùng JWT người dùng; tác vụ nền dùng route nội bộ riêng bên dưới. Không upload lại file vào MinIO hoặc đi vòng qua điện thoại. Trang quét độc lập giữ nguyên upload/multi-image. Bước gửi hàng đợi kiểm tra ExpectedVersion; tải Word từ kết quả đã lưu không gọi lại AI.
+
+## OCR nền của công văn (25/10/2026)
+
+Trang chi tiết gửi lệnh qua DocumentService, không chờ `/recognize` trả layout. Worker gọi `POST /api/ocr/internal/gemini-job` với `{docId,sourcePath,modelId,pages}` và `X-Service-Token` khớp `SERVICE_TOKEN`. Token sai/trống bị chặn trước truy cập tệp hoặc gọi AI. Endpoint không công bố trên OpenAPI. Kiểm tra công văn còn tồn tại và đường dẫn nguồn còn khớp qua DocumentService; đọc MinIO có giới hạn25MB và chạy cùng pipeline bằng chứng Paddle + Gemini, chỉ các trang đã chọn (tối đa5). Trả layout JSON cho worker lưu cùng thông báo thành công/lỗi. Không nhận JWT người dùng hoặc API key trong bản ghi tác vụ.
+
+Service token dùng chung phải cấu hình ở cả hai dịch vụ; DocumentService cần `OcrService__BaseUrl=http://ocr-service:5051/` trong Docker. Các route đồng bộ giữ tương thích và trang quét độc lập vẫn dùng export-word-upload.
+
+Kafka cho lệnh OCR Gemini: DocumentService dùng OcrJobOutbox/OcrJobWorker publish/consume topic ocr.gemini.requested.v1 rồi gọi endpoint nội bộ trên. Consumer Python document.uploaded hiện có vẫn là luồng Paddle cũ, không nhận topic Gemini và không tự chọn model thay người dùng. Giới hạn tệp/trang và pipeline bằng chứng Paddle + Gemini của endpoint nội bộ giữ nguyên.

@@ -18,6 +18,8 @@ async function setup(browser, width, role, own = true, eligible = true) {
   const doc = { id, title: 'Bản nháp kiểm thử', createdById: owner, createdAt: new Date().toISOString(),
     status: 'Draft', canDeleteDraft: eligible, docTypeName: 'CongVanDi', minioPath: '', processes: [] };
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
+    if (new URL(route.request().url()).pathname.endsWith('/ocr-jobs/latest')) return route.fulfill({json:{success:true,data:null}});
     const req = route.request(), path = new URL(req.url()).pathname; let data;
     if (req.method() === 'DELETE' && path === `/api/documents/${id}`) {
       deleteCalls++;

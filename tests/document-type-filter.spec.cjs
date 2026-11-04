@@ -23,6 +23,7 @@ async function browserChecks(browser, viewport) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     const request = route.request(), url = new URL(request.url());
     assert.equal(request.method(), 'GET', 'Fixture browser must not write to the live API');
     let data;

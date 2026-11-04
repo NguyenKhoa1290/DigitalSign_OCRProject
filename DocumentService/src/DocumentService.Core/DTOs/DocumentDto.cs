@@ -8,6 +8,7 @@ public class DocumentDto
     public DateOnly? IssuedDate { get; set; }
     public DateTime? CreatedAt { get; set; }
     public Guid? CreatedById { get; set; }
+    public string? CreatedByName { get; set; }
     public Guid ConcurrencyVersion { get; set; }
     public bool CanDeleteDraft { get; set; }
     public bool IsDeleted { get; set; }

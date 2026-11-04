@@ -31,6 +31,19 @@ try
     // ── Infrastructure (DbContext, MinIO, repositories, services) ─────────────
     builder.Services.AddInfrastructure(configuration);
     builder.Services.AddHostedService<DocumentService.API.Services.DocumentPurgeCleanupWorker>();
+    builder.Services.AddSingleton(_ => Npgsql.NpgsqlDataSource.Create(configuration.GetConnectionString("DefaultConnection")!));
+    builder.Services.AddSingleton<DocumentService.API.Services.OcrJobStore>();
+    builder.Services.AddScoped<DocumentService.API.Services.OcrEditedFileStore>();
+    builder.Services.AddHostedService<DocumentService.API.Services.OcrEditedFileCleanupWorker>();
+    builder.Services.AddSingleton<DocumentService.API.Services.IOcrJobQueue, DocumentService.API.Services.OcrJobKafkaQueue>();
+    builder.Services.AddHostedService<DocumentService.API.Services.OcrJobOutbox>();
+    builder.Services.AddHostedService<DocumentService.API.Services.OcrJobWorker>();
+    builder.Services.AddHttpClient("ocr-background", client =>
+    {
+        client.BaseAddress = new Uri(configuration["OcrService:BaseUrl"] ?? "http://localhost:5051/");
+        client.Timeout = TimeSpan.FromMinutes(30);
+        client.DefaultRequestHeaders.Add("X-Service-Token", configuration["ServiceAuth:OcrServiceToken"]);
+    });
     builder.Services.AddHttpClient("identity-directory", client =>
     {
         client.BaseAddress = new Uri(configuration["IdentityService:BaseUrl"] ?? "http://localhost:5048/");
@@ -84,7 +97,7 @@ try
     builder.Services.AddAuthorization();
 
     // ── Controllers ───────────────────────────────────────────────────────────
-    builder.Services.AddControllers();
+    builder.Services.AddControllers(options => options.Filters.Add<DocumentService.API.Filters.DocumentCreatorFilter>());
 
     // ── Swagger / OpenAPI ─────────────────────────────────────────────────────
     builder.Services.AddEndpointsApiExplorer();
@@ -144,6 +157,8 @@ try
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await db.Database.MigrateAsync();
+            await app.Services.GetRequiredService<DocumentService.API.Services.OcrJobStore>().InitializeAsync();
+            await DocumentService.API.Services.OcrEditedFileStore.InitializeAsync(app.Services.GetRequiredService<Npgsql.NpgsqlDataSource>());
             Log.Information("Database migration hoàn thành.");
         }
         catch (Exception ex)

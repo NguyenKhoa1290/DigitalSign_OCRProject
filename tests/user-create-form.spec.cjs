@@ -18,6 +18,7 @@ async function check(browser, viewport) {
   page.setDefaultTimeout(15000);
   let responseMode = 'username', users = [], rolesAvailable = true, releaseRoles, releaseSave;
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     const req = route.request(), path = new URL(req.url()).pathname, method = req.method();
     let data, status = 200, message;
     if (method === 'GET' && path === '/api/users')

@@ -336,6 +336,14 @@ class InternalGeminiJob(BaseModel):
     pages: str
 
 
+@router.post("/internal/export-layout", include_in_schema=False)
+async def internal_export_layout(request: LayoutExportRequest, x_service_token: str = Header("")):
+    expected = get_settings().service_token
+    if not expected or not hmac.compare_digest(x_service_token, expected):
+        raise HTTPException(status_code=401, detail="Không xác nhận được yêu cầu xuất Word nội bộ.")
+    return await gemini_export_layout(request)
+
+
 @router.post("/internal/gemini-job", include_in_schema=False)
 async def internal_gemini_job(request: InternalGeminiJob, x_service_token: str = Header("")):
     expected = get_settings().service_token

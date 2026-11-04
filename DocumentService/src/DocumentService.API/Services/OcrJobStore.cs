@@ -56,7 +56,7 @@ public sealed class OcrJobStore(NpgsqlDataSource source)
             path = reader.IsDBNull(0) ? "" : reader.GetString(0); version = reader.GetGuid(1); title = reader.GetString(2);
         }
         if (!await IsOperatorForDocumentAsync(connection, transaction, actor, documentId, token))
-            throw new UnauthorizedDocumentAccessException("Văn thư chỉ chạy OCR công văn đến.");
+            throw new UnauthorizedDocumentAccessException("Chỉ chạy OCR khi hồ sơ còn Nháp hoặc Trả sửa.");
         if (version != request.ExpectedVersion) throw new DocumentConflictException("Công văn đã thay đổi. Hãy tải lại trước khi chạy OCR.");
         if (string.IsNullOrWhiteSpace(path)) throw new DocumentServiceException("Vui lòng tải tệp lên trước khi chạy OCR.");
         if (!Regex.IsMatch(path, @"\.(pdf|png|jpe?g|webp)$", RegexOptions.IgnoreCase)) throw new DocumentServiceException("Chỉ nhận diện tệp PDF hoặc ảnh. Word không cần OCR.");
@@ -188,9 +188,8 @@ public sealed class OcrJobStore(NpgsqlDataSource source)
         await using var cmd=Command(connection,transaction,"""
             SELECT EXISTS(SELECT 1 FROM "AppUsers" u JOIN "AppUserRoles" ur ON ur."UserId"=u."Id"
             JOIN "AppRoles" r ON r."Id"=ur."RoleId" JOIN "Documents" d ON d."Id"=@doc
-            LEFT JOIN "DocumentTypes" dt ON dt."Id"=d."DocTypeId"
             WHERE u."Id"=@actor AND u."IsActive" AND NOT d."IsDeleted"
-              AND (r."RoleName"='Admin' OR r."RoleName"='Clerk' AND dt."TypeName"='CongVanDen'))
+              AND (r."RoleName"='Admin' OR r."RoleName"='Clerk' AND d."Status" IN ('Draft','Rejected')))
             """,("actor",actor),("doc",document));
         return (bool)(await cmd.ExecuteScalarAsync(token))!;
     }

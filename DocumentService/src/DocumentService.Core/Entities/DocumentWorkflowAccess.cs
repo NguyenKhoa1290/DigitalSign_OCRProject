@@ -7,6 +7,6 @@ public static class DocumentWorkflowAccess
             ? actor.Roles.Contains("Clerk")
             : actor.Roles.Contains("Specialist") && createdBy.HasValue && createdBy == actor.UserId);
 
-    public static bool CanOcr(string? typeName, DocumentActor actor) =>
-        actor.IsAdmin || typeName == "CongVanDen" && actor.Roles.Contains("Clerk");
+    public static bool CanOcr(string? status, DocumentActor actor) =>
+        actor.IsAdmin || actor.Roles.Contains("Clerk") && status is "Draft" or "Rejected";
 }

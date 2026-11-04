@@ -161,3 +161,11 @@ Sửa metadata/tải tệp: Văn thư xử lý chiều đến, Chuyên viên ch�
 OCR và Word hiệu chỉnh: Văn thư chỉ được chạy/gửi bản sửa cho công văn đến; Admin hỗ trợ cả hai chiều. Chuyên viên không được chạy OCR. Kiểm tra cả POST ocr-jobs, GET ocr-state, PATCH ocr, upload Word, trước gọi AI và trước lưu kết quả. Bản OCR/Word lịch sử vẫn được xem theo quyền đọc hiện có; không xóa dữ liệu cũ. Worker dùng vai trò đang hoạt động trong DB, không chỉ claims cũ. API ký/phát hành không đổi trong đợt này.
 
 PUT metadata không cho tài khoản thường đổi giữa chiều đến và đi để vượt quyền tạo; Admin vẫn theo các kiểm tra nghiệp vụ hiện có. Không đổi loại hoặc người tạo của dữ liệu cũ.
+
+## Bổ sung OCR cả hai chiều ngày 04/11/2026
+
+Phạm vi hiện hành thay hạn chế chiều đi ở ghi chú ngày 25–26/10: Văn thư chạy OCR và tải Word hiệu chỉnh ở cả hai chiều khi Draft/Rejected. Quyền sửa thông tin/thay tệp nguồn/trình chiều đi vẫn thuộc Chuyên viên là người tạo hoặc Admin hỗ trợ. Chuyên viên không chạy OCR; riêng người tạo chiều đi được tải Word nhận diện/bản sửa hiện hành để hoàn thiện nội dung bên ngoài.
+
+Tệp chính .docx là văn bản hoàn chỉnh, không hiện OCR và bị chặn trước gọi AI. Ảnh/PDF dùng model và tối đa 5 trang đã chọn; upload không tự OCR. Văn thư không gửi OCR/Word hiệu chỉnh sau khi chuyển duyệt/ký/phát hành; kiểm tra lại trước AI và lúc lưu, không ghi đè tệp/chữ ký nguồn. Admin giữ ngoại lệ hỗ trợ đã thống nhất. Chưa tự chuyển Word sang PDF hoặc phân loại PDF có lớp chữ.
+
+GET /api/documents/{id}/ocr-word?expectedVersion=... cho Admin/Clerk hoặc Specialist là người tạo chiều đi, lấy layout từ server và chặn phiên bản cũ. Có bản Word hiệu chỉnh thì trả nguyên bytes/tên; nếu chưa có, dựng DOCX qua POST /api/ocr/internal/export-layout với X-Service-Token, không gọi AI. Route nội bộ từ chối token sai/trống; không mở public export-layout cho Specialist. Trạng thái/nhãn và kết quả realtime giữ nguyên. Thiết kế hiện hành: tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_TAO_VA_TRINH_CONG_VAN.md.

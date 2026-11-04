@@ -25,6 +25,18 @@ def pdf():
 
 
 class AttachedOcrTests(unittest.TestCase):
+    def test_internal_word_export_uses_saved_layout_without_running_ai(self):
+        app = FastAPI(); app.include_router(routes.router)
+        with TestClient(app) as client, patch.object(routes, "get_settings", return_value=Mock(service_token="fixture-service")), \
+             patch.object(routes.gemini_service, "generate_layout", new_callable=AsyncMock) as generate, \
+             patch.object(routes.ocr_processor, "get_engine") as engine:
+            payload={"layout":{"blocks":[{"type":"paragraph","text":"Nội dung đã lưu"}]}}
+            self.assertEqual(client.post("/api/ocr/internal/export-layout",json=payload).status_code,401)
+            response=client.post("/api/ocr/internal/export-layout",headers={"X-Service-Token":"fixture-service"},json=payload)
+            self.assertEqual(response.status_code,200,response.text)
+            self.assertTrue(response.content.startswith(b"PK"))
+            generate.assert_not_awaited(); engine.assert_not_called()
+
     def setUp(self):
         app = FastAPI(); app.include_router(routes.router)
         self.client = TestClient(app)

@@ -9,11 +9,11 @@ const layout={font_name:'Times New Roman',font_size:12,blocks:[
  {type:'paragraph',text:'<img src=x onerror="window.ocrInjected=true">'}],uncertain_fields:[]};
 const result={provider:'gemini',modelId:'gemini-fixture',selectedPages:[2,6],sourceFileNames:['saved.pdf'],createdAt:'2026-10-25T07:00:00Z',layout};
 
-async function run(browser,width,{fail=false,role='Clerk',missing=false,stay=false}={}){
+async function run(browser,width,{fail=false,role='Clerk',missing=false,stay=false,docTypeName='CongVanDen',status='Draft'}={}){
  const context=await browser.newContext({viewport:{width,height:850}});
  const token=[Buffer.from('{"alg":"none"}').toString('base64url'),Buffer.from(JSON.stringify({sub:id,name:'OCR fixture',role,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url'),'fixture'].join('.');
  await context.addInitScript(t=>{if(window===window.top)localStorage.setItem('auth_token',t);},token);
- let doc={id,title:'OCR fixture',docTypeName:'CongVanDen',status:'Draft',createdById:id,createdByName:'OCR fixture',concurrencyVersion:version,minioPath:missing?'':'documents/saved.pdf',fileName:'saved.pdf',fileContentType:'application/pdf',docNumber:'KEEP-123',issuedDate:'2026-10-20',ocrDataRaw:role==='Specialist'?JSON.stringify(result):null,processes:[]};
+ let doc={id,title:'OCR fixture',docTypeName,status,createdById:id,createdByName:'OCR fixture',concurrencyVersion:version,minioPath:missing?'':'documents/saved.pdf',fileName:'saved.pdf',fileContentType:'application/pdf',docNumber:'KEEP-123',issuedDate:'2026-10-20',ocrDataRaw:role==='Specialist'?JSON.stringify(result):null,processes:[]};
  let job=null,notice=null,queued=0,exports=0,inspections=0,reads=0,streamCount=0;
  const unexpected=[],errors=[];
  await context.route('**/api/**',async route=>{
@@ -33,15 +33,15 @@ async function run(browser,width,{fail=false,role='Clerk',missing=false,stay=fal
   if(p==='/api/notifications/eeeeeeee-0000-0000-0000-000000000001/read'){
    reads++;notice.readAt='2026-10-25T07:02:00Z';return route.fulfill({json:{success:true,data:true}});
   }
-  if(p==='/api/ocr/gemini/export-layout'){
-   exports++;assert.deepEqual(req.postDataJSON().layout,layout);
+  if(p==='/api/documents/'+id+'/ocr-word'){
+   exports++;assert.equal(req.method(),'GET');assert.equal(new URL(req.url()).searchParams.get('expectedVersion'),doc.concurrencyVersion);
    return route.fulfill({contentType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',body:Buffer.from('fixture-docx')});
   }
   unexpected.push(req.method()+' '+p);return route.abort();
  });
  const page=await context.newPage();page.setDefaultTimeout(60000);page.on('pageerror',e=>errors.push(e.message));
  try{
-  await page.goto(base+'/documents/'+id);await page.getByRole('heading',{name:'OCR fixture',exact:true}).waitFor();
+  await page.goto(base+'/documents/'+id,{waitUntil:'domcontentloaded'});await page.getByRole('heading',{name:'OCR fixture',exact:true}).waitFor();
   const runButton=page.getByRole('button',{name:'Chạy OCR',exact:true});
   if(role==='Specialist'){
    assert.equal(await runButton.count(),0);assert.equal(await page.locator('.gemini-result-card').getByRole('button',{name:'Tải Word',exact:true}).count(),0);
@@ -56,10 +56,12 @@ async function run(browser,width,{fail=false,role='Clerk',missing=false,stay=fal
    await page.locator('#ocr-pages').fill('2,6');await page.getByRole('button',{name:'Gửi yêu cầu OCR',exact:true}).click();
    await page.getByText('Đã xếp hàng OCR.',{exact:false}).waitFor();
    assert.equal(queued,1);assert(await runButton.isDisabled());
+   if(docTypeName==='CongVanDen'){
    assert(await page.getByRole('button',{name:'Sửa thông tin',exact:true}).isEnabled());
    assert(await page.getByRole('button',{name:'Tải lên file',exact:true}).isEnabled());
+   }else{assert.equal(await page.locator('input[type=file]').count(),0);}
    // Reload must recover the durable job without replaying the request.
-   job.status='Running';await page.reload();await page.getByText('Đang nhận diện OCR.',{exact:false}).waitFor();assert.equal(queued,1);
+   job.status='Running';await page.reload({waitUntil:'domcontentloaded'});await page.getByText('Đang nhận diện OCR.',{exact:false}).waitFor();assert.equal(queued,1);
    // Leave detail while AI is still pending; the global notification bell remains active.
    if(!stay){await page.getByRole('link',{name:'Thông báo',exact:true}).click();
     await page.getByRole('heading',{name:'Trung tâm thông báo',exact:true}).waitFor();}
@@ -84,8 +86,8 @@ async function run(browser,width,{fail=false,role='Clerk',missing=false,stay=fal
   }
   assert.equal(queued,role==='Specialist'||missing?0:1);assert.deepEqual(unexpected,[]);assert.deepEqual(errors,[]);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-  const out=process.env.HAU_TEST_ARTIFACTS;if(out){fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,`ocr-background-${width}-${role}-${fail?'failed':missing?'missing':'success'}.png`),animations:'disabled'});}
+  const out=process.env.HAU_TEST_ARTIFACTS;if(out){fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,`ocr-background-${width}-${role}-${docTypeName}-${status}-${fail?'failed':missing?'missing':'success'}.png`),animations:'disabled'});}
   console.log(JSON.stringify({width,role,fail,missing,stay,queued,exports,reads,streamCount,result:'PASS'}));
  }finally{await context.close();}
 }
-(async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.HAU_TEST_CHROMIUM});try{await run(browser,1366,{stay:true});await run(browser,300);await run(browser,390,{fail:true});await run(browser,1366,{role:'Specialist'});await run(browser,300,{missing:true});}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.HAU_TEST_CHROMIUM});try{await run(browser,1366,{stay:true});await run(browser,300);await run(browser,390,{fail:true});await run(browser,1366,{role:'Specialist'});await run(browser,300,{missing:true});await run(browser,300,{docTypeName:'CongVanDi'});await run(browser,1366,{docTypeName:'CongVanDi',status:'Rejected',stay:true});}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

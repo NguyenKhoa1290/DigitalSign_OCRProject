@@ -1,15 +1,19 @@
 @inject ApiService Api
 @inject IJSRuntime JS
 @implements IAsyncDisposable
+@using System.Security.Claims
 
 <section class="card gemini-result-card" id="document-ocr-result">
     <div class="card-header">
         <span class="card-title">Kết quả OCR</span>
         @if (Result != null)
         {
-            <AuthorizeView Roles="Admin,Clerk" Context="ocrUser"><div class="ocr-result-actions">
+            <AuthorizeView Context="ocrUser"><div class="ocr-result-actions">
+                @if (CanDownload(ocrUser.User))
+                {
                 <button class="btn btn-outline btn-sm" disabled="@(_downloading || _uploading)" @onclick="DownloadWord">@(_downloading ? "Đang tải Word..." : "Tải Word")</button>
-                @if (DocumentId.HasValue && (IsIncoming || ocrUser.User.IsInRole("Admin")))
+                }
+                @if (DocumentId.HasValue && CanCorrect(ocrUser.User))
                 {
                     <button class="btn btn-outline btn-sm" disabled="@(_uploading || _downloading || IsProcessing || IsBusy)" @onclick="PickEditedFile">Tải lên bản chỉnh sửa</button>
                     <InputFile id="@_inputId" style="display:none" OnChange="UploadEditedFile" accept=".docx" disabled="@(_uploading || IsProcessing || IsBusy)" />
@@ -55,6 +59,8 @@
     [Parameter] public bool IsProcessing { get; set; }
     [Parameter] public Guid? DocumentId { get; set; }
     [Parameter] public bool IsIncoming { get; set; }
+    [Parameter] public string? DocumentStatus { get; set; }
+    [Parameter] public Guid? CreatedById { get; set; }
     [Parameter] public Guid ExpectedVersion { get; set; }
     [Parameter] public string? SourcePath { get; set; }
     [Parameter] public bool IsBusy { get; set; }
@@ -65,6 +71,11 @@
     private bool _uploading, _disposed;
     private bool _downloading;
     private string? _error;
+    private bool CanCorrect(ClaimsPrincipal user) => user.IsInRole("Admin")
+        || user.IsInRole("Clerk") && DocumentStatus is "Draft" or "Rejected";
+    private bool CanDownload(ClaimsPrincipal user) => user.IsInRole("Admin") || user.IsInRole("Clerk")
+        || DocumentId.HasValue && !IsIncoming && user.IsInRole("Specialist")
+            && Guid.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value,out var actor) && CreatedById == actor;
     private async Task DownloadWord()
     {
         if (Result == null || _downloading) return;
@@ -74,8 +85,8 @@
         try
         {
             byte[]? bytes;
-            if (edited != null && documentId.HasValue)
-                bytes = await Api.GetBytesAsync($"api/documents/{documentId}/ocr-edited-file?revisionId={edited.Id}");
+            if (documentId.HasValue)
+                bytes = await Api.GetBytesAsync($"api/documents/{documentId}/ocr-word?expectedVersion={ExpectedVersion}");
             else
             {
                 using var response = await Api.PostResponseAsync("api/ocr/gemini/export-layout", new { layout = Result.Layout });

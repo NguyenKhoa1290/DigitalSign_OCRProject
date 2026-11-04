@@ -243,3 +243,11 @@ Trang chi tiết gửi lệnh qua DocumentService, không chờ `/recognize` tr�
 Service token dùng chung phải cấu hình ở cả hai dịch vụ; DocumentService cần `OcrService__BaseUrl=http://ocr-service:5051/` trong Docker. Các route đồng bộ giữ tương thích và trang quét độc lập vẫn dùng export-word-upload.
 
 Kafka cho lệnh OCR Gemini: DocumentService dùng OcrJobOutbox/OcrJobWorker publish/consume topic ocr.gemini.requested.v1 rồi gọi endpoint nội bộ trên. Consumer Python document.uploaded hiện có vẫn là luồng Paddle cũ, không nhận topic Gemini và không tự chọn model thay người dùng. Giới hạn tệp/trang và pipeline bằng chứng Paddle + Gemini của endpoint nội bộ giữ nguyên.
+
+## Bổ sung OCR cả hai chiều ngày 04/11/2026
+
+Phạm vi hiện hành thay hạn chế chiều đi ở ghi chú ngày 25–26/10: Văn thư chạy OCR và tải Word hiệu chỉnh ở cả hai chiều khi Draft/Rejected. Quyền sửa thông tin/thay tệp nguồn/trình chiều đi vẫn thuộc Chuyên viên là người tạo hoặc Admin hỗ trợ. Chuyên viên không chạy OCR; riêng người tạo chiều đi được tải Word nhận diện/bản sửa hiện hành để hoàn thiện nội dung bên ngoài.
+
+Tệp chính .docx là văn bản hoàn chỉnh, không hiện OCR và bị chặn trước gọi AI. Ảnh/PDF dùng model và tối đa 5 trang đã chọn; upload không tự OCR. Văn thư không gửi OCR/Word hiệu chỉnh sau khi chuyển duyệt/ký/phát hành; kiểm tra lại trước AI và lúc lưu, không ghi đè tệp/chữ ký nguồn. Admin giữ ngoại lệ hỗ trợ đã thống nhất. Chưa tự chuyển Word sang PDF hoặc phân loại PDF có lớp chữ.
+
+GET /api/documents/{id}/ocr-word?expectedVersion=... cho Admin/Clerk hoặc Specialist là người tạo chiều đi, lấy layout từ server và chặn phiên bản cũ. Có bản Word hiệu chỉnh thì trả nguyên bytes/tên; nếu chưa có, dựng DOCX qua POST /api/ocr/internal/export-layout với X-Service-Token, không gọi AI. Route nội bộ từ chối token sai/trống; không mở public export-layout cho Specialist. Trạng thái/nhãn và kết quả realtime giữ nguyên. Thiết kế hiện hành: tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_TAO_VA_TRINH_CONG_VAN.md.

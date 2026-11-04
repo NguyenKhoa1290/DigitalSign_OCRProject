@@ -11,7 +11,7 @@
 else if (_document == null) { <p>Không tìm thấy công văn.</p> }
 else if (_document.FileContentType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 { <div class="card"><div class="card-body">Văn bản Word không cần OCR</div></div> }
-else { <GeminiOcrResultView Result="GeminiOcrResult.Parse(_document.OcrDataRaw)" DocumentId="Id" IsIncoming="@(_document.DocTypeName == "CongVanDen")" ExpectedVersion="_document.ConcurrencyVersion" SourcePath="@_document.MinioPath" OnEdited="Reload" /> }
+else { <GeminiOcrResultView Result="GeminiOcrResult.Parse(_document.OcrDataRaw)" DocumentId="Id" IsIncoming="@(_document.DocTypeName == "CongVanDen")" DocumentStatus="@_document.Status" CreatedById="_document.CreatedById" ExpectedVersion="_document.ConcurrencyVersion" SourcePath="@_document.MinioPath" OnEdited="Reload" /> }
 
 @code {
     [Parameter] public Guid Id { get; set; }

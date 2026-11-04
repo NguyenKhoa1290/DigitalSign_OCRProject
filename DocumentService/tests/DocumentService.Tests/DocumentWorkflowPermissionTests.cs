@@ -46,13 +46,18 @@ public partial class DocumentDeletionApiTests
     }
 
     [Theory]
-    [InlineData("Clerk",true,200)][InlineData("Clerk",false,403)]
-    [InlineData("Admin",false,200)][InlineData("Specialist",false,403)]
-    [InlineData("Specialist",true,403)][InlineData("Manager",true,403)]
-    [InlineData("BoardOfDirectors",true,403)][InlineData("",true,401)]
-    public async Task AttachedOcrAndCallbackCannotBypassRoleOrDirection(string roles,bool incoming,int expected)
+    [InlineData("Clerk",true,200,"Draft",false,false)][InlineData("Clerk",false,200,"Draft",false,false)]
+    [InlineData("Admin",false,200,"Published",false,false)][InlineData("Specialist",false,403,"Draft",false,false)]
+    [InlineData("Specialist",true,403,"Draft",false,false)][InlineData("Manager",true,403,"Draft",false,false)]
+    [InlineData("BoardOfDirectors",true,403,"Draft",false,false)][InlineData("",true,401,"Draft",false,false)]
+    [InlineData("Clerk",false,200,"Rejected",false,false)]
+    [InlineData("Clerk",true,403,"PendingDirection",false,false)][InlineData("Clerk",false,403,"PendingDeptReview",false,false)]
+    [InlineData("Clerk",false,403,"DirectorSigned",false,false)][InlineData("Clerk",false,403,"Published",false,false)]
+    [InlineData("Clerk",false,400,"Draft",true,false)][InlineData("Admin",false,400,"Draft",true,false)]
+    [InlineData("Clerk",false,403,"Draft",false,true)]
+    public async Task AttachedOcrAndCallbackEnforceStageRoleFormatAndAuthorship(string roles,bool incoming,int expected,string status,bool word,bool metadata)
     {
-        var actor=Guid.NewGuid();var id=Guid.NewGuid();var doc=new DocumentDto{Id=id,DocTypeName=incoming?"CongVanDen":"CongVanDi"};
+        var actor=Guid.NewGuid();var id=Guid.NewGuid();var doc=new DocumentDto{Id=id,DocTypeName=incoming?"CongVanDen":"CongVanDi",Status=status,MinioPath=word?"documents/ready.docx":"documents/scan.pdf"};
         var service=new Mock<IDocumentService>();service.Setup(s=>s.GetDocumentByIdAsync(id)).ReturnsAsync(doc);
         service.Setup(s=>s.UpdateOcrDataAsync(id,It.IsAny<UpdateOcrDto>(),actor)).ReturnsAsync(doc);
         var builder=WebApplication.CreateBuilder();builder.WebHost.UseTestServer();
@@ -62,8 +67,8 @@ public partial class DocumentDeletionApiTests
         await using var app=builder.Build();app.UseAuthentication();app.UseAuthorization();app.MapControllers();await app.StartAsync();
         using var client=app.GetTestClient();
         if(roles!=""){client.DefaultRequestHeaders.Add("Fixture-User",actor.ToString());client.DefaultRequestHeaders.Add("Fixture-Roles",roles);}
-        using var state=await client.GetAsync($"/api/documents/{id}/ocr-state");Assert.Equal(expected,(int)state.StatusCode);
-        using var request=new HttpRequestMessage(HttpMethod.Patch,$"/api/documents/{id}/ocr"){Content=JsonContent.Create(new{ocrDataRaw="{}",roles=new[]{"Admin"}})};
+        using var state=await client.GetAsync($"/api/documents/{id}/ocr-state");Assert.Equal(metadata?200:expected,(int)state.StatusCode);
+        using var request=new HttpRequestMessage(HttpMethod.Patch,$"/api/documents/{id}/ocr"){Content=JsonContent.Create(new{ocrDataRaw="{}",title=metadata?"Forbidden authored title":null,roles=new[]{"Admin"}})};
         using var response=await client.SendAsync(request);Assert.Equal(expected,(int)response.StatusCode);
         service.Verify(s=>s.UpdateOcrDataAsync(id,It.IsAny<UpdateOcrDto>(),actor),expected==200?Times.Once():Times.Never());
     }

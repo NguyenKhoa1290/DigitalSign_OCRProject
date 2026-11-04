@@ -100,6 +100,7 @@ else
             <div class="hidden-file-input" hidden>
                 <InputFile id="documentPdfInput" OnChange="OnFileUpload" accept="@DocumentFileFormats.Accept" disabled="@_isActionLoading" />
             </div>
+        }
             @if (CanOperateOcr && !IsWordFile)
             {
                 <button class="btn btn-outline" @onclick="RunOcr" disabled="@(_isActionLoading || _ocrJob?.IsActive == true)">
@@ -109,7 +110,6 @@ else
                     Chạy OCR
                 </button>
             }
-        }
 
         @if (!IsIncoming && _document.Status == "PendingDeptReview" && _role == "Manager")
         {
@@ -320,7 +320,7 @@ else
                     <div class="alert alert-danger" role="alert">OCR không thành công. @_ocrJob.Error Bạn có thể chọn model khác và chạy lại.</div>
                 }
                 var resultDocumentId = Id;
-                <GeminiOcrResultView Result="_geminiResult" IsIncoming="IsIncoming" IsProcessing="@(_ocrJob?.IsActive == true)"
+                <GeminiOcrResultView Result="_geminiResult" IsIncoming="IsIncoming" DocumentStatus="@_document.Status" CreatedById="_document.CreatedById" IsProcessing="@(_ocrJob?.IsActive == true)"
                     DocumentId="Id" ExpectedVersion="_document.ConcurrencyVersion" SourcePath="@_document.MinioPath" IsBusy="_isActionLoading"
                     OnEdited="@(() => OcrEdited(resultDocumentId))" BusyChanged="@(busy => SetEditedBusy(resultDocumentId, busy))" />
             }
@@ -545,7 +545,7 @@ else
     private List<AssigneeDto> _assignees = new();
     private bool CanEdit => _document != null && (IsIncoming ? _document.Status == "Draft" : _document.Status is "Draft" or "Rejected")
         && (_isAdmin || (IsIncoming ? _canReceive : _canDraftOutgoing && _document.CreatedById == _actorId));
-    private bool CanOperateOcr => _isAdmin || IsIncoming && _canReceive;
+    private bool CanOperateOcr => _isAdmin || _canReceive && _document?.Status is "Draft" or "Rejected";
     private bool CanSubmitOutgoing => !IsIncoming && _document?.Status is "Draft" or "Rejected"
         && (_isAdmin || (_canDraftOutgoing && _document.CreatedById == _actorId));
     private bool _canDraftOutgoing;

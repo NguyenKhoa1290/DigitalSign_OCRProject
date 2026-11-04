@@ -95,7 +95,9 @@ public sealed class OcrEditedFileStore(NpgsqlDataSource source, IFileStorageServ
             raw=reader.IsDBNull(0)?new():JsonNode.Parse(reader.GetString(0)) as JsonObject??new();path=reader.IsDBNull(1)?"":reader.GetString(1);
         }
         if(!await OcrJobStore.IsOperatorForDocumentAsync(connection,transaction,actor,doc,token))
-            throw new UnauthorizedDocumentAccessException("Văn thư chỉ hiệu chỉnh OCR công văn đến.");
+            throw new UnauthorizedDocumentAccessException("Chỉ hiệu chỉnh OCR khi hồ sơ còn Nháp hoặc Trả sửa.");
+        if(path.EndsWith(".docx",StringComparison.OrdinalIgnoreCase))
+            throw new DocumentServiceException("Word là văn bản hoàn chỉnh, không cần OCR.");
         var provider=(raw["provider"]??raw["Provider"])?.GetValue<string>();var layout=raw["layout"]??raw["Layout"];
         if(provider!="gemini" || layout?["blocks"] is not JsonArray {Count:>0})throw new DocumentServiceException("Cần có kết quả OCR trước khi tải lên bản chỉnh sửa.");
         if(string.IsNullOrWhiteSpace(path))throw new DocumentServiceException("Công văn chưa có tệp gốc để đối chiếu.");

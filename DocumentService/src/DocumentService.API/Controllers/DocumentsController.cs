@@ -269,8 +269,14 @@ public class DocumentsController : ControllerBase
 
         var document = await _documentService.GetDocumentByIdAsync(id);
         if (User.Identity?.IsAuthenticated == true
-            ? !DocumentWorkflowAccess.CanOcr(document.DocTypeName, CurrentActor())
+            ? !DocumentWorkflowAccess.CanOcr(document.Status, CurrentActor())
             : document.DocTypeName != "CongVanDen") return Forbid();
+
+        if (document.MinioPath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(ApiResponse<object>.Fail("Word là văn bản hoàn chỉnh, không cần OCR."));
+        if (!User.IsInRole("Admin") && document.DocTypeName != "CongVanDen"
+            && (dto.Title != null || dto.DocNumber != null || dto.IssuedDate.HasValue))
+            return Forbid(); // OCR support does not grant authorship of an outgoing draft.
 
         var result = await _documentService.UpdateOcrDataAsync(id, dto, userId);
         return Ok(ApiResponse<DocumentDto>.Ok(result, "Cập nhật OCR thành công."));
@@ -284,7 +290,9 @@ public class DocumentsController : ControllerBase
             return Unauthorized(ApiResponse<object>.Fail(errorMessage!));
         Response.Headers.CacheControl = "no-store";
         var document = await _documentService.GetDocumentByIdAsync(id);
-        if (User.Identity?.IsAuthenticated == true && !DocumentWorkflowAccess.CanOcr(document.DocTypeName, CurrentActor())) return Forbid();
+        if (User.Identity?.IsAuthenticated == true && !DocumentWorkflowAccess.CanOcr(document.Status, CurrentActor())) return Forbid();
+        if (document.MinioPath.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(ApiResponse<object>.Fail("Word là văn bản hoàn chỉnh, không cần OCR."));
         return Ok(ApiResponse<object>.Ok(new { document.MinioPath, document.ConcurrencyVersion, document.DocTypeName }));
     }
 

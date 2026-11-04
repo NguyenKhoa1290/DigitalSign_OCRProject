@@ -25,37 +25,39 @@ public partial class OcrJobTests
     }
 
     [PostgresFact]
-    public async Task ClerkCannotQueueOrEditOutgoingButAdminCanSupportIt()
+    public async Task ClerkCanQueueAndCorrectOutgoingWhileTheSourceStaysUnchanged()
     {
         await using var f=await Fixture.Create();
         await f.Sql("UPDATE \"Documents\" SET \"DocTypeId\"='aaaaaaaa-0000-0000-0000-000000000002'");
-        await Assert.ThrowsAsync<UnauthorizedDocumentAccessException>(()=>f.Enqueue());
-        Assert.Equal(0L,await f.Scalar<long>("SELECT count(*) FROM \"OcrJobs\""));
-        var storage=new EditFiles();var edits=new OcrEditedFileStore(f.Source,storage.Storage.Object);
+        var queued=await f.Enqueue();
+        await using var connection=await f.Source.OpenConnectionAsync();
+        var job=(await f.Store.ClaimAsync(connection,queued.Id,default))!;
+        await f.Store.CompleteAsync(connection,job,Result,default);
+        var storage=new EditFiles();var edits=await Edits(f,storage);
         using var word=Word();
-        await Assert.ThrowsAsync<UnauthorizedDocumentAccessException>(()=>edits.UploadAsync(f.Doc,Actor,f.Version,word,"fixed.docx",default));
-        Assert.Equal(0,storage.Uploaded);
-        await f.Sql("UPDATE \"AppRoles\" SET \"RoleName\"='Admin'");
-        var job=await f.Enqueue();Assert.Equal("Queued",job.Status);
+        var version=await f.Scalar<Guid>("SELECT \"ConcurrencyVersion\" FROM \"Documents\"");
+        var edit=await edits.UploadAsync(f.Doc,Actor,version,word,"fixed.docx",default);
+        Assert.Equal("Clerk",edit.EditorRole);Assert.Equal(1,storage.Uploaded);
+        Assert.Equal("documents/source.pdf",await f.Scalar<string>("SELECT \"MinioPath\" FROM \"Documents\""));
     }
 
     [PostgresFact]
-    public async Task FinishedAiCannotSaveAfterClerkLosesDocumentDirection()
+    public async Task FinishedAiCannotSaveAfterClerkDocumentLeavesDraftStage()
     {
         await using var f=await Fixture.Create();var queued=await f.Enqueue();
         await using var connection=await f.Source.OpenConnectionAsync();
         var job=(await f.Store.ClaimAsync(connection,queued.Id,default))!;
-        await f.Sql("UPDATE \"Documents\" SET \"DocTypeId\"='aaaaaaaa-0000-0000-0000-000000000002'");
+        await f.Sql("UPDATE \"Documents\" SET \"Status\"='PendingDeptReview'");
         await Assert.ThrowsAsync<UnauthorizedDocumentAccessException>(()=>f.Store.CompleteAsync(connection,job,Result,default));
         Assert.Equal(0L,await f.Scalar<long>("SELECT count(*) FROM \"Documents\" WHERE \"OcrDataRaw\" IS NOT NULL"));
     }
 
     [PostgresFact]
-    public async Task QueuedClerkWorkLosingItsDirectionIsFailedBeforeAnyAiCall()
+    public async Task QueuedClerkWorkLeavingDraftStageIsFailedBeforeAnyAiCall()
     {
         await using var f=await Fixture.Create();var job=await f.Enqueue();var queue=new FakeQueue();
         Assert.True(await f.Store.PublishNextAsync(queue,default));
-        await f.Sql("UPDATE \"Documents\" SET \"DocTypeId\"='aaaaaaaa-0000-0000-0000-000000000002'");
+        await f.Sql("UPDATE \"Documents\" SET \"Status\"='DirectorSigned'");
         var started=new TaskCompletionSource<HttpRequestMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var release=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);release.SetResult();
         var handler=new OcrHttp(started,release,false);

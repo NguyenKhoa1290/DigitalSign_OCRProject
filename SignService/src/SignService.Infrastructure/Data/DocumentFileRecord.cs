@@ -7,7 +7,14 @@ namespace SignService.Infrastructure.Data;
 public class DocumentFileRecord
 {
     public Guid Id { get; set; }
+    public string Title { get; set; } = "";
+    public Guid? CreatedById { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public string? DepartmentName { get; set; }
+    public bool IsSchoolWide { get; set; }
     public string MinioPath { get; set; } = string.Empty;
+    public string? SignedPdfPath { get; set; }
+    public string? OcrDataRaw { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? SigningStartedAt { get; set; }
     public Guid ConcurrencyVersion { get; set; }

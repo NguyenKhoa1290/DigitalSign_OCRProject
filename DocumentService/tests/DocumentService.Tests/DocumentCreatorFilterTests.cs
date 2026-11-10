@@ -64,6 +64,29 @@ public class DocumentCreatorFilterTests
     }
 
     [Fact]
+    public async Task HistoryResolvesEditorsWithoutRequiringCreatorAndUsesOneLookup()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();
+        var counter = new LookupCounter();
+        await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).AddInterceptors(counter).Options);
+        await db.Database.ExecuteSqlRawAsync("CREATE TABLE AppUsers (Id TEXT PRIMARY KEY, FullName TEXT NULL, Username TEXT NULL)");
+        var editor = Guid.NewGuid(); var other = Guid.NewGuid(); var missing = Guid.NewGuid();
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO AppUsers VALUES ({editor},'  Văn thư hiệu chỉnh  ','VT001'),({other},NULL,'GV002')");
+        var dto = new DocumentDto { Processes = new()
+        {
+            new() { FromUserId = editor, Action = "OcrEdited", Comment = "Lần 1: ban-sua.docx" },
+            new() { FromUserId = editor, Action = "OcrEdited", Comment = "Lần 2: ban-sua-2.docx" },
+            new() { FromUserId = other, Action = "Update" },
+            new() { FromUserId = missing, Action = "Upload" }
+        } };
+        await Apply(db, ApiResponse<DocumentDto>.Ok(dto));
+        Assert.Equal(new string?[] { "Văn thư hiệu chỉnh", "Văn thư hiệu chỉnh", "GV002", null }, dto.Processes.Select(p => p.ProcessedByName));
+        Assert.Contains("ban-sua-2.docx", dto.Processes[1].Comment);
+        Assert.Equal(missing, dto.Processes[3].FromUserId);
+        Assert.Equal(1, counter.Lookups); Assert.Empty(db.ChangeTracker.Entries());
+    }
+
+    [Fact]
     public async Task MissingIdentityTableDoesNotFailAnAlreadyCommittedCreation()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:"); await connection.OpenAsync();

@@ -29,6 +29,7 @@ public class IncomingPdfSignatureTests
         var service = new Mock<ICertificateService>();
         service.Setup(c => c.GetUserCertificateAsync(It.IsAny<Guid>())).ReturnsAsync((Guid id) => certificates[id]);
         service.Setup(c => c.IsCertificateValid(It.IsAny<UserCertificate>())).Returns(true);
+        service.Setup(c => c.GetTrust(It.IsAny<byte[]>())).Returns(new CertificateTrust(true, false));
         var pdf = new PdfSigningService(service.Object, NullLogger<PdfSigningService>.Instance);
         using var original = new MemoryStream();
         using (var document = new PdfDocument(new PdfWriter(original))) { document.AddNewPage(); }

@@ -40,6 +40,8 @@
                   @bind-Value="_statusFilter" Options="StatusFilterOptions" AfterValueChanged="OnFilterChanged" />
     <CustomSelect CssClass="filter-select" AriaLabel="Lọc theo loại văn bản"
                   @bind-Value="_typeFilter" Options="TypeFilterOptions" AfterValueChanged="OnFilterChanged" />
+    <CustomSelect CssClass="filter-select" AriaLabel="Lọc theo phạm vi"
+                  @bind-Value="_scopeFilter" Options="ScopeFilterOptions" AfterValueChanged="OnFilterChanged" />
 </div>
 @if (_isAdmin) { <p class="document-hold-hint">Nhấn giữ công văn để mở thao tác hủy.</p> }
 
@@ -82,6 +84,7 @@ else
                     <tr @onclick="() => ViewDocument(doc.Id)">
                         <td>
                             <div class="table-title" title="@doc.Title">@doc.Title</div>
+                            <div class="table-meta document-scope">@(doc.IsSchoolWide ? "Công văn chung" : doc.DepartmentName ?? "Chưa xác định đơn vị")</div>
                             @if (!string.IsNullOrEmpty(doc.DocumentNumber))
                             {
                                 <div class="table-meta">Số: @doc.DocumentNumber</div>
@@ -123,6 +126,7 @@ else
                         <div class="document-mobile-number">Số: @doc.DocumentNumber</div>
                     }
                     <div class="document-mobile-badges">
+                        <span class="badge badge-indigo document-scope">@(doc.IsSchoolWide ? "Công văn chung" : doc.DepartmentName ?? "Chưa xác định đơn vị")</span>
                         <StatusBadge Status="@doc.Status" />
                         @if (!string.IsNullOrEmpty(doc.DocumentTypeName))
                         {
@@ -191,6 +195,11 @@ else
     private string _searchQuery = "";
     private string _statusFilter = "";
     private string _typeFilter = "";
+    private string _scopeFilter = "";
+    private static readonly IReadOnlyList<SelectOption> ScopeFilterOptions = new List<SelectOption>
+    {
+        new("", "Tất cả phạm vi"), new("department", "Công văn đơn vị"), new("school", "Công văn chung")
+    };
     private static readonly IReadOnlyList<SelectOption> StatusFilterOptions = new List<SelectOption>
     {
         new("", "Tất cả trạng thái"),
@@ -234,11 +243,11 @@ else
         try
         {
             _result = await DocumentService.GetDocumentsAsync(
-                _currentPage, _pageSize, _statusFilter, _typeFilter, _searchQuery);
+                _currentPage, _pageSize, _statusFilter, _typeFilter, _searchQuery, _scopeFilter);
             if (_result?.Items.Count == 0 && _currentPage > 1)
             {
                 _currentPage--;
-                _result = await DocumentService.GetDocumentsAsync(_currentPage, _pageSize, _statusFilter, _typeFilter, _searchQuery);
+                _result = await DocumentService.GetDocumentsAsync(_currentPage, _pageSize, _statusFilter, _typeFilter, _searchQuery, _scopeFilter);
             }
         }
         catch (Exception ex)

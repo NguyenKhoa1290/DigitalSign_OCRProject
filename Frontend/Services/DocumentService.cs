@@ -10,14 +10,18 @@ public class DocumentService
     public DocumentService(ApiService api) => _api = api;
 
     public async Task<PagedResult<DocumentDto>?> GetDocumentsAsync(
-        int page = 1, int pageSize = 15, string? status = null, string? typeId = null, string? search = null)
+        int page = 1, int pageSize = 15, string? status = null, string? typeId = null, string? search = null, string? scope = null)
     {
         var q = $"api/documents?page={page}&pageSize={pageSize}";
         if (!string.IsNullOrEmpty(status)) q += $"&status={Uri.EscapeDataString(status)}";
         if (!string.IsNullOrEmpty(typeId)) q += $"&docTypeId={Uri.EscapeDataString(typeId)}";
         if (!string.IsNullOrEmpty(search)) q += $"&search={Uri.EscapeDataString(search)}";
+        if (!string.IsNullOrEmpty(scope)) q += $"&scope={Uri.EscapeDataString(scope)}";
         return await _api.GetAsync<PagedResult<DocumentDto>>(q);
     }
+
+    public Task<PagedResult<DocumentDto>?> GetSigningDocumentsAsync(string view, int page = 1)
+        => _api.GetAsync<PagedResult<DocumentDto>>($"api/documents/signing?view={Uri.EscapeDataString(view)}&page={page}&pageSize=15");
 
     public async Task<DocumentDto?> GetDocumentAsync(Guid id, CancellationToken token = default)
         => await _api.GetAsync<DocumentDto>($"api/documents/{id}", token);
@@ -117,9 +121,6 @@ public class DocumentService
 
     public async Task<bool> PublishDocumentAsync(Guid id)
     { try { await _api.PostAsync<object>($"api/documents/{id}/publish", null); return true; } catch { return false; } }
-
-    public async Task<bool> AssignDocumentAsync(Guid id, Guid assignedToId, string? comment = null)
-    { try { return await _api.PostAsync<DocumentDto>($"api/documents/{id}/assign", new { toUserId = assignedToId, comment }) is not null; } catch { return false; } }
 
     public async Task<DocumentDto> SaveGeminiOcrAsync(Guid id, GeminiOcrResult result, Guid expectedVersion)
     {

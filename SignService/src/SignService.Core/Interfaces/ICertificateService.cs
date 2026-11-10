@@ -26,4 +26,7 @@ public interface ICertificateService
 
     // Kiểm tra certificate còn hạn không
     bool IsCertificateValid(UserCertificate cert);
+    CertificateTrust GetTrust(byte[] encodedCertificate) => new(false, false);
 }
+
+public record CertificateTrust(bool IsTrusted, bool IsRevoked);

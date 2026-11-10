@@ -30,7 +30,12 @@ public class DocumentDto
     public DateTime? OfficiallyReceivedAt { get; set; }
     public string? DepartmentName { get; set; }
     public Guid? DepartmentId { get; set; }
+    public bool IsSchoolWide { get; set; }
+    public bool CanReview { get; set; }
+    public DateTime? MySignedAt { get; set; }
     public string? MinioPath { get; set; }
+    public string? SignedPdfPath { get; set; }
+    public DateTime? SigningStartedAt { get; set; }
     public string? FileName { get; set; }
     public string FileContentType { get; set; } = "application/pdf";
     public string? OcrDataRaw { get; set; }

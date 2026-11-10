@@ -159,6 +159,10 @@ build_metadata.AdditionalFiles.CssScope = b-1j70pd0ja9
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2lnbmF0dXJlc1xNeUNlcnRpZmljYXRlLnJhem9y
 build_metadata.AdditionalFiles.CssScope = b-9s0mk9wl7h
 
+[E:/DigitalSign_OCRProject/Frontend/Pages/Signatures/VerifyFile.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2lnbmF0dXJlc1xWZXJpZnlGaWxlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-kn9bqjdy7f
+
 [E:/DigitalSign_OCRProject/Frontend/Shared/CustomSelect.razor]
 build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXEN1c3RvbVNlbGVjdC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-50bx6f3t73

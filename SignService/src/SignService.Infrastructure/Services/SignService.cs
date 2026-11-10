@@ -16,6 +16,7 @@ public class SignService : ISignService
     private readonly IDocumentFileRepository _documentFileRepository;
     private readonly ILogger<SignService> _logger;
     private readonly string _minioBucket;
+    private readonly ISigningDocumentPreparer? _preparer;
 
     public SignService(
         ISignatureRepository signatureRepo,
@@ -24,7 +25,7 @@ public class SignService : ISignService
         IMinioService minioService,
         IDocumentFileRepository documentFileRepository,
         IConfiguration config,
-        ILogger<SignService> logger)
+        ILogger<SignService> logger, ISigningDocumentPreparer? preparer = null)
     {
         _signatureRepo = signatureRepo;
         _certService = certService;
@@ -32,6 +33,7 @@ public class SignService : ISignService
         _minioService = minioService;
         _documentFileRepository = documentFileRepository;
         _logger = logger;
+        _preparer = preparer;
         _minioBucket = config["MinioSettings:Bucket"] ?? "documents";
     }
 
@@ -67,8 +69,9 @@ public class SignService : ISignService
             throw new CertificateExpiredException();
 
         // Reject unsupported input before persisting a signing-start marker.
-        await ResolveDocumentObjectNameAsync(request.DocId);
+        if (_preparer == null) await ResolveDocumentObjectNameAsync(request.DocId);
         await using var signing = await _documentFileRepository.BeginSigningAsync(request.DocId);
+        await _documentFileRepository.ValidateSigningStageAsync(request.DocId, signatureType);
 
         // Kiểm tra đã ký chưa
         bool alreadySigned = await _signatureRepo.HasSignatureAsync(request.DocId, signatureType);
@@ -76,18 +79,26 @@ public class SignService : ISignService
             throw new AlreadySignedException(signatureType);
 
         // Tải PDF từ MinIO theo đường dẫn thật DocumentService đã lưu.
-        string objectName = await ResolveDocumentObjectNameAsync(request.DocId);
+        string objectName = $"{request.DocId}/signed-{Guid.NewGuid():N}.pdf";
         byte[] pdfBytes;
         try
         {
-            pdfBytes = await _minioService.DownloadFileAsync(objectName);
+            pdfBytes = _preparer != null ? await _preparer.PrepareAsync(request.DocId)
+                : await _minioService.DownloadFileAsync(await ResolveDocumentObjectNameAsync(request.DocId));
         }
+        catch (SignServiceException) { throw; }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Không tìm thấy PDF trên MinIO: {ObjectName}", objectName);
             throw new DocumentNotFoundException(request.DocId);
         }
 
+        if (signatureType == SignatureType.LegalSeal)
+        {
+            var previous = await _pdfSigningService.VerifyPdfSignaturesAsync(pdfBytes);
+            if (!previous.IsValid || !previous.Signatures.Any(s => s.SignatureType == SignatureType.PersonalSignature && s.IsIntact))
+                throw new IncomingConflictException("PDF thiếu chữ ký nháy hợp lệ hoặc đã bị thay đổi. Chưa ký pháp nhân.");
+        }
         // Ký PDF
         string signerName = request.SignerName ?? userCert.FullName;
         string reason = request.Reason ?? (signatureType == SignatureType.PersonalSignature
@@ -101,8 +112,12 @@ public class SignService : ISignService
             signerName,
             reason);
 
-        // Ghi đè đúng object gốc trên MinIO để các service khác tiếp tục dùng cùng path.
+        var verified = await _pdfSigningService.VerifyPdfSignaturesAsync(signedPdf);
+        if (!verified.IsValid || !verified.Signatures.Any(s => s.SignatureType == signatureType && s.IsIntact))
+            throw new PdfSigningException("Không xác minh được PDF sau khi ký.");
+        // Write a new immutable object, preserving source and earlier signatures.
         await _minioService.UploadFileAsync(objectName, signedPdf, "application/pdf");
+        await _documentFileRepository.SaveSignedPdfAsync(request.DocId, objectName);
 
         // Lưu DB
         var signature = await _signatureRepo.CreateAsync(new Signature
@@ -110,6 +125,7 @@ public class SignService : ISignService
             DocId = request.DocId,
             SignerId = request.SignerId,
             SignatureType = signatureType,
+            SignedFilePath = objectName,
             SignedAt = DateTime.UtcNow
         });
         await signing.CompleteAsync();
@@ -154,13 +170,15 @@ public class SignService : ISignService
             SignerName = s.SignerName,
             SignatureType = s.SignatureType,
             SignedAt = s.SignedAt,
-            IsIntact = s.IsIntact
+            IsIntact = s.IsIntact, IsCertificateValid = s.IsCertificateValid,
+            IsCertificateTrusted = s.IsCertificateTrusted, IsRevoked = s.IsRevoked
         }).ToList();
 
         return new VerifyResultDto
         {
             DocId = docId,
             IsValid = pdfVerifyResult.IsValid,
+            CoversWholeDocument = pdfVerifyResult.CoversWholeDocument, Message = pdfVerifyResult.Message,
             TotalSignatures = pdfVerifyResult.SignatureCount,
             HasPersonalSignature = hasPersonal,
             HasLegalSeal = hasLegalSeal,
@@ -172,13 +190,48 @@ public class SignService : ISignService
 
     public async Task<IEnumerable<SignatureDto>> GetSignaturesByDocumentAsync(Guid docId)
     {
-        _ = await ResolveDocumentObjectNameAsync(docId);
-        var signatures = await _signatureRepo.GetByDocumentIdAsync(docId);
+        var objectName = await ResolveDocumentObjectNameAsync(docId);
+        var signatures = (await _signatureRepo.GetByDocumentIdAsync(docId)).ToArray();
+        if (signatures.Length == 0) return Array.Empty<SignatureDto>();
+
+        var embeddedNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            var pdf = await _minioService.DownloadFileAsync(objectName);
+            var evidence = await _pdfSigningService.VerifyPdfSignaturesAsync(pdf);
+            // Each workflow step has one signature. Use its embedded certificate
+            // name even after expiry/revocation or removal of the server PFX.
+            foreach (var group in evidence.Signatures.Where(s => s.IsIntact
+                         && !string.IsNullOrWhiteSpace(s.SignerName)
+                         && s.SignerName != "Unknown").GroupBy(s => s.SignatureType))
+                if (group.Count() == 1) embeddedNames[group.Key] = group.Single().SignerName;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không đọc được tên người ký trong PDF của {DocId}", docId);
+        }
+
+        var certificateNames = new Dictionary<Guid, string>();
+        foreach (var signerId in signatures.Where(s => !embeddedNames.ContainsKey(s.SignatureType))
+                     .Select(s => s.SignerId).Distinct())
+        {
+            try
+            {
+                certificateNames[signerId] = (await _certService.GetUserCertificateAsync(signerId))?.FullName ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không đọc được tên trên chứng thư của {SignerId}", signerId);
+            }
+        }
+
         return signatures.Select(s => new SignatureDto
         {
             Id = s.Id,
             DocId = s.DocId,
             SignerId = s.SignerId,
+            SignerName = embeddedNames.GetValueOrDefault(s.SignatureType)
+                ?? certificateNames.GetValueOrDefault(s.SignerId, string.Empty),
             SignatureType = s.SignatureType,
             SignatureTypeDisplay = GetTypeDisplay(s.SignatureType),
             SignedAt = s.SignedAt

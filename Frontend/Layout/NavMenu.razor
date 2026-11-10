@@ -62,7 +62,9 @@
     {
         if (!firstRender) return;
 
-        _taskbarModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/liquid-glass.js?v=20261011-8");
+        // Use the same module URL as index.html so taskbar events and the
+        // Blazor navigation reference belong to one module instance.
+        _taskbarModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/liquid-glass.js");
         _taskbarReference = DotNetObjectReference.Create(this);
         await _taskbarModule.InvokeVoidAsync("bindTaskbarNavigation", _taskbarReference);
     }

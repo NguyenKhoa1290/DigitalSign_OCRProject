@@ -19,7 +19,7 @@ public class DocumentRepository : IDocumentRepository
 
     public async Task<Document?> GetByIdAsync(Guid id, bool includeProcesses = false)
     {
-        IQueryable<Document> query = _context.Documents
+        IQueryable<Document> query = _context.VisibleDocuments
             .AsNoTracking()
             .Include(d => d.DocType);
 
@@ -33,7 +33,7 @@ public class DocumentRepository : IDocumentRepository
 
     public async Task<Document?> GetByDocNumberAsync(string docNumber)
     {
-        return await _context.Documents
+        return await _context.VisibleDocuments
             .AsNoTracking()
             .Include(d => d.DocType)
             .Include(d => d.Processes.OrderBy(p => p.Timestamp))
@@ -42,11 +42,31 @@ public class DocumentRepository : IDocumentRepository
 
     public async Task<(IEnumerable<Document> Documents, int Total)> GetAllAsync(DocumentQueryParams query)
     {
-        var q = _context.Documents
+        var q = _context.VisibleDocuments
             .AsNoTracking()
             .Include(d => d.DocType)
             .Include(d => d.Processes.OrderBy(process => process.Timestamp))
             .AsQueryable();
+
+        if (query.Scope == "school") q = q.Where(d => d.IsSchoolWide);
+        else if (query.Scope == "department") q = q.Where(d => !d.IsSchoolWide);
+        if (query.SigningView == "signed" && query.SigningUserId is Guid signer)
+            q = q.Where(d => _context.SignatureEvidence.Any(s => s.DocId == d.Id && s.SignerId == signer));
+        else if (query.SigningView == "pending")
+        {
+            var manager = query.SigningRoles.Contains("Manager");
+            var board = query.SigningRoles.Contains("BoardOfDirectors");
+            var admin = query.SigningRoles.Contains("Admin");
+            var department = query.SigningDepartmentId;
+            q = q.Where(d =>
+                (admin || board) && d.DocType != null && d.DocType.TypeName == "CongVanDen" && d.Status == DocumentStatus.PendingDirection
+                || (admin || manager && department.HasValue && d.ProcessingDepartmentId == department)
+                    && d.DocType != null && d.DocType.TypeName == "CongVanDen" && d.Status == DocumentStatus.PendingAssignment
+                || d.DocType != null && d.DocType.TypeName != "CongVanDen" && (
+                    (admin || manager && department.HasValue && d.DepartmentId == department) && (d.Status == DocumentStatus.PendingDeptReview
+                        || d.Status == DocumentStatus.DeptSigned && d.SignedPdfPath == null && !_context.SignatureEvidence.Any(s => s.DocId == d.Id))
+                    || (admin || board) && d.Status == DocumentStatus.PendingDirectorSign));
+        }
 
         // Search theo Title hoặc DocNumber
         if (!string.IsNullOrWhiteSpace(query.Search))
@@ -76,11 +96,14 @@ public class DocumentRepository : IDocumentRepository
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var documents = await q
+        var ordered = query.SigningView == "signed" && query.SigningUserId.HasValue
+            ? q.OrderByDescending(d => _context.SignatureEvidence.Where(s => s.DocId == d.Id && s.SignerId == query.SigningUserId).Max(s => (DateTime?)s.SignedAt)).ThenBy(d => d.Id)
+            : q
             .OrderByDescending(d => d.CreatedAt.HasValue || d.Processes.Any(process => process.Action == DocumentAction.Submit || process.Action == DocumentAction.Create))
             .ThenByDescending(d => d.CreatedAt ?? d.Processes.Where(process => process.Action == DocumentAction.Submit || process.Action == DocumentAction.Create)
                 .Select(process => (DateTime?)process.Timestamp).Min())
-            .ThenBy(d => d.Id)
+            .ThenBy(d => d.Id);
+        var documents = await ordered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -108,9 +131,10 @@ public class DocumentRepository : IDocumentRepository
             _context.Entry(document).Property(d => d.FirstSubmittedAt).IsModified = false;
         foreach (var property in new[] { nameof(Document.CreatedById), nameof(Document.CreatedAt),
             nameof(Document.DeletionEligibilityConfirmed), nameof(Document.FirstAssignedAt),
+            nameof(Document.DepartmentId), nameof(Document.DepartmentName), nameof(Document.IsSchoolWide),
             nameof(Document.ProcessingDepartmentId), nameof(Document.ProcessingDepartmentName),
             nameof(Document.AssignedToId), nameof(Document.AssignedToName),
-            nameof(Document.IncomingOriginalPath), nameof(Document.IncomingDirectionPath),
+            nameof(Document.IncomingOriginalPath), nameof(Document.IncomingDirectionPath), nameof(Document.SignedPdfPath),
             nameof(Document.OfficiallyReceivedAt), nameof(Document.SigningStartedAt), nameof(Document.IsDeleted),
             nameof(Document.DeletedAt), nameof(Document.DeletedById), nameof(Document.DeleteReason) })
             _context.Entry(document).Property(property).IsModified = false;
@@ -128,6 +152,8 @@ public class DocumentRepository : IDocumentRepository
         // Compare the stored path so simultaneous uploads cannot delete the wrong PDF.
         var changed = await _context.Documents
             .Where(document => document.Id == id && document.MinioPath == expectedPath && document.ConcurrencyVersion == expectedVersion
+                && document.SigningStartedAt == null && document.SignedPdfPath == null
+                && !_context.SignatureEvidence.Any(s => s.DocId == id)
                 && (document.Status == DocumentStatus.Draft
                     || document.Status == DocumentStatus.Rejected && document.DocType!.TypeName != "CongVanDen"))
             .ExecuteUpdateAsync(update => update
@@ -267,8 +293,7 @@ public class DocumentRepository : IDocumentRepository
             throw new DocumentConflictException("Công văn đã thay đổi. Hãy tải lại trước khi trình chỉ đạo.");
         if (await _context.SignatureEvidence.AnyAsync(s => s.DocId == id))
             throw new DocumentConflictException("Hồ sơ đang Nháp nhưng đã có bằng chứng ký theo quy trình cũ. Cần đối soát trước khi trình lại.");
-        if (!document.MinioPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            throw new DocumentServiceException("Cần tải bản PDF để lãnh đạo ký chỉ đạo và ký phân công. Ảnh vẫn có thể dùng để OCR.");
+        DocumentService.Core.Common.SigningSourcePolicy.RequireReady(document.MinioPath, document.OcrDataRaw);
         if (comment?.Length > 1000) throw new DocumentServiceException("Ghi chú tối đa 1000 ký tự.");
         var now = DateTime.UtcNow;
         if (!document.OfficiallyReceivedAt.HasValue)
@@ -294,9 +319,12 @@ public class DocumentRepository : IDocumentRepository
     public async Task<DocumentStatisticsDto> GetStatisticsAsync(Guid userId, DateTime todayStartUtc, DateTime tomorrowStartUtc)
     {
         // Creation is the earliest Submit process, not the most recent submission or edit.
-        var documents = _context.Documents.AsNoTracking().Select(d => new
+        var reviewScope = _context.AccessScope;
+        var mayReviewAll = reviewScope == null || reviewScope.IsAdmin || reviewScope.Roles.Contains("BoardOfDirectors");
+        var reviewDepartment = reviewScope?.DepartmentId;
+        var documents = _context.VisibleDocuments.AsNoTracking().Select(d => new
         {
-            d.Status, d.MinioPath, d.OcrDataRaw,
+            d.Status, d.MinioPath, d.OcrDataRaw, d.DepartmentId,
             CreatedAt = d.CreatedAt ?? d.Processes.Where(p => p.Action == DocumentAction.Submit || p.Action == DocumentAction.Create)
                 .Select(p => (DateTime?)p.Timestamp).Min(),
             CreatedBy = d.CreatedById ?? d.Processes.Where(p => p.Action == DocumentAction.Submit || p.Action == DocumentAction.Create)
@@ -316,7 +344,8 @@ public class DocumentRepository : IDocumentRepository
             MyPendingDocuments = group.Count(d => d.CreatedBy == userId && (d.Status == DocumentStatus.PendingDeptReview
                 || d.Status == DocumentStatus.DeptSigned || d.Status == DocumentStatus.PendingDirectorSign
                 || d.Status == DocumentStatus.PendingDirection || d.Status == DocumentStatus.PendingAssignment || d.Status == DocumentStatus.IncomingAssigned)),
-            PendingDeptDocuments = group.Count(d => d.Status == DocumentStatus.PendingDeptReview),
+            PendingDeptDocuments = group.Count(d => d.Status == DocumentStatus.PendingDeptReview
+                && (mayReviewAll || reviewDepartment.HasValue && d.DepartmentId == reviewDepartment)),
             PendingDirectorDocuments = group.Count(d => d.Status == DocumentStatus.PendingDirectorSign),
             DirectorSignedDocuments = group.Count(d => d.Status == DocumentStatus.DirectorSigned || d.Status == DocumentStatus.Published),
             AssignedDocuments = group.Count(d => d.AssignedByMe)

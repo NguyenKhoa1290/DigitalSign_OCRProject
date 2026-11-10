@@ -13,6 +13,8 @@ public class SignVerifyResult
 {
     public bool IsValid { get; set; }
     public int SignatureCount { get; set; }
+    public bool CoversWholeDocument { get; set; }
+    public string? Message { get; set; }
     public List<SignatureInfo> Signatures { get; set; } = new();
 }
 
@@ -23,4 +25,6 @@ public class SignatureInfo
     public DateTime SignedAt { get; set; }
     public bool IsIntact { get; set; } // PDF không bị sửa sau khi ký
     public bool IsCertificateValid { get; set; }
+    public bool IsCertificateTrusted { get; set; }
+    public bool IsRevoked { get; set; }
 }

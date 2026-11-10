@@ -32,6 +32,7 @@ public class AppUser
 
     /// <summary>Trạng thái hoạt động của tài khoản. Mặc định: true.</summary>
     public bool IsActive { get; set; } = true;
+    public string Theme { get; set; } = "light";
 
     /// <summary>Bắt buộc đổi mật khẩu lần đầu đăng nhập. Admin set = true khi tạo, user đổi xong = false.</summary>
     public bool MustChangePassword { get; set; } = false;

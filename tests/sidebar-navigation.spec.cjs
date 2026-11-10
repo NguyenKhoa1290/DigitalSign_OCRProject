@@ -70,7 +70,7 @@ async function check(browser, role, width) {
   await page.getByRole('heading', { name: 'OCR permission fixture', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Chạy OCR', exact: true }).count(), role === 'Clerk' ? 1 : 0);
   assert.equal(await page.getByRole('button', { name: 'Sửa thông tin', exact: true }).count(), 1);
-  assert.equal(await page.getByRole('button', { name: 'Tải lên file', exact: true }).count(), 1);
+  assert.equal(await page.getByRole('button', { name: 'Thay tệp đính kèm', exact: true }).count(), 1);
   assert.equal(await page.getByRole('button', { name: 'Nộp trình duyệt', exact: true }).count(), 1);
   await page.getByRole('link', { name: 'Kết quả OCR', exact: true }).click();
   await page.getByRole('heading', { name: 'Kết quả OCR', exact: true }).waitFor();

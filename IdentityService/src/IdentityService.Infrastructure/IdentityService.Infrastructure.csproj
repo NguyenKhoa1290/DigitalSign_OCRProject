@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Assets\hau-logo.png" LogicalName="IdentityService.Email.hau-logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\IdentityService.Core\IdentityService.Core.csproj" />
   </ItemGroup>
 

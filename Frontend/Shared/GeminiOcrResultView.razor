@@ -57,6 +57,7 @@
     [Parameter] public GeminiOcrResult? Result { get; set; }
     [Parameter] public string? SaveError { get; set; }
     [Parameter] public bool IsProcessing { get; set; }
+    [Parameter] public bool IsLocked { get; set; }
     [Parameter] public Guid? DocumentId { get; set; }
     [Parameter] public bool IsIncoming { get; set; }
     [Parameter] public string? DocumentStatus { get; set; }
@@ -71,8 +72,8 @@
     private bool _uploading, _disposed;
     private bool _downloading;
     private string? _error;
-    private bool CanCorrect(ClaimsPrincipal user) => user.IsInRole("Admin")
-        || user.IsInRole("Clerk") && DocumentStatus is "Draft" or "Rejected";
+    private bool CanCorrect(ClaimsPrincipal user) => !IsLocked && (user.IsInRole("Admin")
+        || user.IsInRole("Clerk") && DocumentStatus is "Draft" or "Rejected");
     private bool CanDownload(ClaimsPrincipal user) => user.IsInRole("Admin") || user.IsInRole("Clerk")
         || DocumentId.HasValue && !IsIncoming && user.IsInRole("Specialist")
             && Guid.TryParse(user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value,out var actor) && CreatedById == actor;

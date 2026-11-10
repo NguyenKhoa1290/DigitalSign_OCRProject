@@ -253,3 +253,12 @@ Các service khác validate JWT theo cấu hình:
 cd IdentityService
 dotnet test
 ```
+
+## Logo trong email OTP
+
+Hai mẫu xác minh email và khôi phục mật khẩu dùng logo HAU 64×64 px ở đầu nội dung. Ảnh PNG được đóng gói trong Infrastructure dưới dạng EmbeddedResource, gắn MIME inline và tham chiếu qua `cid:hau-logo`; không tải ảnh từ website khi mở thư. Logo dùng cùng nguồn với `Frontend/wwwroot/images/hau-logo.png`. Đây là logo trong nội dung, không phải avatar người gửi/BIMI. Khi đổi logo, cập nhật `Assets/hau-logo.png` và build lại IdentityService.
+
+
+## Giao diện theo tài khoản (05/11/2026)
+
+AppUsers.Theme lưu light/dark, mặc định light. AuthStoreInitializer thêm cột nếu DB đã tồn tại, không thay dữ liệu tài khoản khác. GET /api/users/me và login/refresh trả Theme. PUT /api/users/me/theme nhận {"theme":"light"} hoặc {"theme":"dark"}, yêu cầu đăng nhập, lấy người sửa từ JWT; không nhận userId/roles hoặc sửa các trường hồ sơ. Mọi vai trò hoạt động đều được tự đổi giao diện. UserRepository.UpdateAsync giữ nguyên cột Theme khi sửa thông tin/xác thực để tránh một phiên cũ ghi đè cài đặt vừa lưu; ThemePreferenceService chỉ cập nhật thuộc tính Theme. Frontend lưu tự động khi gạt công tắc; login trình duyệt mới nhận đúng lựa chọn máy chủ.

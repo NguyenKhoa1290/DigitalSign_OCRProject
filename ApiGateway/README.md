@@ -83,3 +83,13 @@ Trigger `hau_document_result_trigger` phát `hau_document_updates` sau transacti
 Snapshot vẫn chứa unreadCount của đúng user; khi đang theo dõi hồ sơ, thêm documentId/documentVersion. Không truyền nội dung OCR qua SSE. Client đọc lại GET công văn có xác thực để lấy kết quả; bản chụp lúc nối lại bù sự kiện bỏ lỡ. Nếu hồ sơ bị xóa/mất quyền đọc, documentVersion=null và client ngừng theo dõi, quay về stream thông báo thường. Kết nối/heartbeat/thời hạn2phút như trước. Nginx đã tắt buffering cho cùng route, query không cần cấu hình proxy mới.
 
 Kiểm thử DocumentResultRealtimeTests: SSE HTTP thật + PostgreSQL schema cô lập, cùng công văn có Specialist/Manager/BoardOfDirectors xem đồng thời, giao dịch rollback không phát, commit đổi version cho đủ người xem, chỉ requester có unread, không gửi nội dung OCR/không đánh thức hồ sơ khác, thiếu/xóa/inactive bị chặn, reconnect đọc snapshot mới.
+
+
+## Phạm vi thông báo công văn (05/11/2026)
+
+Danh sách/chỉ số thông báo và SSE theo công văn kiểm tra phạm vi giống DocumentService, gồm đơn vị hiện tại, hồ sơ chung, người tạo, người được giao, người đã ký và Admin/BGH. Thông báo chờ ký nháy chỉ gửi Trưởng phòng thuộc đơn vị ghi trên công văn; hồ sơ thiếu đơn vị không phát cho toàn bộ Trưởng phòng.
+
+
+## Giới hạn PDF xác minh (07/11/2026)
+
+Route SignService cho phép request tối đa 64 MiB để hỗ trợ multipart PDF xác minh tối đa 50 MiB. Endpoint vẫn yêu cầu phiên đăng nhập hợp lệ. Đã kiểm tra upload 31 MiB qua frontend/gateway, không gặp 413.

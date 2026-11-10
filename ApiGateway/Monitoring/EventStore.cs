@@ -6,21 +6,31 @@ namespace ApiGateway.Monitoring;
 
 public class EventStore(NpgsqlDataSource dataSource)
 {
+    // Match DocumentService visibility, including a user's historical signatures.
+    private const string VisibleDocument = """
+        EXISTS (SELECT 1 FROM "AppUsers" u WHERE u."Id"=@user AND u."IsActive" AND (
+          d."IsSchoolWide" OR d."CreatedById"=u."Id" OR d."AssignedToId"=u."Id"
+          OR (u."DepartmentId" IS NOT NULL AND (u."DepartmentId"=d."DepartmentId" OR u."DepartmentId"=d."ProcessingDepartmentId"))
+          OR EXISTS (SELECT 1 FROM "Signatures" s WHERE s."DocId"=d."Id" AND s."SignerId"=u."Id")
+          OR EXISTS (SELECT 1 FROM "AppUserRoles" ur JOIN "AppRoles" r ON r."Id"=ur."RoleId"
+              WHERE ur."UserId"=u."Id" AND r."RoleName" IN ('Admin','BoardOfDirectors'))))
+        """;
+    private static readonly string VisibleNotification =
+        "(\"DocumentId\" IS NULL OR EXISTS (SELECT 1 FROM \"Documents\" d WHERE d.\"Id\"=\"UserNotifications\".\"DocumentId\" AND NOT d.\"IsDeleted\" AND " + VisibleDocument + "))";
     public async Task<Guid?> GetDocumentVersionAsync(Guid document, Guid user, CancellationToken token)
     {
-        await using var cmd = dataSource.CreateCommand("""
+        await using var cmd = dataSource.CreateCommand($"""
             SELECT d."ConcurrencyVersion" FROM "Documents" d
             WHERE d."Id"=@document AND NOT d."IsDeleted"
-              AND EXISTS (SELECT 1 FROM "AppUsers" u WHERE u."Id"=@user AND u."IsActive")
+              AND {VisibleDocument}
             """);
         Add(cmd,"document",document); Add(cmd,"user",user);
         return await cmd.ExecuteScalarAsync(token) is Guid version ? version : null;
     }
     public async Task<long> GetUnreadCountAsync(Guid user, CancellationToken token)
     {
-        await using var cmd = dataSource.CreateCommand("""
-            SELECT count(*) FROM "UserNotifications" n WHERE n."UserId"=@user AND n."ReadAt" IS NULL
-            AND (n."DocumentId" IS NULL OR EXISTS (SELECT 1 FROM "Documents" d WHERE d."Id"=n."DocumentId" AND NOT d."IsDeleted"))
+        await using var cmd = dataSource.CreateCommand($"""
+            SELECT count(*) FROM "UserNotifications" WHERE "UserId"=@user AND "ReadAt" IS NULL AND {VisibleNotification}
             """);
         Add(cmd,"user",user);
         return (long)(await cmd.ExecuteScalarAsync(token))!;
@@ -85,7 +95,7 @@ public class EventStore(NpgsqlDataSource dataSource)
     public async Task<PageResult<UserNotification>> GetNotificationsAsync(Guid user, int page, bool unreadOnly, string? kind, CancellationToken token)
     {
         page=Math.Clamp(page,1,100000); const int size=20;
-        const string visibleDocument = "(\"DocumentId\" IS NULL OR EXISTS (SELECT 1 FROM \"Documents\" d WHERE d.\"Id\"=\"UserNotifications\".\"DocumentId\" AND NOT d.\"IsDeleted\"))";
+        var visibleDocument = VisibleNotification;
         var where="WHERE \"UserId\"=@user AND (NOT @unread OR \"ReadAt\" IS NULL) AND (@kind IS NULL OR \"Kind\"=@kind) AND " + visibleDocument;
         await using var cmd = dataSource.CreateCommand($"""
             SELECT count(*) FROM "UserNotifications" {where};

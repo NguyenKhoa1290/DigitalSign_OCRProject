@@ -242,6 +242,9 @@ a:hover { text-decoration: underline; }
 .logout-btn:hover { color: var(--color-danger); background: rgba(239,68,68,0.1); }
 
 /* ===== MAIN CONTENT ===== */
+.app-layout:has(.pdf-verification-page),
+.main-content:has(.pdf-verification-page) { overflow: clip; }
+.main-content:has(.pdf-verification-page) { min-width: 0; }
 .main-content {
     flex: 1;
     display: flex;
@@ -506,6 +509,7 @@ textarea.form-control { min-height: 100px; resize: vertical; }
     justify-content: space-between;
     padding: 14px 16px;
     border-top: 1px solid var(--color-border-light);
+    border-radius: var(--radius-surface);
     background: var(--color-surface);
 }
 .pagination-info { font-size: 13px; color: var(--color-text-secondary); }

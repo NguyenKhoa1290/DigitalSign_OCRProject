@@ -83,7 +83,7 @@ public class DocumentDeletionPostgresTests
             await db.Database.MigrateAsync();
             await db.Database.ExecuteSqlRawAsync("""
                 CREATE TABLE "Signatures" ("Id" uuid PRIMARY KEY, "DocId" uuid NOT NULL, "SignerId" uuid NOT NULL,
-                 "SignatureType" varchar(100) NOT NULL, "SignedAt" timestamptz NOT NULL)
+                 "SignatureType" varchar(100) NOT NULL, "SignedAt" timestamptz NOT NULL, "SignedFilePath" text NULL)
                 """);
             if (!legacy)
             {
@@ -137,6 +137,7 @@ public class DocumentDeletionPostgresTests
         await using var lease = await new SignDocumentRepository(signDb).BeginSigningAsync(f.Id);
         var cancellation = repo.CancelAsync(f.Id, new(f.Owner, ["Admin"]), "Cancel", version);
         (await Task.WhenAny(cancellation, Task.Delay(150))).Should().NotBe(cancellation);
+        await new SignDocumentRepository(signDb).SaveSignedPdfAsync(f.Id,"signed-fixture.pdf");
         await lease.CompleteAsync();
         await FluentActions.Invoking(() => cancellation).Should().ThrowAsync<DocumentConflictException>();
         db.ChangeTracker.Clear();
@@ -158,7 +159,7 @@ public class DocumentDeletionPostgresTests
     }
 
     [DeletionPostgresFact]
-    public async Task SigningLocksTheDocumentAndThePersistedMarkerPreventsDeletionEvenWithoutASignature()
+    public async Task SuccessfulSigningLocksTheDocumentAndThePersistedMarkerPreventsDeletion()
     {
         await using var f = new Fixture(); await f.Initialize();
         await using var signingDb = new SignContext(new DbContextOptionsBuilder<SignContext>().UseNpgsql(f.ConnectionString).Options);
@@ -167,10 +168,11 @@ public class DocumentDeletionPostgresTests
         await using var deletingDb = f.Context();
         var deletion = new DocumentRepository(deletingDb).SetDeletedAsync(f.Id, f.Actor, null, true);
         (await Task.WhenAny(deletion, Task.Delay(150))).Should().NotBe(deletion);
+        await signing.SaveSignedPdfAsync(f.Id,"signed-fixture.pdf");
         await lease.CompleteAsync();
         await FluentActions.Invoking(() => deletion).Should().ThrowAsync<DocumentConflictException>();
         (await new DocumentRepository(deletingDb).GetByIdAsync(f.Id))!.SigningStartedAt.Should().NotBeNull();
-        (await signing.GetMinioPathAsync(f.Id)).Should().Be("documents/fixture.pdf");
+        (await signing.GetMinioPathAsync(f.Id)).Should().Be("signed-fixture.pdf");
     }
 
     [DeletionPostgresFact]

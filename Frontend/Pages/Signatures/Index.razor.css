@@ -1,5 +1,47 @@
-.signature-back-button {
+.signature-header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
     flex-shrink: 0;
+}
+
+.signature-back-button { flex-shrink: 0; }
+
+.signature-tabs .tab-btn.active {
+    border-bottom-color: transparent;
+}
+
+.signature-queue {
+    overflow: hidden;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-surface);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.signature-document-list { display: grid; gap: 0; }
+.signature-list-item {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+.signature-list-item + .signature-list-item { border-top: 1px solid var(--color-border-light); }
+.signature-list-item:hover {
+    border-color: var(--color-border-light);
+    box-shadow: none;
+    transform: none;
+}
+.signature-list-item .signature-document-meta { margin: 10px 0; }
+.signature-list-item .btn { margin-top: 12px; }
+.signature-pagination {
+    border-radius: 0;
+    border-top: 1px solid var(--color-border-light);
+    background: transparent;
 }
 
 .signature-layout {
@@ -69,12 +111,14 @@
 
 @media (max-width: 960px) {
     .signature-page-header {
-        align-items: stretch;
+        align-items: flex-start;
+        flex-wrap: wrap;
     }
 
-    .signature-back-button {
-        justify-content: center;
+    .signature-header-actions {
+        margin-left: 0;
         width: 100%;
+        justify-content: flex-start;
     }
 }
 
@@ -87,4 +131,10 @@
     .signature-actions .btn {
         justify-content: center;
     }
+}
+
+@media (max-width: 420px) {
+    .signature-header-actions { align-items: stretch; flex-direction: column; }
+    .signature-header-actions .btn { justify-content: center; width: 100%; }
+    .signature-pagination { align-items: flex-start; gap: 12px; }
 }

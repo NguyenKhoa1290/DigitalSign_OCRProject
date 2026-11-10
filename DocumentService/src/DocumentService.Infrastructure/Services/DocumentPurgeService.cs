@@ -33,7 +33,9 @@ public class DocumentPurgeService(AppDbContext db, IFileStorageService storage, 
             {
                 if (!document.IsDeleted) throw new DocumentConflictException("Chỉ xóa vĩnh viễn công văn đã xóa hoặc hủy. Hãy tải lại danh sách.");
                 Confirm(document.Title, document.ConcurrencyVersion, request);
-                var names = new[] { document.MinioPath, document.IncomingOriginalPath, document.IncomingDirectionPath }
+                var signedFiles = await db.SignatureEvidence.Where(s => s.DocId == id).Select(s => s.SignedFilePath).ToListAsync();
+                var names = new[] { document.MinioPath, document.IncomingOriginalPath, document.IncomingDirectionPath, document.SignedPdfPath }
+                    .Concat(signedFiles)
                     .Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => ObjectName(p!)).Distinct(StringComparer.Ordinal).ToArray();
                 var record = new DocumentPurgeRecord { DocId = id, Title = document.Title, OriginalStatus = document.Status,
                     OriginalVersion = document.ConcurrencyVersion, ActorId = actor.UserId, Reason = request.Reason.Trim(), PurgedAt = DateTime.UtcNow,
@@ -93,8 +95,9 @@ public class DocumentPurgeService(AppDbContext db, IFileStorageService storage, 
         var job = await db.DocumentPurgeRecords.SingleAsync(p => p.Id == id);
         if (job.FilesCleanedAt.HasValue) return true;
         var references = await db.Documents.IgnoreQueryFilters().AsNoTracking()
-            .Select(d => new { d.MinioPath, d.IncomingOriginalPath, d.IncomingDirectionPath }).ToListAsync();
-        var shared = references.SelectMany(d => new[] { d.MinioPath, d.IncomingOriginalPath, d.IncomingDirectionPath })
+            .Select(d => new { d.MinioPath, d.IncomingOriginalPath, d.IncomingDirectionPath, d.SignedPdfPath }).ToListAsync();
+        var retainedSignatures = await db.SignatureEvidence.Select(s => s.SignedFilePath).ToListAsync();
+        var shared = references.SelectMany(d => new[] { d.MinioPath, d.IncomingOriginalPath, d.IncomingDirectionPath, d.SignedPdfPath }).Concat(retainedSignatures)
             .Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => ObjectName(p!)).ToHashSet(StringComparer.Ordinal);
         var success = true;
         foreach (var name in JsonSerializer.Deserialize<string[]>(job.ObjectNamesJson) ?? [])

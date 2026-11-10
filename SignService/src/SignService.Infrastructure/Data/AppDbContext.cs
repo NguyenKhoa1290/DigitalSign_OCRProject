@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
             e.ToTable("Documents", table => table.ExcludeFromMigrations());
             e.HasKey(x => x.Id);
             e.Property(x => x.MinioPath).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(500);
+            e.Property(x => x.DepartmentName).HasMaxLength(255);
             e.Property(x => x.Status).HasMaxLength(50);
             e.Property(x => x.ProcessingDepartmentName).HasMaxLength(255);
             e.Property(x => x.AssignedToName).HasMaxLength(100);

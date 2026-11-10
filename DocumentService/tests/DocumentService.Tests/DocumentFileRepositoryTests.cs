@@ -18,6 +18,7 @@ public class DocumentFileRepositoryTests
         using var connection=new SqliteConnection("Data Source=:memory:");await connection.OpenAsync();
         await using var db=new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
         await db.Database.EnsureCreatedAsync();var id=Guid.NewGuid();var version=Guid.NewGuid();
+        await db.Database.ExecuteSqlRawAsync("CREATE TABLE Signatures (DocId TEXT, SignerId TEXT, SignedAt TEXT, SignatureType TEXT, SignedFilePath TEXT)");
         db.Add(new Document{Id=id,Title="Draft",DocTypeId=Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"),MinioPath="documents/original.pdf",ConcurrencyVersion=version});
         await db.SaveChangesAsync();db.ChangeTracker.Clear();
         var changedVersion=Guid.NewGuid();
@@ -35,6 +36,7 @@ public class DocumentFileRepositoryTests
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
         await using var context = new AppDbContext(options);
         await context.Database.EnsureCreatedAsync();
+        await context.Database.ExecuteSqlRawAsync("CREATE TABLE Signatures (DocId TEXT, SignerId TEXT, SignedAt TEXT, SignatureType TEXT, SignedFilePath TEXT)");
         var id = Guid.NewGuid();
         context.Documents.Add(new Document
         {

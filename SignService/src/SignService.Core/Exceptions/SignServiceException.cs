@@ -31,5 +31,5 @@ public class PdfSigningException : SignServiceException
 }
 
 public class IncomingConflictException(string message) : SignServiceException(message);
-public class IncomingAccessException() : SignServiceException("Bạn không có quyền xử lý công văn đến này.");
+public class IncomingAccessException() : SignServiceException("Bạn không có quyền xử lý công văn này.");
 public class WorkflowDirectoryUnavailableException() : SignServiceException("Chưa xác minh được đơn vị hoặc tài khoản. Vui lòng thử lại.");

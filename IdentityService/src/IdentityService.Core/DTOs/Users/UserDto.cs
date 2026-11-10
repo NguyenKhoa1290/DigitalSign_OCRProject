@@ -31,6 +31,7 @@ public class UserDto
 
     /// <summary>Trạng thái hoạt động của tài khoản.</summary>
     public bool IsActive { get; set; }
+    public string Theme { get; set; } = "light";
 
     /// <summary>Thời điểm tạo tài khoản (UTC).</summary>
     public DateTime CreatedAt { get; set; }

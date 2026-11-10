@@ -1,6 +1,7 @@
 import '../lib/flight/components/glass-surface.js';
 import '../lib/flight/components/liquid-button.js';
 import './liquid-action-buttons.js';
+import './liquid-theme-switch.js';
 import '../lib/flight/flight-taskbar.js';
 import { setGlassBackdrop } from '../lib/flight/components/backdrop.js';
 
@@ -48,6 +49,7 @@ export function syncTaskbarSelection() {
 }
 
 function drawBackdrop() {
+    const dark = document.documentElement.dataset.theme === 'dark';
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -60,20 +62,20 @@ function drawBackdrop() {
 
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     const base = context.createLinearGradient(0, 0, width, height);
-    base.addColorStop(0, '#e8f7ff');
-    base.addColorStop(.45, '#eef5fb');
-    base.addColorStop(1, '#d9e8f5');
+    base.addColorStop(0, dark ? '#0d1825' : '#e8f7ff');
+    base.addColorStop(.45, dark ? '#152538' : '#eef5fb');
+    base.addColorStop(1, dark ? '#112131' : '#d9e8f5');
     context.fillStyle = base;
     context.fillRect(0, 0, width, height);
 
     const blue = context.createRadialGradient(width * .78, height * .1, 0, width * .78, height * .1, Math.max(width, height) * .32);
-    blue.addColorStop(0, 'rgba(83, 209, 255, .55)');
+    blue.addColorStop(0, dark ? 'rgba(47, 122, 182, .22)' : 'rgba(83, 209, 255, .55)');
     blue.addColorStop(1, 'rgba(83, 209, 255, 0)');
     context.fillStyle = blue;
     context.fillRect(0, 0, width, height);
 
     const green = context.createRadialGradient(width * .38, height * .94, 0, width * .38, height * .94, Math.max(width, height) * .34);
-    green.addColorStop(0, 'rgba(0, 150, 63, .20)');
+    green.addColorStop(0, dark ? 'rgba(0, 130, 90, .10)' : 'rgba(0, 150, 63, .20)');
     green.addColorStop(1, 'rgba(0, 150, 63, 0)');
     context.fillStyle = green;
     context.fillRect(0, 0, width, height);
@@ -85,6 +87,8 @@ function drawBackdrop() {
 }
 
 function configureTaskbar(taskbar) {
+    const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    if (taskbar.getAttribute('theme') !== theme) taskbar.setAttribute('theme', theme);
     if (taskbar.dataset.configured === 'true') return;
 
     const routes = (taskbar.getAttribute('routes') || '').split('|');
@@ -109,6 +113,11 @@ function configureTaskbars() {
 drawBackdrop();
 configureTaskbars();
 new MutationObserver(configureTaskbars).observe(document.body, { childList: true, subtree: true });
+window.addEventListener('hau-theme-change', () => {
+    backdropViewport = null;
+    drawBackdrop();
+    configureTaskbars();
+});
 window.addEventListener('resize', () => {
     if (backdropResizeFrame) return;
     backdropResizeFrame = requestAnimationFrame(() => { backdropResizeFrame = 0; drawBackdrop(); });

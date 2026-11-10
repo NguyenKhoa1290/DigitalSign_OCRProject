@@ -189,6 +189,8 @@ public sealed class OcrJobStore(NpgsqlDataSource source)
             SELECT EXISTS(SELECT 1 FROM "AppUsers" u JOIN "AppUserRoles" ur ON ur."UserId"=u."Id"
             JOIN "AppRoles" r ON r."Id"=ur."RoleId" JOIN "Documents" d ON d."Id"=@doc
             WHERE u."Id"=@actor AND u."IsActive" AND NOT d."IsDeleted"
+                AND d."SigningStartedAt" IS NULL AND d."SignedPdfPath" IS NULL
+                AND NOT EXISTS (SELECT 1 FROM "Signatures" s WHERE s."DocId"=d."Id")
               AND (r."RoleName"='Admin' OR r."RoleName"='Clerk' AND d."Status" IN ('Draft','Rejected')))
             """,("actor",actor),("doc",document));
         return (bool)(await cmd.ExecuteScalarAsync(token))!;

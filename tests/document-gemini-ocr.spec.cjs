@@ -58,7 +58,7 @@ async function run(browser,width,{fail=false,role='Clerk',missing=false,stay=fal
    assert.equal(queued,1);assert(await runButton.isDisabled());
    if(docTypeName==='CongVanDen'){
    assert(await page.getByRole('button',{name:'Sửa thông tin',exact:true}).isEnabled());
-   assert(await page.getByRole('button',{name:'Tải lên file',exact:true}).isEnabled());
+   assert(await page.getByRole('button',{name:'Thay tệp đính kèm',exact:true}).isEnabled());
    }else{assert.equal(await page.locator('input[type=file]').count(),0);}
    // Reload must recover the durable job without replaying the request.
    job.status='Running';await page.reload({waitUntil:'domcontentloaded'});await page.getByText('Đang nhận diện OCR.',{exact:false}).waitFor();assert.equal(queued,1);

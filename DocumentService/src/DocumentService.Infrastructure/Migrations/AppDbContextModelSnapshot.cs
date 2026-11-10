@@ -58,6 +58,13 @@ namespace DocumentService.Infrastructure.Migrations
                     b.Property<bool>("DeletionEligibilityConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DepartmentName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
                     b.Property<string>("DocNumber")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
@@ -84,6 +91,9 @@ namespace DocumentService.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsSchoolWide")
+                        .HasColumnType("boolean");
+
                     b.Property<DateOnly?>("IssuedDate")
                         .HasColumnType("date");
 
@@ -104,6 +114,9 @@ namespace DocumentService.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("SignedPdfPath")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("SigningStartedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -123,6 +136,8 @@ namespace DocumentService.Infrastructure.Migrations
                         .HasDatabaseName("IX_Documents_DocNumber");
 
                     b.HasIndex("DocTypeId");
+
+                    b.HasIndex("DepartmentId", "IsSchoolWide");
 
                     b.HasIndex("IsDeleted", "DeletedAt");
 
@@ -270,6 +285,19 @@ namespace DocumentService.Infrastructure.Migrations
             modelBuilder.Entity("DocumentService.Infrastructure.Data.SignatureEvidence", b =>
                 {
                     b.Property<Guid>("DocId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SignatureType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("SignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SignedFilePath")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SignerId")
                         .HasColumnType("uuid");
 
                     b.ToTable("Signatures", null, t =>

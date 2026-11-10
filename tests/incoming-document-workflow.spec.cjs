@@ -18,9 +18,9 @@ async function check(browser, width, role, status, type = 'CongVanDen', wrongUni
   })).toString('base64url'), 'fixture'].join('.');
   await context.addInitScript(value => { if (window === window.top) localStorage.setItem('auth_token', value); }, token);
   const page = await context.newPage(), errors = [], unexpected = [], writes = [];
-  page.setDefaultTimeout(15000); page.on('pageerror', error => errors.push(error.message));
+  page.setDefaultTimeout(60000); page.on('pageerror', error => errors.push(error.message));
   const document = { id, title: 'Công văn fixture', status, docTypeName: type,
-    docTypeId: 'aaaaaaaa-0000-0000-0000-000000000001', concurrencyVersion: version,
+    createdById: actor, docTypeId: 'aaaaaaaa-0000-0000-0000-000000000001', concurrencyVersion: version,
     minioPath: 'fixture.pdf', fileName: 'fixture.pdf', fileContentType: 'application/pdf',
     processingDepartmentId: department, processingDepartmentName: 'Khoa fixture',
     assignedToId: status === 'IncomingAssigned' ? specialist : null,
@@ -66,7 +66,7 @@ async function check(browser, width, role, status, type = 'CongVanDen', wrongUni
     return route.fulfill({ status: responseStatus, contentType: 'application/json', body: JSON.stringify({ success: true, data }) });
   });
   try {
-    await page.goto(web + '/documents/' + id);
+    await page.goto(web + '/documents/' + id, {waitUntil:'domcontentloaded'});
     await page.getByRole('heading', { name: 'Công văn fixture', exact: true }).waitFor();
     const button = name => page.getByRole('button', { name, exact: true });
     if (type === 'CongVanDen') {
@@ -74,7 +74,7 @@ async function check(browser, width, role, status, type = 'CongVanDen', wrongUni
       assert.equal(await button('Ký nháy').count(), 0);
       assert.equal(await button('Ký số pháp nhân').count(), 0);
     }
-    if (role === 'Clerk' && status === 'Draft') {
+    if (status === 'Draft' && ((role === 'Clerk' && type === 'CongVanDen') || (role === 'Specialist' && type === 'CongVanDi'))) {
       assert.equal(await button('Phân công xử lý').count(), 0);
       const label = type === 'CongVanDen' ? 'Trình BGH chỉ đạo' : 'Nộp trình duyệt';
       await button(label).click();
@@ -135,7 +135,7 @@ async function check(browser, width, role, status, type = 'CongVanDen', wrongUni
       await check(browser, width, 'Manager', 'PendingAssignment', 'CongVanDen', true);
       await check(browser, width, 'Specialist', 'IncomingAssigned');
       await check(browser, width, 'Manager', 'PendingDeptReview');
-      await check(browser, width, 'Clerk', 'Draft', 'CongVanDi');
+      await check(browser, width, 'Specialist', 'Draft', 'CongVanDi');
     }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

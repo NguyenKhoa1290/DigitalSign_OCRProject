@@ -179,6 +179,8 @@ services:
       MinioSettings__UseSSL: "false"
       MinioSettings__Bucket: documents
       CertificateSettings__CertsDirectory: /app/certs
+      OcrService__BaseUrl: http://ocr-service:5051/
+      ServiceAuth__OcrServiceToken: ${OCR_SERVICE_TOKEN:-hau-dev-ocr-service-token}
     depends_on:
       postgres:
         condition: service_healthy

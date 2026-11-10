@@ -7,7 +7,7 @@ using MimeKit;
 namespace IdentityService.Infrastructure.Services;
 
 /// <summary>
-/// Gửi email transactional qua Gmail SMTP bằng MailKit.
+/// Gửi email transactional qua SMTP bằng MailKit.
 /// Cấu hình đọc từ EmailSettings trong appsettings.json.
 /// </summary>
 public class EmailService : IEmailService
@@ -60,6 +60,8 @@ public class EmailService : IEmailService
 <div style='font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;
             border:1px solid #e5e7eb;border-radius:12px;'>
   <div style='text-align:center;margin-bottom:24px;'>
+    <img src='cid:hau-logo' width='64' height='64' alt='Logo HAU'
+         style='display:block;margin:0 auto 12px;border:0;' />
     <h2 style='color:#1e3a5f;margin:0;'>HAU Documents</h2>
     <p style='color:#6b7280;margin:4px 0 0;'>Hệ thống Quản lý Công văn</p>
   </div>
@@ -84,6 +86,7 @@ public class EmailService : IEmailService
             TextBody = $"Mã OTP khôi phục mật khẩu của bạn: {otp}\nMã có hiệu lực trong 15 phút."
         };
 
+        AddBrandLogo(bodyBuilder);
         message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
@@ -140,6 +143,8 @@ public class EmailService : IEmailService
 <div style='font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;
             border:1px solid #e5e7eb;border-radius:12px;'>
   <div style='text-align:center;margin-bottom:24px;'>
+    <img src='cid:hau-logo' width='64' height='64' alt='Logo HAU'
+         style='display:block;margin:0 auto 12px;border:0;' />
     <h2 style='color:#1e3a5f;margin:0;'>HAU Documents</h2>
     <p style='color:#6b7280;margin:4px 0 0;'>Xác minh địa chỉ email</p>
   </div>
@@ -160,6 +165,7 @@ public class EmailService : IEmailService
             TextBody = $"Mã xác minh email HAU Documents: {otp}\nMã có hiệu lực trong 15 phút."
         };
 
+        AddBrandLogo(bodyBuilder);
         message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
@@ -170,6 +176,17 @@ public class EmailService : IEmailService
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
+    }
+
+    private static void AddBrandLogo(BodyBuilder builder)
+    {
+        using var stream = typeof(EmailService).Assembly.GetManifestResourceStream("IdentityService.Email.hau-logo.png")
+            ?? throw new InvalidOperationException("Email brand logo is missing.");
+        using var content = new MemoryStream();
+        stream.CopyTo(content);
+        var logo = builder.LinkedResources.Add("hau-logo.png", content.ToArray(), new ContentType("image", "png"));
+        logo.ContentId = "hau-logo";
+        logo.ContentDisposition = new ContentDisposition(ContentDisposition.Inline);
     }
 
     private static SecureSocketOptions ParseSecureSocketOptions(string? value)

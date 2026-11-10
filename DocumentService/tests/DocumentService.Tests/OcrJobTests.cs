@@ -51,6 +51,8 @@ public partial class OcrJobTests
                 INSERT INTO "DocumentTypes" VALUES ('aaaaaaaa-0000-0000-0000-000000000001','CongVanDen'),('aaaaaaaa-0000-0000-0000-000000000002','CongVanDi');
                 CREATE TABLE "Documents" ("Id" uuid PRIMARY KEY,"Title" text NOT NULL,"MinioPath" text NOT NULL,"FileName" text,"ConcurrencyVersion" uuid NOT NULL,"IsDeleted" boolean NOT NULL DEFAULT false,"OcrDataRaw" jsonb,"Status" text DEFAULT 'Draft',"ProcessingDepartmentId" uuid,"DocTypeId" uuid DEFAULT 'aaaaaaaa-0000-0000-0000-000000000001');
                 CREATE TABLE "DocumentProcesses" ("Id" uuid PRIMARY KEY,"DocId" uuid REFERENCES "Documents"("Id") ON DELETE CASCADE,"FromUserId" uuid,"ToUserId" uuid,"Action" text,"Comment" text,"Timestamp" timestamptz);
+                ALTER TABLE "Documents" ADD COLUMN "SigningStartedAt" timestamptz NULL, ADD COLUMN "SignedPdfPath" text NULL;
+                CREATE TABLE "Signatures" ("DocId" uuid NOT NULL);
                 """);
             var monitoring=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../../ApiGateway/Monitoring/schema.sql"));
             await f.Sql(await File.ReadAllTextAsync(monitoring));
@@ -69,6 +71,15 @@ public partial class OcrJobTests
         public async Task<T> Scalar<T>(string sql){await using var c=Source.CreateCommand(sql);return (T)(await c.ExecuteScalarAsync())!;}
         public Task<OcrJobDto> Enqueue()=>Store.EnqueueAsync(Doc,Actor,new(Version,"gemini-fixture","1"),default);
         public async ValueTask DisposeAsync(){await Source.DisposeAsync();await using var c=new NpgsqlConnection(Connection);await c.OpenAsync();await using var cmd=new NpgsqlCommand($"DROP SCHEMA \"{Schema}\" CASCADE",c);await cmd.ExecuteNonQueryAsync();}
+    }
+
+    [PostgresFact]
+    public async Task SignedContentCannotStartAnotherOcrJobEvenForAdmin()
+    {
+        await using var f=await Fixture.Create();
+        await f.Sql("UPDATE \"AppRoles\" SET \"RoleName\"='Admin'; UPDATE \"Documents\" SET \"Status\"='Rejected',\"SigningStartedAt\"=now(),\"SignedPdfPath\"='signed.pdf'");
+        await Assert.ThrowsAsync<UnauthorizedDocumentAccessException>(()=>f.Enqueue());
+        Assert.Equal(0L,await f.Scalar<long>("SELECT count(*) FROM \"OcrJobs\""));
     }
 
     [Theory]

@@ -43,6 +43,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICertificateService, CertificateService>();
         services.AddScoped<IMinioService, MinioService>();
         services.AddScoped<IPdfSigningService, PdfSigningService>();
+        services.AddScoped<ISigningDocumentPreparer, SigningDocumentPreparer>();
+        services.AddHttpClient("signing-word-export", client =>
+        {
+            client.BaseAddress = new Uri(config["OcrService:BaseUrl"] ?? "http://ocr-service:5051/");
+            client.Timeout = TimeSpan.FromSeconds(90);
+            if (!string.IsNullOrEmpty(config["ServiceAuth:OcrServiceToken"]))
+                client.DefaultRequestHeaders.Add("X-Service-Token", config["ServiceAuth:OcrServiceToken"]);
+        });
         services.AddScoped<ISignService, SignService.Infrastructure.Services.SignService>();
 
         return services;

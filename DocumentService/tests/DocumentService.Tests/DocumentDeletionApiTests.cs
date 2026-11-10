@@ -153,11 +153,11 @@ public partial class DocumentDeletionApiTests
     }
 
     [Fact]
-    public async Task IncomingSubmitRequiresClerkAndClerkCannotUseTheAssignmentApi()
+    public async Task IncomingSubmitRequiresClerkOrAdminAndClerkCannotUseTheAssignmentApi()
     {
         var actor = Guid.NewGuid(); var version = Guid.NewGuid(); var id = Guid.NewGuid();
         var service = new Mock<IDocumentService>();
-        service.Setup(s => s.SubmitIncomingAsync(id, It.Is<DocumentActor>(a => a.UserId == actor && a.Roles.Contains("Clerk")), version, "Fixture"))
+        service.Setup(s => s.SubmitIncomingAsync(id, It.Is<DocumentActor>(a => a.UserId == actor && (a.Roles.Contains("Clerk") || a.IsAdmin)), version, "Fixture"))
             .ReturnsAsync(new DocumentService.Core.DTOs.DocumentDto { Id = id, Status = DocumentStatus.PendingDirection });
         var builder = WebApplication.CreateBuilder(); builder.WebHost.UseTestServer();
         builder.Services.AddAuthentication("fixture").AddScheme<AuthenticationSchemeOptions, FixtureAuth>("fixture", _ => { });
@@ -165,15 +165,17 @@ public partial class DocumentDeletionApiTests
         builder.Services.AddControllers().AddApplicationPart(typeof(DocumentsController).Assembly);
         await using var app = builder.Build(); app.UseAuthentication(); app.UseAuthorization(); app.MapControllers(); await app.StartAsync();
         using var client = app.GetTestClient(); client.DefaultRequestHeaders.Add("Fixture-User", actor.ToString());
-        foreach (var role in new[] { "Admin", "Specialist", "Manager", "BoardOfDirectors" })
+        foreach (var role in new[] { "Specialist", "Manager", "BoardOfDirectors" })
         {
             client.DefaultRequestHeaders.Remove("Fixture-Roles"); client.DefaultRequestHeaders.Add("Fixture-Roles", role);
             Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/api/documents/{id}/incoming-submit", new { ExpectedVersion = version, Comment = "Fixture" })).StatusCode);
         }
+        client.DefaultRequestHeaders.Remove("Fixture-Roles"); client.DefaultRequestHeaders.Add("Fixture-Roles", "Admin");
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/documents/{id}/incoming-submit", new { ExpectedVersion = version, Comment = "Fixture" })).StatusCode);
         client.DefaultRequestHeaders.Remove("Fixture-Roles"); client.DefaultRequestHeaders.Add("Fixture-Roles", "Clerk");
         Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/documents/{id}/incoming-submit", new { ExpectedVersion = version, Comment = "Fixture", UserId = Guid.NewGuid() })).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/api/documents/{id}/assign", new { ToUserId = Guid.NewGuid() })).StatusCode);
-        service.Verify(s => s.SubmitIncomingAsync(id, It.IsAny<DocumentActor>(), version, "Fixture"), Times.Once);
+        service.Verify(s => s.SubmitIncomingAsync(id, It.IsAny<DocumentActor>(), version, "Fixture"), Times.Exactly(2));
         service.Verify(s => s.AssignAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string?>()), Times.Never);
     }
 

@@ -18,6 +18,47 @@ namespace ApiGateway.Tests;
 
 public class DocumentResultRealtimeTests
 {
+    [ViewerDatabaseFact]
+    public async Task DocumentScopeFiltersNotificationsStreamsAndManagerRecipients()
+    {
+        var options=new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("HAU_OCR_JOB_TEST_POSTGRES"));
+        if(options.Database!="fixture" || options.Host is not ("127.0.0.1" or "localhost")) throw new InvalidOperationException("Only the isolated fixture database is allowed.");
+        await using var admin=new NpgsqlConnection(options.ConnectionString);await admin.OpenAsync();
+        var schema="scope_"+Guid.NewGuid().ToString("N");
+        await using(var cmd=new NpgsqlCommand($"CREATE SCHEMA \"{schema}\"",admin))await cmd.ExecuteNonQueryAsync();
+        try{
+            options.SearchPath=schema;await using var source=NpgsqlDataSource.Create(options.ConnectionString);
+            async Task Sql(string sql){await using var cmd=source.CreateCommand(sql);await cmd.ExecuteNonQueryAsync();}
+            await Sql("""
+                CREATE TABLE "AppUsers" ("Id" uuid PRIMARY KEY,"IsActive" boolean NOT NULL DEFAULT true,"DepartmentId" uuid);
+                CREATE TABLE "AppRoles" ("Id" uuid PRIMARY KEY,"RoleName" text);
+                CREATE TABLE "AppUserRoles" ("UserId" uuid,"RoleId" uuid);
+                CREATE TABLE "Signatures" ("DocId" uuid,"SignerId" uuid);
+                CREATE TABLE "Documents" ("Id" uuid PRIMARY KEY,"IsDeleted" boolean NOT NULL DEFAULT false,"OcrDataRaw" jsonb,
+                  "ConcurrencyVersion" uuid NOT NULL DEFAULT gen_random_uuid(),"Status" text,"DepartmentId" uuid,"ProcessingDepartmentId" uuid,
+                  "CreatedById" uuid,"AssignedToId" uuid,"IsSchoolWide" boolean NOT NULL DEFAULT false);
+                CREATE TABLE "DocumentProcesses" ("Id" uuid PRIMARY KEY,"DocId" uuid,"FromUserId" uuid,"ToUserId" uuid,"Action" text,"Timestamp" timestamptz);
+                """);
+            var store=new EventStore(source);await store.InitializeAsync();
+            var deptA=Guid.NewGuid();var deptB=Guid.NewGuid();var author=Guid.NewGuid();var reader=Guid.NewGuid();var other=Guid.NewGuid();var board=Guid.NewGuid();
+            var managerRole=Guid.NewGuid();var boardRole=Guid.NewGuid();var doc=Guid.NewGuid();var common=Guid.NewGuid();
+            await Sql($"INSERT INTO \"AppUsers\" VALUES ('{author}',true,'{deptA}'),('{reader}',true,'{deptA}'),('{other}',true,'{deptB}'),('{board}',true,'{deptB}'); " +
+                $"INSERT INTO \"AppRoles\" VALUES ('{managerRole}','Manager'),('{boardRole}','BoardOfDirectors'); INSERT INTO \"AppUserRoles\" VALUES ('{reader}','{managerRole}'),('{other}','{managerRole}'),('{board}','{boardRole}'); " +
+                $"INSERT INTO \"Documents\" (\"Id\",\"Status\",\"DepartmentId\",\"CreatedById\") VALUES ('{doc}','PendingDeptReview','{deptA}','{author}'); " +
+                $"INSERT INTO \"Documents\" (\"Id\",\"Status\",\"IsSchoolWide\") VALUES ('{common}','Draft',true); " +
+                $"INSERT INTO \"DocumentProcesses\" VALUES ('{Guid.NewGuid()}','{doc}','{author}',NULL,'Submit',now());");
+            Assert.NotNull(await store.GetDocumentVersionAsync(doc,reader,default));
+            Assert.Null(await store.GetDocumentVersionAsync(doc,other,default));
+            Assert.NotNull(await store.GetDocumentVersionAsync(common,other,default));
+            Assert.NotNull(await store.GetDocumentVersionAsync(doc,board,default));
+            Assert.Equal(1,await store.GetUnreadCountAsync(reader,default));Assert.Equal(0,await store.GetUnreadCountAsync(other,default));
+            await Sql($"UPDATE \"AppUsers\" SET \"DepartmentId\"='{deptB}' WHERE \"Id\"='{reader}'");
+            Assert.Null(await store.GetDocumentVersionAsync(doc,reader,default));Assert.Equal(0,await store.GetUnreadCountAsync(reader,default));
+            Assert.Empty((await store.GetNotificationsAsync(reader,1,false,null,default)).Items);
+            await Sql($"INSERT INTO \"Signatures\" VALUES ('{doc}','{reader}')");
+            Assert.NotNull(await store.GetDocumentVersionAsync(doc,reader,default));Assert.Equal(1,await store.GetUnreadCountAsync(reader,default));
+        }finally{await using var drop=new NpgsqlCommand($"DROP SCHEMA \"{schema}\" CASCADE",admin);await drop.ExecuteNonQueryAsync();}
+    }
     [Fact]
     public async Task DocumentSignalsReachDifferentUsersWatchingSameDocumentOnly()
     {
@@ -51,7 +92,9 @@ public class DocumentResultRealtimeTests
                 CREATE TABLE "AppRoles" ("Id" uuid PRIMARY KEY,"RoleName" text);
                 CREATE TABLE "AppUserRoles" ("UserId" uuid,"RoleId" uuid);
                 CREATE TABLE "Documents" ("Id" uuid PRIMARY KEY,"IsDeleted" boolean NOT NULL DEFAULT false,"OcrDataRaw" jsonb,
-                  "ConcurrencyVersion" uuid NOT NULL DEFAULT gen_random_uuid(),"Status" text DEFAULT 'Draft',"ProcessingDepartmentId" uuid);
+                  "ConcurrencyVersion" uuid NOT NULL DEFAULT gen_random_uuid(),"Status" text DEFAULT 'Draft',"ProcessingDepartmentId" uuid,
+                  "DepartmentId" uuid,"CreatedById" uuid,"AssignedToId" uuid,"IsSchoolWide" boolean NOT NULL DEFAULT true);
+                CREATE TABLE "Signatures" ("DocId" uuid,"SignerId" uuid);
                 CREATE TABLE "DocumentProcesses" ("Id" uuid PRIMARY KEY,"DocId" uuid,"FromUserId" uuid,"ToUserId" uuid,"Action" text,"Timestamp" timestamptz);
                 """);
             var store=new EventStore(source);await store.InitializeAsync();

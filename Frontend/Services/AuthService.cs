@@ -4,6 +4,7 @@ using System.Text.Json;
 using Blazored.LocalStorage;
 using HauDocumentApp.Auth;
 using HauDocumentApp.Models;
+using Microsoft.JSInterop;
 
 namespace HauDocumentApp.Services;
 
@@ -12,6 +13,7 @@ public class AuthService
     private readonly HttpClient               _httpClient;
     private readonly ILocalStorageService     _localStorage;
     private readonly CustomAuthStateProvider  _authStateProvider;
+    private readonly IJSRuntime _js;
     private const string TokenKey             = "auth_token";
     private const string RefreshTokenKey      = "refresh_token";
     private const string MustChangeKey        = "must_change_password";
@@ -20,11 +22,12 @@ public class AuthService
     public AuthService(
         HttpClient              httpClient,
         ILocalStorageService    localStorage,
-        CustomAuthStateProvider authStateProvider)
+        CustomAuthStateProvider authStateProvider, IJSRuntime js)
     {
         _httpClient        = httpClient;
         _localStorage      = localStorage;
         _authStateProvider = authStateProvider;
+        _js = js;
     }
 
     // ── Login ──────────────────────────────────────────────────────────────────
@@ -180,6 +183,7 @@ public class AuthService
         await _localStorage.RemoveItemAsync(TokenKey);
         await _localStorage.RemoveItemAsync(RefreshTokenKey);
         await _localStorage.RemoveItemAsync(MustChangeKey);
+        try { await _js.InvokeVoidAsync("hauThemePreview.clearAccount"); } catch (JSException) { }
     }
 
     public async Task<string?> GetTokenAsync()
@@ -305,6 +309,8 @@ public class AuthService
     {
         await _localStorage.SetItemAsStringAsync(TokenKey, login.AccessToken);
         await _localStorage.SetItemAsStringAsync(RefreshTokenKey, login.RefreshToken);
+        try { await _js.InvokeVoidAsync("hauThemePreview.setAccount", login.UserId, login.Theme); }
+        catch (JSException) { /* Appearance must not turn a successful authentication into a failure. */ }
     }
 
     private static bool HasMinimumValidity(string token, TimeSpan minimumValidity)

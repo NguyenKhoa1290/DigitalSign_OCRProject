@@ -45,6 +45,10 @@ public class NotificationRealtimeTests
             await using (var seed = source.CreateCommand("""
                 CREATE TABLE "AppUsers" ("Id" uuid PRIMARY KEY,"IsActive" boolean NOT NULL DEFAULT true,"DepartmentId" uuid NULL);
                 CREATE TABLE "Documents" ("Id" uuid PRIMARY KEY,"IsDeleted" boolean NOT NULL DEFAULT false,"Status" text,"ProcessingDepartmentId" uuid,"OcrDataRaw" jsonb,"ConcurrencyVersion" uuid NOT NULL DEFAULT gen_random_uuid());
+                ALTER TABLE "Documents" ADD COLUMN "DepartmentId" uuid, ADD COLUMN "CreatedById" uuid, ADD COLUMN "AssignedToId" uuid, ADD COLUMN "IsSchoolWide" boolean NOT NULL DEFAULT true;
+                CREATE TABLE "AppRoles" ("Id" uuid PRIMARY KEY,"RoleName" text);
+                CREATE TABLE "AppUserRoles" ("UserId" uuid,"RoleId" uuid);
+                CREATE TABLE "Signatures" ("DocId" uuid,"SignerId" uuid);
                 CREATE TABLE "DocumentProcesses" ("Id" uuid PRIMARY KEY,"DocId" uuid,"FromUserId" uuid,"ToUserId" uuid,"Action" text,"Timestamp" timestamptz);
                 """)) await seed.ExecuteNonQueryAsync();
             var store = new EventStore(source); await store.InitializeAsync();

@@ -133,6 +133,7 @@ public class PdfSigningService : IPdfSigningService
                 var sigNames = signUtil.GetSignatureNames();
 
                 result.SignatureCount = sigNames.Count;
+                result.CoversWholeDocument = sigNames.Count > 0 && signUtil.SignatureCoversWholeDocument(sigNames.Last());
 
                 foreach (var sigName in sigNames)
                 {
@@ -142,7 +143,8 @@ public class PdfSigningService : IPdfSigningService
                         bool intact = pkcs7.VerifySignatureIntegrityAndAuthenticity();
 
                         var signerCert = pkcs7.GetSigningCertificate(); // returns IX509Certificate
-                        bool certValid = true;
+                        bool certValid = false;
+                        var trust = new CertificateTrust(false, false);
                         string signerName = "Unknown";
                         DateTime signedAt = DateTime.UtcNow;
 
@@ -151,11 +153,13 @@ public class PdfSigningService : IPdfSigningService
                             try
                             {
                                 signerCert.CheckValidity(DateTime.UtcNow); // IX509Certificate.CheckValidity(DateTime)
+                                certValid = true;
                             }
                             catch
                             {
                                 certValid = false;
                             }
+                            trust = _certService.GetTrust(signerCert.GetEncoded());
 
                             // IX509Certificate.GetSubjectDN() returns IX500Name
                             var subjectDn = signerCert.GetSubjectDN()?.ToString() ?? string.Empty;
@@ -173,7 +177,9 @@ public class PdfSigningService : IPdfSigningService
                             SignatureType = ExtractSignatureType(sigName),
                             SignedAt = signedAt,
                             IsIntact = intact,
-                            IsCertificateValid = certValid
+                            IsCertificateValid = certValid,
+                            IsCertificateTrusted = trust.IsTrusted,
+                            IsRevoked = trust.IsRevoked
                         });
                     }
                     catch (Exception ex)
@@ -188,12 +194,21 @@ public class PdfSigningService : IPdfSigningService
                     }
                 }
 
-                result.IsValid = result.Signatures.Count > 0 && result.Signatures.All(s => s.IsIntact);
+                result.IsValid = result.CoversWholeDocument && result.Signatures.Count > 0
+                    && result.Signatures.All(s => s.IsIntact && s.IsCertificateValid && s.IsCertificateTrusted && !s.IsRevoked);
+                result.Message = sigNames.Count == 0 ? "Tệp chưa có chữ ký số."
+                    : !result.CoversWholeDocument ? "Có thay đổi hoặc nội dung được thêm sau chữ ký cuối. Bản PDF hiện tại chưa được ký toàn bộ."
+                    : result.Signatures.Any(s => !s.IsIntact) ? "Chữ ký không toàn vẹn hoặc tệp đã bị thay đổi."
+                    : result.Signatures.Any(s => s.IsRevoked) ? "Có chứng thư đã bị thu hồi trong hệ thống."
+                    : result.Signatures.Any(s => !s.IsCertificateValid) ? "Có chứng thư hết hạn hoặc chưa có hiệu lực."
+                    : result.Signatures.Any(s => !s.IsCertificateTrusted) ? "Chữ ký toàn vẹn nhưng CA chưa được hệ thống tin cậy; chưa thể xác nhận danh tính người ký."
+                    : "Chữ ký toàn vẹn, chứng thư CA nội bộ hợp lệ và chữ ký cuối bao phủ toàn bộ PDF.";
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi xác minh chữ ký PDF");
                 result.IsValid = false;
+                result.Message = "Không đọc hoặc xác minh được chữ ký trong PDF.";
             }
 
             return result;

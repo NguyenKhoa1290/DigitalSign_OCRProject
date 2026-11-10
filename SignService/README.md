@@ -79,8 +79,28 @@ Các endpoint `personal-sign`/`legal-seal` dành cho chiều đi từ chối `Co
 
 ## Lưu ý tích hợp hiện tại
 
-- Backend `SignRequestDto` yêu cầu `DocId` và `SignerId`.
-- Frontend đã đồng bộ DTO ký số để gửi đúng `DocId`, `SignerId`, `SignerName`, `Reason`.
+- Backend `SignRequestDto` nhận `DocId` và các thông tin ký; người ký thực tế được xác định từ JWT và Identity.
+- Frontend gửi `DocId` và `Reason`; `SignerId`, `SignerName` trong payload được backend thay bằng danh tính đã xác thực.
 - SignService đọc `Documents.MinioPath` từ database dùng chung, chuẩn hóa `documents/{storedFileName}` thành object `{storedFileName}` rồi tải/lưu lại đúng file trên MinIO.
 - Luồng backend ký nháy end-to-end qua Docker/Gateway đã pass với test case `TC-SIGN-001`.
 - Payload theo frontend mới đã pass test case `TC-FE-SIGN-002` cho cả ký nháy và ký pháp nhân.
+
+
+## Phạm vi ký theo đơn vị (05/11/2026)
+
+API kiểm tra tài khoản đang hoạt động, phạm vi công văn và dùng danh tính người ký từ JWT/Identity, không tin SignerId hoặc SignerName do client gửi. Ký nháy chiều đi chỉ cho Trưởng phòng đúng đơn vị công văn và đúng bước chờ ký; công văn chung thuộc đơn vị cấp Trường. Chỉ BGH ký pháp nhân ở bước chờ BGH; Admin có toàn quyền. Công văn đến do BGH/Admin ký chỉ đạo và Trưởng phòng đơn vị được chỉ đạo/Admin ký phân công. Kiểm tra quyền xem cả danh sách chữ ký và xác minh theo phạm vi.
+
+
+## Nguồn ký và xác minh hiện hành (07/11/2026)
+
+PDF ký trực tiếp; Word chuyển PDF tự động; ảnh dùng Word OCR hiện hành (ưu tiên bản hiệu chỉnh), thiếu hoặc sai nguồn OCR thì chặn ký. Không gọi lại AI khi ký. LibreOffice trong image SignService chuyển Word sang PDF; cấu hình `OcrService:BaseUrl` và `ServiceAuth:OcrServiceToken` cho xuất Word từ bố cục đã lưu. Bộ chuyển xử lý một tài liệu mỗi lúc, giới hạn chờ và thời gian chạy.
+
+Giữ MinioPath nguồn, lưu PDF ký riêng tại Documents.SignedPdfPath và Signatures.SignedFilePath; ký sau đọc PDF ký hiện hành. Xác minh PDF sau mỗi lần ký rồi mới lưu; không ghi đè tệp gốc. Khóa dòng giữ ổn định nguồn; chỉ lưu SigningStartedAt sau ký thành công. Khóa sửa áp dụng cả Admin và hồ sơ trả lại; hoàn tất trạng thái chiều đi vẫn là yêu cầu riêng có thể thử lại.
+
+POST `/api/signatures/verify-file` nhận multipart `file` PDF không quá 50 MB, chỉ xác minh, không lưu. Kiểm tra toàn vẹn, chứng thư còn hạn, CA nội bộ/thu hồi và chữ ký cuối bao phủ toàn bộ tệp. CA ngoài không tự được tin cậy; chưa có TSA hoặc OCSP/CRL công cộng. Ô PIN cũ trên UI đã bỏ. Các ghi chú ghi đè object hoặc bắt người dùng tự xuất PDF ở phần lịch sử không còn mô tả luồng hiện hành.
+
+Thiết kế: `tai_lieu/06_thiet_ke_he_thong/KY_SO_TU_WORD_OCR_VA_XAC_MINH_PDF.md`. Kiểm thử: 38/38 SignService với PostgreSQL fixture; pipeline chuyển đổi/ký thật bằng chứng thư thử nghiệm, không ký hồ sơ người dùng.
+
+### Phông chữ tiếng Việt khi chuyển PDF (07/11/2026)
+
+Image dùng `fonts-liberation2` và `fonts-dejavu-core`. Không thay bằng `fonts-liberation` đời cũ: Liberation Serif cũ thiếu dải U+1EA0..U+1EF9, tạo ô vuông dù text trích xuất từ PDF vẫn đúng. `python tools/check_signing_fonts.py` kiểm tra 104 ký tự trên bốn kiểu Regular/Bold/Italic/Bold Italic trong container đang chạy. Sau thay font phải tạo PDF mới từ Word/OCR; tệp PDF đã ký không tự thay đổi và không được sửa trực tiếp.

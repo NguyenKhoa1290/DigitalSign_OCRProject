@@ -97,7 +97,10 @@ try
     builder.Services.AddAuthorization();
 
     // ── Controllers ───────────────────────────────────────────────────────────
-    builder.Services.AddControllers(options => options.Filters.Add<DocumentService.API.Filters.DocumentCreatorFilter>());
+    builder.Services.AddControllers(options => {
+        options.Filters.Add<DocumentService.API.Filters.DocumentScopeFilter>();
+        options.Filters.Add<DocumentService.API.Filters.DocumentCreatorFilter>();
+    });
 
     // ── Swagger / OpenAPI ─────────────────────────────────────────────────────
     builder.Services.AddEndpointsApiExplorer();

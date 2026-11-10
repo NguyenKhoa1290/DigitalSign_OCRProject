@@ -156,7 +156,7 @@ async function main() {
   await page.getByRole('heading', { name: 'UI edited document', exact: true }).waitFor();
   assert.match(await page.locator('iframe.pdf-frame').getAttribute('src'), /^blob:/);
   const downloadEvent = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Tải PDF', exact: true }).click();
+  await page.getByRole('button', { name: 'Tải xuống bản gốc', exact: true }).click();
   const browserDownload = await downloadEvent;
   assert.match(browserDownload.suggestedFilename(), /\.pdf$/);
   assert.deepEqual(await fs.readFile(await browserDownload.path()), pdf);

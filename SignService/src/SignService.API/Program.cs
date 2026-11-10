@@ -61,7 +61,7 @@ builder.Services.AddAuthorization();
 // ──────────────────────────────────────────────────────────────────────────────
 // Controllers + Swagger
 // ──────────────────────────────────────────────────────────────────────────────
-builder.Services.AddControllers();
+    builder.Services.AddControllers(options => options.Filters.Add<SignService.API.Filters.SigningScopeFilter>());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

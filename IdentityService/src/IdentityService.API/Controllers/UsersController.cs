@@ -175,6 +175,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCurrentUser()
     {
+        Response.Headers.CacheControl = "no-store";
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? User.FindFirst("sub")?.Value
                      ?? User.FindFirst("nameid")?.Value;

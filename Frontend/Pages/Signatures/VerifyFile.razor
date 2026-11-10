@@ -1,0 +1,70 @@
+@page "/verify-signature"
+@attribute [Authorize]
+@inject ApiService Api
+@inject IJSRuntime JS
+
+<PageTitle>Kiểm tra chữ ký PDF</PageTitle>
+<section class="pdf-verification-page">
+<div class="page-header"><div><h1 class="page-title">Kiểm tra chữ ký PDF</h1><p class="page-subtitle">Kiểm tra tài liệu bên ngoài hoặc bản PDF đã tải xuống.</p></div><a class="btn btn-outline" href="/documents">Quay lại công văn</a></div>
+<div class="card"><div class="card-body">
+    <p>Chọn PDF tối đa 50 MB. Tệp chỉ được dùng để kiểm tra, không lưu vào hồ sơ công văn.</p>
+    <button class="btn btn-primary" disabled="@_busy" @onclick="ChooseFile">@(_busy ? "Đang kiểm tra..." : "Chọn PDF để kiểm tra")</button>
+    <div hidden><InputFile id="signatureVerificationFile" accept=".pdf,application/pdf" OnChange="Verify" disabled="@_busy" /></div>
+    @if (_name != null) { <p class="form-hint">@_name</p> }
+    @if (_error != null) { <p class="alert alert-danger" role="alert">@_error</p> }
+    @if (_result != null)
+    {
+        <div class="alert @(_result.IsValid ? "alert-success" : "alert-warning")" role="status">@_result.Message</div>
+        <p>@_result.SignatureCount chữ ký · @(_result.CoversWholeDocument ? "Chữ ký cuối bao phủ toàn bộ PDF" : "Chưa xác nhận toàn bộ PDF được ký")</p>
+        @foreach (var signature in _result.Signatures)
+        {
+            <div class="detail-item"><strong>@signature.SignerName</strong><p>@VietnamTime.Format(signature.SignedAt)</p>
+                <p>@(signature.IsIntact ? "Chữ ký toàn vẹn" : "Chữ ký không toàn vẹn") · @(signature.IsCertificateTrusted ? "CA nội bộ được tin cậy" : "CA chưa được tin cậy")</p>
+                @if (signature.IsRevoked) { <p>Chứng thư đã bị thu hồi.</p> }
+                @if (!signature.IsCertificateValid) { <p>Chứng thư hết hạn hoặc chưa có hiệu lực.</p> }
+            </div>
+        }
+        <p class="form-hint">Hệ thống kiểm tra theo CA nội bộ. Chứng thư từ CA bên ngoài chưa được cấu hình tin cậy sẽ được ghi rõ; thời điểm ký chưa có xác thực bằng dịch vụ dấu thời gian.</p>
+    }
+</div></div>
+</section>
+
+@code {
+    private bool _busy;
+    private string? _name, _error;
+    private FileVerification? _result;
+    private async Task ChooseFile() { if (!_busy) await JS.InvokeVoidAsync("documentFiles.pickFile", "signatureVerificationFile"); }
+    private async Task Verify(InputFileChangeEventArgs args)
+    {
+        _result = null; _error = null; _name = args.File.Name;
+        if (args.File.Size > 50L*1024*1024 || !_name.EndsWith(".pdf",StringComparison.OrdinalIgnoreCase)) { _error="Chọn PDF không quá 50 MB."; return; }
+        _busy = true;
+        try
+        {
+            using var response = await Api.UploadInputAsync("api/signatures/verify-file", "signatureVerificationFile", _name);
+            if (!response.IsSuccessStatusCode) { _error="Chưa kiểm tra được PDF. Hãy kiểm tra tệp và thử lại."; return; }
+            var envelope = await response.Content.ReadFromJsonAsync<ApiResponse<FileVerification>>();
+            _result = envelope?.Data;
+            if (_result == null) _error="Máy chủ không trả kết quả kiểm tra.";
+        }
+        catch { _error="Không kết nối được dịch vụ kiểm tra chữ ký."; }
+        finally { _busy=false; }
+    }
+    public class FileVerification
+    {
+        public bool IsValid { get; set; }
+        public int SignatureCount { get; set; }
+        public bool CoversWholeDocument { get; set; }
+        public string? Message { get; set; }
+        public List<FileSignature> Signatures { get; set; } = new();
+    }
+    public class FileSignature
+    {
+        public string SignerName { get; set; } = "";
+        public DateTime SignedAt { get; set; }
+        public bool IsIntact { get; set; }
+        public bool IsCertificateValid { get; set; }
+        public bool IsCertificateTrusted { get; set; }
+        public bool IsRevoked { get; set; }
+    }
+}

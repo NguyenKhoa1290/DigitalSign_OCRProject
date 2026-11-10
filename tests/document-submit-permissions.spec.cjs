@@ -1,5 +1,6 @@
 // UI fixtures only: no document creation/submission against the application API.
 const assert=require('node:assert/strict');
+const fs=require('node:fs');const path=require('node:path');
 const {chromium}=require(process.env.HAU_PLAYWRIGHT_MODULE||'playwright');
 const base=process.env.HAU_TEST_WEB||'https://hauquanlycongvan.com';
 const actor='aaaaaaaa-0000-0000-0000-000000000001';
@@ -35,16 +36,18 @@ async function run(browser,role,width){
    const mutable=!doc.status||doc.status==='Draft'||doc.status==='Rejected';
    const canSubmit=mutable&&doc.docTypeName!=='CongVanDen'&&(role==='Admin'||(role==='Specialist'&&doc.createdById===actor));
    assert.equal(await page.getByRole('button',{name:'Nộp trình duyệt',exact:true}).count(),canSubmit?1:0);
+   assert.equal(await page.getByRole('button',{name:'Phân công xử lý',exact:true}).count(),0);
    const incoming=doc.docTypeName==='CongVanDen';
    const canEdit=(incoming?(!doc.status||doc.status==='Draft'):mutable)&&(role==='Admin'||(incoming?role==='Clerk':role==='Specialist'&&doc.createdById===actor));
    assert.equal(await page.getByRole('button',{name:'Sửa thông tin',exact:true}).count(),canEdit?1:0);
-   assert.equal(await page.getByRole('button',{name:'Tải lên file',exact:true}).count(),canEdit?1:0);
+   assert.equal(await page.getByRole('button',{name:'Thay tệp đính kèm',exact:true}).count(),canEdit?1:0);
    assert.equal(await page.getByRole('button',{name:'Chạy OCR',exact:true}).count(),!doc.word&&(role==='Admin'||role==='Clerk'&&mutable)?1:0);
    assert.equal(await page.getByRole('button',{name:'Trình BGH chỉ đạo',exact:true}).count(),doc.docTypeName==='CongVanDen'&&(!doc.status||doc.status==='Draft')&&role==='Clerk'?1:0);
+   if(role==='Manager'&&index===0&&process.env.HAU_TEST_ARTIFACTS){fs.mkdirSync(process.env.HAU_TEST_ARTIFACTS,{recursive:true});await page.screenshot({path:path.join(process.env.HAU_TEST_ARTIFACTS,`outgoing-draft-manager-${width}.png`)});}
    if(doc.word)assert.equal(await page.locator('.gemini-result-card').count(),0);
   }
   assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);
   console.log(`PASS ${role} ${width}px: outgoing submit role/owner and separate incoming action`);
  }finally{await context.close();}
 }
-(async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.HAU_TEST_CHROMIUM});try{for(const role of ['Clerk','Specialist','Admin','Manager','BoardOfDirectors'])await run(browser,role,1366);await run(browser,'Clerk',300);await run(browser,'Specialist',300);}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.HAU_TEST_CHROMIUM});try{for(const role of ['Clerk','Specialist','Admin','Manager','BoardOfDirectors'])await run(browser,role,1366);await run(browser,'Clerk',300);await run(browser,'Specialist',300);await run(browser,'Manager',300);await run(browser,'BoardOfDirectors',300);}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

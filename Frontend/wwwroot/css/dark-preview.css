@@ -1,0 +1,132 @@
+/* Opt-in experiment. Removing data-theme="dark" restores the existing design. */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-primary: #72c7fa;
+    --color-primary-dark: #a4dcff;
+    --color-primary-light: #17364b;
+    --color-success: #69d9a0;
+    --color-success-light: #14392b;
+    --color-warning: #f6c66e;
+    --color-warning-light: #41351e;
+    --color-danger: #ff9299;
+    --color-danger-light: #46262e;
+    --color-info: #a7bcff;
+    --color-info-light: #253453;
+    --color-text-primary: #e5eef7;
+    --color-text-secondary: #b4c7d8;
+    --color-text-muted: #9bafc2;
+    --color-border: #3b5268;
+    --color-border-light: #2c4054;
+    --color-bg: #101c29;
+    --color-surface: #1a2c3f;
+    --text-secondary: #b4c7d8;
+    --shadow-sm: 0 2px 8px #0003;
+    --shadow-md: 0 6px 18px #0004;
+    --shadow-lg: 0 12px 32px #0005;
+    --shadow-xl: 0 24px 64px #0006;
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .app-layout {
+    background: radial-gradient(circle at 78% 10%, #18436780, transparent 36%),
+        radial-gradient(circle at 30% 94%, #13453c50, transparent 36%),
+        linear-gradient(145deg, #0d1825, #152538 60%, #112131);
+}
+:root[data-theme="dark"] .app-layout::before,
+:root[data-theme="dark"] .app-layout::after,
+:root[data-theme="dark"] .main-content::before { opacity: .22; }
+:root[data-theme="dark"] .liquid-sidebar-shell .sidebar { background: #0e223bd9; }
+:root[data-theme="dark"] .liquid-sidebar-shell { border-color: #6f9dbe40; box-shadow: 0 16px 40px #0005; }
+
+:root[data-theme="dark"] :is(.card, .stat-card, .table-wrapper, .login-card, .modal,
+    .document-preview-card, .document-detail-layout .card) {
+    background: #192b3eeb;
+    border-color: #6483a149;
+    box-shadow: 0 12px 32px #0004, inset 0 1px 0 #ffffff0a;
+    color: var(--color-text-primary);
+}
+:root[data-theme="dark"] :is(.card-header, .modal-header, .modal-footer, .pagination) {
+    background: #ffffff03;
+    border-color: var(--color-border-light);
+}
+:root[data-theme="dark"] :is(.page-title, .card-title, .stat-value, .detail-value, .login-title,
+    .login-logo-text h1, .modal-title, .timeline-title, .user-name) { color: var(--color-text-primary); }
+:root[data-theme="dark"] :is(.page-subtitle, .form-label, .form-hint, .stat-label, .detail-label,
+    .timeline-desc, .timeline-time, .login-subtitle, .login-footer, .table-count) { color: var(--color-text-secondary); }
+
+:root[data-theme="dark"] :is(.form-control, .search-input, .custom-select-trigger,
+    .page-btn, .detail-item, .file-upload-area, .sig-item, .assignee-option, .user-card-mobile) {
+    background: #102133bd;
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
+    box-shadow: inset 0 1px 3px #0002;
+}
+:root[data-theme="dark"] :is(input, textarea)::placeholder { color: #9bafc2; opacity: 1; }
+:root[data-theme="dark"] :is(input, textarea, select):focus-visible {
+    outline-color: #72c7fa;
+    border-color: #72c7fa;
+}
+:root[data-theme="dark"] .form-control:disabled { background: #1d2d3e; color: #9bafc2; }
+:root[data-theme="dark"] .custom-select-option-selected { color: #a4dcff; }
+:root[data-theme="dark"] .file-upload-area:hover { background: #17364b; border-color: #72c7fa; }
+
+:root[data-theme="dark"] :is(th, thead) { background: #173047; color: #bcd5e7; border-color: #385269; }
+:root[data-theme="dark"] :is(td, tbody tr) { border-color: var(--color-border-light); }
+:root[data-theme="dark"] tbody tr:hover { background: #25435c70; }
+:root[data-theme="dark"] .table-wrapper :is(table, tbody, tr, td) { color: var(--color-text-primary); }
+/* Hover uses the existing light row highlight, so regular row text turns black. */
+:root[data-theme="dark"] .table tbody tr:hover td,
+:root[data-theme="dark"] .table tbody tr:hover :is(.table-title, .table-meta, .empty-value,
+    .user-full-name, .user-email, .username-cell, .certificate-user-name, .certificate-username),
+:root[data-theme="dark"] .table tbody tr:hover td > a:not(.btn) { color: #000; }
+:root[data-theme="dark"] :is(.action-menu-trigger, .row-actions-trigger, .context-menu, .row-action-menu,
+    .user-action-trigger, .row-action-trigger, .certificate-action-trigger, .document-action-trigger,
+    .user-action-menu, .certificate-action-menu,
+    .organization-tabs, .account-menu-popover) { background: #1a2e43; color: #d4e6f4; border-color: var(--color-border); }
+:root[data-theme="dark"] :is(.row-action-trigger, .certificate-action-trigger, .document-action-trigger) {
+    color: var(--color-primary);
+}
+:root[data-theme="dark"] :is(.user-mobile-card, .certificate-mobile-card, .document-mobile-card) {
+    background: #192b3e;
+    border-color: var(--color-border);
+}
+:root[data-theme="dark"] .organization-tabs button { color: var(--color-text-secondary); }
+:root[data-theme="dark"] .organization-tabs button.selected { color: #9dd8ff; }
+:root[data-theme="dark"] :is(.tab-btn.active, .tree-node.selected) { color: #9dd8ff; background: #17364b; }
+:root[data-theme="dark"] .tree-node:hover { background: #28425b; }
+
+:root[data-theme="dark"] .btn {
+    --button-tint: 90, 133, 166;
+    --button-alpha: .18;
+    border-color: #b5d5ec42;
+    background: linear-gradient(160deg, #ffffff0e, #ffffff00 55%), rgba(var(--button-tint), var(--button-alpha));
+    box-shadow: inset 0 1px 1px #ffffff21, inset 0 -1px 2px #0003, 0 4px 12px #0003;
+}
+:root[data-theme="dark"] :is(.btn-outline, .btn-ghost, .btn-secondary, .btn-neutral, .liquid-action) { color: #d4e6f4; }
+:root[data-theme="dark"] :is(.btn-outline, .btn-ghost, .btn-secondary, .btn-neutral):hover:not(:disabled) {
+    background: #2e506bd9;
+    border-color: #72c7fa;
+    color: #fff;
+}
+:root[data-theme="dark"] .btn-primary { --button-tint: 0, 123, 205; --button-alpha: .94; color: #fff; }
+:root[data-theme="dark"] .btn-success { --button-tint: 0, 126, 75; --button-alpha: .94; color: #fff; }
+:root[data-theme="dark"] .btn-danger { --button-tint: 185, 45, 61; --button-alpha: .94; color: #fff; }
+:root[data-theme="dark"] .btn-warning { --button-tint: 161, 103, 18; --button-alpha: .94; color: #fff; }
+:root[data-theme="dark"] :is(.btn-primary, .btn-success, .btn-danger, .btn-warning):hover:not(:disabled) { filter: brightness(1.15); }
+:root[data-theme="dark"] .page-btn.active { background: #0879bd; color: #fff; }
+:root[data-theme="dark"] .modal-overlay { background: #020914b8; }
+:root[data-theme="dark"] .modal-close { background: #2b435b; color: #e5eef7; }
+:root[data-theme="dark"] .modal-close:hover { background: #3b5975; color: #fff; }
+:root[data-theme="dark"] :is(.alert-danger, .login-error) { background: #46262e; color: #ffb3b9; }
+:root[data-theme="dark"] .alert-warning { background: #41351e; color: #ffe0a4; }
+:root[data-theme="dark"] .alert-info { background: #203b53; color: #c0e4ff; }
+:root[data-theme="dark"] .alert-success { background: #14392b; color: #9be9bd; }
+:root[data-theme="dark"] .upload-toast { background: #1a2e43; color: #e5eef7; border-color: #3b5268; border-top-color: #72c7fa; }
+:root[data-theme="dark"] :is(.upload-name, .upload-close) { color: #b4c7d8; }
+:root[data-theme="dark"] .upload-success { border-top-color: #69d9a0; }
+:root[data-theme="dark"] .upload-error { border-top-color: #ff9299; }
+
+/* Document pages retain their paper colour; the surrounding interface is dark. */
+:root[data-theme="dark"] .ocr-document { color-scheme: light; background: #fff; color: #17202d; border-color: #536c83; }
+:root[data-theme="dark"] .ocr-document :is(th, thead) { background: #edf3f8; color: #17202d; }
+:root[data-theme="dark"] .ocr-document :is(td, tbody tr) { color: #17202d; border-color: #cbd5df; }

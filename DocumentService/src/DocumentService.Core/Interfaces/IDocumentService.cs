@@ -35,7 +35,7 @@ public interface IDocumentService
     Task<DocumentDto> DirectorSignAsync(Guid id, Guid userId, string? comment);     // BGH ký số
     Task<DocumentDto> RejectAsync(Guid id, Guid userId, string reason);             // Từ chối ở bất kỳ bước
     Task<DocumentDto> PublishAsync(Guid id, Guid userId);                           // Văn thư phát hành
-    Task<DocumentDto> AssignAsync(Guid id, Guid fromUserId, Guid toUserId, string? comment); // Phân công
+    Task<DocumentDto> AssignAsync(Guid id, Guid fromUserId, Guid toUserId, string? comment); // Legacy unsigned assignment: always rejected; incoming signing is in SignService
 
     // DocumentTypes
     Task<IEnumerable<DocumentTypeDto>> GetDocumentTypesAsync();

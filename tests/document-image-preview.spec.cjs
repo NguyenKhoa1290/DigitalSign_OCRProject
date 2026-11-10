@@ -45,7 +45,7 @@ async function run(browser,width){
   await page.locator('#documentPdfInput').setInputFiles(imagePath);await page.waitForFunction(()=>document.querySelector('.pending-document-image')?.naturalWidth>0);for(let n=0;!release&&n<250;n++)await page.waitForTimeout(20);assert(release,'Retry upload request did not start');
   if(process.env.HAU_TEST_ARTIFACTS){fs.mkdirSync(process.env.HAU_TEST_ARTIFACTS,{recursive:true});await page.locator('.pending-image-card').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(process.env.HAU_TEST_ARTIFACTS,`pending-${width}.png`),animations:'disabled'});}
   release();release=null;await page.getByText('Xem ảnh công văn',{exact:true}).waitFor();await page.waitForFunction(()=>document.querySelector('img.document-image:not(.pending-document-image)')?.naturalWidth>0);
-  assert.equal(await page.locator('.pending-image-card').count(),0);assert(await page.getByRole('button',{name:'Tải ảnh',exact:true}).isVisible());
+  assert.equal(await page.locator('.pending-image-card').count(),0);assert(await page.getByRole('button',{name:'Tải xuống bản gốc',exact:true}).isVisible());
   const blobs=await page.evaluate(async()=>{
    const image=document.querySelector('img.document-image'),original=image.closest('.card').querySelector('a[target="_blank"]').href;
    const preview=new Uint8Array(await(await fetch(image.src)).arrayBuffer()),file=new Uint8Array(await(await fetch(original)).arrayBuffer());

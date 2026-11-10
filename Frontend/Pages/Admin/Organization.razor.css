@@ -53,6 +53,10 @@
     outline-offset: 2px;
 }
 
+@media (min-width: 961px) {
+    .organization-tabs { display: none; }
+}
+
 @media (max-width: 600px) {
     .organization-tabs { width: 100%; }
     .organization-tabs button { flex: 1; padding-inline: 8px; }

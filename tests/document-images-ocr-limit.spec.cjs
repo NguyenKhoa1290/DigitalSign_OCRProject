@@ -66,15 +66,15 @@ async function check(browser, width) {
   assert.equal(await page.locator('iframe.pdf-frame').count(), 0);
   assert(await preview.evaluate(img => img.getBoundingClientRect().width <= innerWidth));
   let downloading = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Tải ảnh', exact: true }).click();
+  await page.getByRole('button', { name: 'Tải xuống bản gốc', exact: true }).click();
   assert.equal((await downloading).suggestedFilename(), imageName);
 
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Tải lên file', exact: true }).click();
+  await page.getByRole('button', { name: 'Thay tệp đính kèm', exact: true }).click();
   await (await chooser).setFiles({ name: 'replacement.pdf', mimeType: 'application/pdf', buffer: pdf });
   await page.locator('iframe.pdf-frame').waitFor();
   assert.equal(await page.locator('img.document-image').count(), 0); assert.equal(uploads, 2);
-  downloading = page.waitForEvent('download'); await page.getByRole('button', { name: 'Tải PDF', exact: true }).click();
+  downloading = page.waitForEvent('download'); await page.getByRole('button', { name: 'Tải xuống bản gốc', exact: true }).click();
   assert.equal((await downloading).suggestedFilename(), 'replacement.pdf');
   const ocr = page.getByRole('button', { name: 'Chạy OCR', exact: true }); await ocr.click();
   await page.getByText(limitMessage, { exact: true }).waitFor();

@@ -39,6 +39,9 @@ namespace SignService.Infrastructure.Migrations
                     b.Property<DateTime>("SignedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("SignedFilePath")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("SignerId")
                         .HasColumnType("uuid");
 
@@ -66,6 +69,16 @@ namespace SignService.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DepartmentName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
                     b.Property<Guid>("DocTypeId")
                         .HasColumnType("uuid");
 
@@ -81,8 +94,14 @@ namespace SignService.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsSchoolWide")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("MinioPath")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OcrDataRaw")
                         .HasColumnType("text");
 
                     b.Property<Guid?>("ProcessingDepartmentId")
@@ -92,6 +111,9 @@ namespace SignService.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("SignedPdfPath")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("SigningStartedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -99,6 +121,11 @@ namespace SignService.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
 

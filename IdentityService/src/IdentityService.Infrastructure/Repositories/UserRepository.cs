@@ -85,6 +85,8 @@ public class UserRepository : IUserRepository
     public async Task<AppUser> UpdateAsync(AppUser user)
     {
         _context.AppUsers.Update(user);
+        // Appearance has its own endpoint; profile/auth updates must not reset it.
+        _context.Entry(user).Property(u => u.Theme).IsModified = false;
         await _context.SaveChangesAsync();
         return user;
     }

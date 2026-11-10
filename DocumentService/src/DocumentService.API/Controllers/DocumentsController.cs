@@ -4,9 +4,8 @@ using DocumentService.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using System.Net;
-using System.Text.Json;
 using DocumentService.Core.Entities;
+using DocumentService.Core.Exceptions;
 
 namespace DocumentService.API.Controllers;
 
@@ -87,9 +86,22 @@ public class DocumentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PagedResult<DocumentDto>>), 200)]
     public async Task<IActionResult> GetAll([FromQuery] DocumentQueryParams query)
     {
+        query.SigningView = null; // Internal signing parameters are never accepted on the general list.
         Response.Headers.CacheControl = "no-store";
         var result = await _documentService.GetAllDocumentsAsync(query);
         return Ok(ApiResponse<PagedResult<DocumentDto>>.Ok(result));
+    }
+
+    [HttpGet("signing"), Authorize(Roles = "Admin,Manager,BoardOfDirectors")]
+    public async Task<IActionResult> GetSigning([FromQuery] DocumentQueryParams query, [FromQuery] string view = "pending")
+    {
+        if (view is not ("pending" or "signed")) return BadRequest(ApiResponse<object>.Fail("Chọn danh sách chờ ký hoặc đã ký."));
+        var db = HttpContext.RequestServices.GetRequiredService<DocumentService.Infrastructure.Data.AppDbContext>();
+        var access = db.AccessScope ?? throw new UnauthorizedDocumentAccessException();
+        query.SigningView = view; query.SigningUserId = access.UserId;
+        query.SigningRoles = access.Roles.ToArray(); query.SigningDepartmentId = access.DepartmentId;
+        Response.Headers.CacheControl = "no-store";
+        return Ok(ApiResponse<PagedResult<DocumentDto>>.Ok(await _documentService.GetAllDocumentsAsync(query)));
     }
 
     /// <summary>
@@ -317,7 +329,7 @@ public class DocumentsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/incoming-submit")]
-    [Authorize(Roles = "Clerk")]
+    [Authorize(Roles = "Clerk,Admin")]
     public async Task<IActionResult> SubmitIncoming(Guid id, [FromBody] WorkflowActionDto dto)
         => Ok(ApiResponse<DocumentDto>.Ok(await _documentService.SubmitIncomingAsync(id, CurrentActor(), dto.ExpectedVersion, dto.Comment),
             "Đã trình Ban Giám hiệu ký chỉ đạo công văn đến."));
@@ -392,45 +404,12 @@ public class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/documents/{id}/assign - Phân công xử lý văn bản
+    /// Legacy unsigned assignment is retired. Incoming assignment requires SignService.
     /// </summary>
     [HttpPost("{id:guid}/assign")]
     [Authorize(Roles = "Admin,Manager,BoardOfDirectors")]
-    [ProducesResponseType(typeof(ApiResponse<DocumentDto>), 200)]
-    [ProducesResponseType(404)]
-    public async Task<IActionResult> Assign(Guid id, [FromBody] WorkflowActionDto dto)
-    {
-        if (dto.ToUserId is null || dto.ToUserId == Guid.Empty)
-            return BadRequest(ApiResponse<object>.Fail("Vui lòng cung cấp ToUserId để phân công."));
-
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/users/{dto.ToUserId}");
-            request.Headers.TryAddWithoutValidation("Authorization", Request.Headers.Authorization.ToString());
-            using var response = await _httpClientFactory.CreateClient("identity-directory")
-                .SendAsync(request, HttpContext.RequestAborted);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-                return BadRequest(ApiResponse<object>.Fail("Người nhận không tồn tại."));
-            if (response.StatusCode == HttpStatusCode.Unauthorized) return Unauthorized();
-            if (!response.IsSuccessStatusCode)
-                return StatusCode(503, ApiResponse<object>.Fail("Chưa xác nhận được người nhận. Vui lòng thử lại."));
-            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            if (json.RootElement.ValueKind != JsonValueKind.Object
-                || !json.RootElement.TryGetProperty("data", out var user)
-                || user.ValueKind != JsonValueKind.Object
-                || !user.TryGetProperty("isActive", out var active))
-                return StatusCode(503, ApiResponse<object>.Fail("Phản hồi danh bạ người dùng không hợp lệ."));
-            if (active.ValueKind != JsonValueKind.True)
-                return BadRequest(ApiResponse<object>.Fail("Tài khoản người nhận không hoạt động."));
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-        {
-            _logger.LogWarning(ex, "Không kiểm tra được người nhận phân công {UserId}", dto.ToUserId);
-            return StatusCode(503, ApiResponse<object>.Fail("Chưa kết nối được danh bạ người dùng. Vui lòng thử lại."));
-        }
-
-        var userId = GetCurrentUserId();
-        var result = await _documentService.AssignAsync(id, userId, dto.ToUserId.Value, dto.Comment);
-        return Ok(ApiResponse<DocumentDto>.Ok(result, "Đã phân công xử lý văn bản."));
-    }
+    [ProducesResponseType(StatusCodes.Status410Gone)]
+    public IActionResult Assign(Guid id, [FromBody] WorkflowActionDto dto)
+        => StatusCode(StatusCodes.Status410Gone, ApiResponse<object>.Fail(
+            "Công văn đi không có bước phân công xử lý. Công văn đến phải ký phân công sau khi BGH ký chỉ đạo."));
 }

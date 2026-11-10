@@ -4,6 +4,7 @@
 @inject AuthService AuthService
 @inject NavigationManager NavManager
 @inject IToastService Toast
+@inject IJSRuntime JS
 
 <PageTitle>Trang cá nhân - HAU</PageTitle>
 
@@ -21,6 +22,18 @@ else
             <div class="form-group"><label class="form-label required" for="profile-full-name">Họ và tên</label><input id="profile-full-name" class="form-control" maxlength="100" @bind="_fullName" disabled="@_isSaving" /></div>
             <div class="form-group"><label class="form-label" for="profile-email">Email</label><input id="profile-email" type="email" class="form-control" maxlength="100" @bind="_email" disabled="@_isSaving" /></div>
             <div class="form-group"><label class="form-label" for="profile-phone">Số điện thoại</label><input id="profile-phone" type="tel" class="form-control" maxlength="15" @bind="_phone" disabled="@_isSaving" /></div>
+            <div class="profile-theme-setting">
+                <div class="profile-theme-description">
+                    <label id="profile-theme-label" for="profile-dark-mode">Chế độ tối <span class="theme-preview-badge">Thử nghiệm</span></label>
+                    <p id="profile-theme-hint">Tự động lưu theo tài khoản, áp dụng khi đăng nhập trên trình duyệt hoặc thiết bị khác.</p>
+                </div>
+                <button id="profile-dark-mode" type="button" class="theme-switch" role="switch"
+                        aria-checked="@(_darkMode ? "true" : "false")" aria-labelledby="profile-theme-label"
+                        aria-describedby="profile-theme-hint" disabled="@(!_themeReady || _themeBusy)" @onclick="ToggleTheme">
+                    <span class="theme-switch-track" aria-hidden="true"></span>
+                    <glass-surface class="theme-switch-thumb" radius="999" aria-hidden="true"></glass-surface>
+                </button>
+            </div>
         </div>
         <div class="modal-footer profile-actions">
             <button type="button" class="btn btn-danger" @onclick="Logout" disabled="@_isSaving">Đăng xuất</button>
@@ -36,6 +49,30 @@ else
     private string _phone = string.Empty;
     private bool _isLoading = true;
     private bool _isSaving;
+    private bool _darkMode, _themeReady, _themeBusy;
+    private bool _restoreThemeFocus;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_restoreThemeFocus) return;
+        _restoreThemeFocus = false;
+        try { await JS.InvokeVoidAsync("hauThemePreview.restoreSwitchFocus"); } catch (JSException) { }
+    }
+
+    private async Task ToggleTheme()
+    {
+        if (!_themeReady || _themeBusy || _user == null) return;
+        _themeBusy = true;
+        try
+        {
+            var saved = await AdminService.SetThemeAsync(_darkMode ? "light" : "dark");
+            if (saved == null) { Toast.ShowError("Không lưu được giao diện. Hãy thử lại."); return; }
+            _darkMode = await JS.InvokeAsync<bool>("hauThemePreview.setAccount", _user.Id, saved.Theme);
+            _user.Theme = saved.Theme;
+        }
+        catch { Toast.ShowWarning("Chưa cập nhật được giao diện. Hãy tải lại trang."); }
+        finally { _themeBusy = false; _restoreThemeFocus = true; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,6 +83,12 @@ else
             _fullName = _user.FullName;
             _email = _user.Email ?? string.Empty;
             _phone = _user.PhoneNumber ?? string.Empty;
+            try
+            {
+                _darkMode = await JS.InvokeAsync<bool>("hauThemePreview.setAccount", _user.Id, _user.Theme);
+                _themeReady = true;
+            }
+            catch (JSException) { Toast.ShowWarning("Chưa tải được giao diện tài khoản. Hãy tải lại trang."); }
         }
         catch { Toast.ShowError("Không thể tải thông tin tài khoản."); }
         finally { _isLoading = false; }

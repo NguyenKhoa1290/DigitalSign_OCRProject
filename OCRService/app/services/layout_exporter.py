@@ -184,6 +184,18 @@ def create_layout_docx(layout):
     normal.font.size = Pt(_number(layout.get("font_size"), 12, 9, 18))
     normal._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), normal.font.name)
     normal.paragraph_format.space_after = Pt(4)
+    # A manual line break must not stretch a short line across the page in a
+    # justified paragraph. Keep Word and LibreOffice consistent without
+    # changing the paragraph's normal automatic wrapping or its text/runs.
+    compat = document.settings.element.find(qn("w:compat"))
+    if compat is None:
+        compat = OxmlElement("w:compat")
+        document.settings.element.append(compat)
+    no_expand_break = compat.find(qn("w:doNotExpandShiftReturn"))
+    if no_expand_break is None:
+        no_expand_break = OxmlElement("w:doNotExpandShiftReturn")
+        compat.append(no_expand_break)
+    no_expand_break.set(qn("w:val"), "1")
     previous_kind = None
     for block in layout["blocks"]:
         kind = block.get("type")

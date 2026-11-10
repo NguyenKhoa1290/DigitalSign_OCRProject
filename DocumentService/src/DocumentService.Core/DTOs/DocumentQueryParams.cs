@@ -9,4 +9,9 @@ public class DocumentQueryParams
     public string? Status { get; set; }
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
+    public string? Scope { get; set; } // department / school; still constrained by actor access
+    [System.Text.Json.Serialization.JsonIgnore] public string? SigningView { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore] public Guid? SigningUserId { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore] public string[] SigningRoles { get; set; } = [];
+    [System.Text.Json.Serialization.JsonIgnore] public Guid? SigningDepartmentId { get; set; }
 }

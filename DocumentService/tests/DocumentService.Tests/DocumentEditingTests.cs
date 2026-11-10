@@ -42,6 +42,19 @@ public class DocumentEditingTests
     [Theory]
     [InlineData(DocumentStatus.Draft)]
     [InlineData(DocumentStatus.Rejected)]
+    public async Task SignedContentCannotBeReplacedOrEditedEvenWhenStatusIsReturned(string status)
+    {
+        _document.Status=status;_document.SigningStartedAt=DateTime.UtcNow;_document.SignedPdfPath="signed.pdf";
+        await Assert.ThrowsAsync<DocumentConflictException>(()=>_service.UpdateDocumentAsync(_document.Id,ValidUpdate(),Guid.NewGuid()));
+        await Assert.ThrowsAsync<DocumentConflictException>(()=>_service.UploadFileAsync(_document.Id,new MemoryStream(new byte[]{1}),"other.pdf","application/pdf",Guid.NewGuid()));
+        await Assert.ThrowsAsync<DocumentConflictException>(()=>_service.UpdateOcrDataAsync(_document.Id,new UpdateOcrDto { OcrDataRaw="{}" },Guid.NewGuid()));
+        _files.Verify(f=>f.UploadFileAsync(It.IsAny<Stream>(),It.IsAny<string>(),It.IsAny<string>(),It.IsAny<string>()),Times.Never);
+        _documents.Verify(f=>f.UpdateAsync(It.IsAny<Document>()),Times.Never);
+    }
+
+    [Theory]
+    [InlineData(DocumentStatus.Draft)]
+    [InlineData(DocumentStatus.Rejected)]
     public async Task Edit_AllowedStatus_PreservesFileOcrAndWorkflowAndRecordsActor(string status)
     {
         _document.Status = status;
@@ -128,13 +141,22 @@ public class DocumentEditingTests
         _processes.Verify(repo => repo.CreateAsync(It.IsAny<DocumentProcess>()), Times.Never);
     }
 
-    [Fact]
-    public async Task Assign_RecordsRecipientAndPreservesStatus()
+    [Theory]
+    [InlineData(DocumentStatus.Draft)]
+    [InlineData(DocumentStatus.Rejected)]
+    [InlineData(DocumentStatus.PendingDeptReview)]
+    [InlineData(DocumentStatus.DeptSigned)]
+    [InlineData(DocumentStatus.PendingDirectorSign)]
+    [InlineData(DocumentStatus.DirectorSigned)]
+    [InlineData(DocumentStatus.Published)]
+    public async Task Assign_OutgoingIsRejectedWithoutMutation(string status)
     {
-        var sender = Guid.NewGuid(); var recipient = Guid.NewGuid();
-        var result = await _service.AssignAsync(_document.Id, sender, recipient, "Handle this");
-        result.Status.Should().Be(DocumentStatus.Draft);
-        _processes.Verify(repo => repo.CreateAsync(It.Is<DocumentProcess>(p =>
-            p.FromUserId == sender && p.ToUserId == recipient && p.Comment == "Handle this" && p.Action == DocumentAction.Assign)), Times.Once);
+        _document.DocType = new DocumentType { TypeName = "CongVanDi" };
+        _document.Status = status;
+        await FluentActions.Awaiting(() => _service.AssignAsync(_document.Id, Guid.NewGuid(), Guid.NewGuid(), "Handle this"))
+            .Should().ThrowAsync<DocumentServiceException>().WithMessage("*không có bước phân công*");
+        _document.Status.Should().Be(status);
+        _documents.Verify(repo => repo.UpdateAsync(It.IsAny<Document>()), Times.Never);
+        _processes.Verify(repo => repo.CreateAsync(It.IsAny<DocumentProcess>()), Times.Never);
     }
 }

@@ -58,6 +58,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITokenService,      TokenService>();
         services.AddScoped<IAuthService,       AuthService>();
         services.AddScoped<IUserService,       UserService>();
+        services.AddScoped<IThemePreferenceService, ThemePreferenceService>();
         services.AddScoped<IRoleService,       RoleService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IEmailService,      EmailService>();

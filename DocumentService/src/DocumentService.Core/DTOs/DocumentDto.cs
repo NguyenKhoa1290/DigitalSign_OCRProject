@@ -9,6 +9,11 @@ public class DocumentDto
     public DateTime? CreatedAt { get; set; }
     public Guid? CreatedById { get; set; }
     public string? CreatedByName { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public string? DepartmentName { get; set; }
+    public bool IsSchoolWide { get; set; }
+    public bool CanReview { get; set; }
+    public DateTime? MySignedAt { get; set; }
     public Guid ConcurrencyVersion { get; set; }
     public bool CanDeleteDraft { get; set; }
     public bool IsDeleted { get; set; }
@@ -23,6 +28,8 @@ public class DocumentDto
     public string? AssignedToName { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string MinioPath { get; set; } = string.Empty;
+    public string? SignedPdfPath { get; set; }
+    public DateTime? SigningStartedAt { get; set; }
     public string? FileName { get; set; }
     public string FileContentType { get; set; } = "application/pdf";
     public string? OcrDataRaw { get; set; }

@@ -217,6 +217,18 @@ public class CertificateService : ICertificateService
         if (!File.Exists(pfxPath))
             return Task.FromResult(false);
 
+        // Retain public revocation evidence after removing the signing key.
+        using (var stream = File.OpenRead(pfxPath))
+        {
+            var store = new Pkcs12StoreBuilder().Build(); store.Load(stream, userId.ToString().ToCharArray());
+            foreach (string alias in store.Aliases)
+                if (store.IsKeyEntry(alias))
+                {
+                    var fingerprint = Convert.ToHexString(SHA256.HashData(store.GetCertificate(alias).Certificate.GetEncoded()));
+                    lock (_revocationsLock) File.AppendAllLines(Path.Combine(_certsDirectory,"revoked-sha256.txt"), new[] { fingerprint });
+                    break;
+                }
+        }
         File.Delete(pfxPath);
         _logger.LogInformation("Đã thu hồi certificate của user: {UserId}", userId);
         return Task.FromResult(true);
@@ -226,6 +238,27 @@ public class CertificateService : ICertificateService
     {
         var now = DateTime.UtcNow;
         return cert.NotBefore <= now && now <= cert.NotAfter;
+    }
+
+    private readonly object _revocationsLock = new();
+    public CertificateTrust GetTrust(byte[] encodedCertificate)
+    {
+        var fingerprint = Convert.ToHexString(SHA256.HashData(encodedCertificate));
+        bool revoked;
+        lock (_revocationsLock)
+        {
+            var path = Path.Combine(_certsDirectory,"revoked-sha256.txt");
+            revoked = File.Exists(path) && File.ReadLines(path).Any(x => x == fingerprint);
+        }
+        try
+        {
+            var certificate = new X509CertificateParser().ReadCertificate(encodedCertificate);
+            var (root, _) = LoadRootCa(); root.CheckValidity(DateTime.UtcNow);
+            if (!certificate.IssuerDN.Equivalent(root.SubjectDN)) return new(false, revoked);
+            certificate.Verify(root.GetPublicKey());
+            return new(true, revoked);
+        }
+        catch { return new(false, revoked); }
     }
 
     // ──────────────────────────────────────────────────────────────────────────

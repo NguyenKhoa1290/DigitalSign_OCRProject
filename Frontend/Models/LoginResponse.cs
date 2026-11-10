@@ -10,6 +10,7 @@ public class LoginResponse
     public string FullName { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = new();
     public bool MustChangePassword { get; set; } = false;
+    public string Theme { get; set; } = "light";
 
     // Helper — lấy role đầu tiên (thường user chỉ có 1 role)
     public string PrimaryRole => Roles.FirstOrDefault() ?? string.Empty;

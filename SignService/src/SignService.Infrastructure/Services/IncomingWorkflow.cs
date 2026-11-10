@@ -10,7 +10,7 @@ namespace SignService.Infrastructure.Services;
 
 // Incoming signatures run BGH -> department manager, independently of the outgoing personal -> legal sequence.
 public class IncomingWorkflow(AppDbContext db, IWorkflowDirectory directory, IMinioService minio,
-    IPdfSigningService pdf, ICertificateService certificates) : IIncomingWorkflow
+    IPdfSigningService pdf, ICertificateService certificates, ISigningDocumentPreparer? preparer = null) : IIncomingWorkflow
 {
     public async Task<SignResultDto> DirectAsync(Guid id, WorkflowActor actor, IncomingDirectionRequest request)
     {
@@ -39,7 +39,7 @@ public class IncomingWorkflow(AppDbContext db, IWorkflowDirectory directory, IMi
         return await SignAsync(id, actor, user.FullName, request.ExpectedVersion, "PendingAssignment",
             SignatureType.IncomingAssignment, request.Comment.Trim(), recipient.Id, document =>
             {
-                if (!document.ProcessingDepartmentId.HasValue || user.DepartmentId != document.ProcessingDepartmentId)
+                if (!document.ProcessingDepartmentId.HasValue || (!actor.Roles.Contains("Admin") && user.DepartmentId != document.ProcessingDepartmentId))
                     throw new IncomingAccessException();
                 var branch = new HashSet<Guid> { document.ProcessingDepartmentId.Value };
                 bool added;
@@ -60,9 +60,9 @@ public class IncomingWorkflow(AppDbContext db, IWorkflowDirectory directory, IMi
 
     private async Task<WorkflowUser> AuthorizeAsync(WorkflowActor actor, string role)
     {
-        if (actor.Id == Guid.Empty || !actor.Roles.Contains(role)) throw new IncomingAccessException();
+        if (actor.Id == Guid.Empty || !(actor.Roles.Contains(role) || actor.Roles.Contains("Admin"))) throw new IncomingAccessException();
         var user = await directory.GetUserAsync(actor.Id);
-        if (!user.IsActive || !user.Roles.Contains(role)) throw new IncomingAccessException();
+        if (!user.IsActive || !(user.Roles.Contains(role) && actor.Roles.Contains(role) || user.Roles.Contains("Admin") && actor.Roles.Contains("Admin"))) throw new IncomingAccessException();
         return user;
     }
 
@@ -83,7 +83,7 @@ public class IncomingWorkflow(AppDbContext db, IWorkflowDirectory directory, IMi
             throw new IncomingConflictException("Thao tác chỉ dành cho công văn đến.");
         if (document.Status != requiredStatus || version == Guid.Empty || document.ConcurrencyVersion != version)
             throw new IncomingConflictException("Công văn đã thay đổi hoặc chưa tới bước xử lý này. Hãy tải lại trang.");
-        if (!document.MinioPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        if (preparer == null && !document.MinioPath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
             throw new SignServiceException("Cần bản PDF để ký số công văn đến.");
         if (await db.Signatures.AnyAsync(s => s.DocId == id && s.SignatureType == purpose))
             throw new AlreadySignedException(purpose);
@@ -93,9 +93,9 @@ public class IncomingWorkflow(AppDbContext db, IWorkflowDirectory directory, IMi
         transition(document); // Includes unit/recipient authorization; no external writes before these checks.
         var certificate = await certificates.GetUserCertificateAsync(actor.Id) ?? throw new CertificateNotFoundException(actor.Id);
         if (!certificates.IsCertificateValid(certificate)) throw new CertificateExpiredException();
-        var originalPath = document.MinioPath;
+        var originalPath = document.SignedPdfPath ?? document.MinioPath;
         var objectName = originalPath.StartsWith("documents/", StringComparison.Ordinal) ? originalPath[10..] : originalPath;
-        var bytes = await minio.DownloadFileAsync(objectName);
+        var bytes = preparer != null ? await preparer.PrepareAsync(id) : await minio.DownloadFileAsync(objectName);
         if (isAssignment)
         {
             var prior = await pdf.VerifyPdfSignaturesAsync(bytes);
@@ -115,10 +115,10 @@ public class IncomingWorkflow(AppDbContext db, IWorkflowDirectory directory, IMi
         // Keep the original and previous signed objects. A failed DB commit cannot damage either version.
         document.IncomingOriginalPath ??= originalPath;
         if (!isAssignment) document.IncomingDirectionPath = newObject;
-        document.MinioPath = newObject;
+        document.SignedPdfPath = newObject;
         document.SigningStartedAt ??= DateTime.UtcNow;
         document.ConcurrencyVersion = Guid.NewGuid();
-        var signature = new Signature { Id = Guid.NewGuid(), DocId = id, SignerId = actor.Id, SignatureType = purpose, SignedAt = DateTime.UtcNow };
+        var signature = new Signature { Id = Guid.NewGuid(), DocId = id, SignerId = actor.Id, SignatureType = purpose, SignedFilePath = newObject, SignedAt = DateTime.UtcNow };
         db.Signatures.Add(signature);
         // The process trigger reads Documents. Flush the new route before inserting its event;
         // both flushes remain inside this transaction and are rolled back together on failure.

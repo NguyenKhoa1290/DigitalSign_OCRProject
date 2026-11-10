@@ -28,10 +28,16 @@ public class DeletedDocumentNotificationTests
             options.SearchPath = schema;
             await using var source = NpgsqlDataSource.Create(options.ConnectionString);
             await using (var seed = source.CreateCommand("""
-                CREATE TABLE "Documents" ("Id" uuid PRIMARY KEY,"IsDeleted" boolean NOT NULL);
+                CREATE TABLE "AppUsers" ("Id" uuid PRIMARY KEY,"IsActive" boolean NOT NULL,"DepartmentId" uuid);
+                CREATE TABLE "AppRoles" ("Id" uuid PRIMARY KEY,"RoleName" text);
+                CREATE TABLE "AppUserRoles" ("UserId" uuid,"RoleId" uuid);
+                CREATE TABLE "Signatures" ("DocId" uuid,"SignerId" uuid);
+                CREATE TABLE "Documents" ("Id" uuid PRIMARY KEY,"IsDeleted" boolean NOT NULL,"IsSchoolWide" boolean NOT NULL DEFAULT true,
+                    "CreatedById" uuid,"AssignedToId" uuid,"DepartmentId" uuid,"ProcessingDepartmentId" uuid);
                 CREATE TABLE "UserNotifications" ("Id" uuid PRIMARY KEY,"UserId" uuid NOT NULL,"DocumentId" uuid NULL,
                  "Kind" text NOT NULL,"Message" text NOT NULL,"TargetUrl" text NOT NULL,"Timestamp" timestamptz NOT NULL DEFAULT now(),"ReadAt" timestamptz NULL);
-                INSERT INTO "Documents" VALUES ('aaaaaaaa-0000-0000-0000-000000000001',true),('aaaaaaaa-0000-0000-0000-000000000002',false);
+                INSERT INTO "AppUsers" ("Id","IsActive") VALUES ('bbbbbbbb-0000-0000-0000-000000000001',true);
+                INSERT INTO "Documents" ("Id","IsDeleted") VALUES ('aaaaaaaa-0000-0000-0000-000000000001',true),('aaaaaaaa-0000-0000-0000-000000000002',false);
                 INSERT INTO "UserNotifications" ("Id","UserId","DocumentId","Kind","Message","TargetUrl") VALUES
                  (gen_random_uuid(),'bbbbbbbb-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','OcrCompleted','Deleted','/deleted'),
                  (gen_random_uuid(),'bbbbbbbb-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000002','OcrCompleted','Active','/active'),

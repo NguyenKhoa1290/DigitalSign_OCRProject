@@ -49,6 +49,8 @@ public class SignatureVerifyResult
     public bool IsValid { get; set; }
     public bool AllValid => IsValid;
     public int TotalSignatures { get; set; }
+    public bool CoversWholeDocument { get; set; }
+    public string? Message { get; set; }
     public int ValidSignatures => Signatures.Count(s => s.IsValid);
     public bool HasPersonalSignature { get; set; }
     public bool HasLegalSeal { get; set; }

@@ -64,6 +64,7 @@ public class AppDbContext : DbContext
 
             entity.Property(u => u.IsActive)
                   .HasDefaultValue(true);
+            entity.Property(u => u.Theme).HasMaxLength(5).HasDefaultValue("light").IsRequired();
 
             entity.Property(u => u.MustChangePassword)
                   .HasDefaultValue(false);

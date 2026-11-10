@@ -26,7 +26,7 @@ public class DocumentPurgeTests
             await Connection.OpenAsync();
             Db = new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(Connection).Options);
             await Db.Database.EnsureCreatedAsync();
-            await Db.Database.ExecuteSqlRawAsync("CREATE TABLE Signatures (DocId TEXT NOT NULL)");
+            await Db.Database.ExecuteSqlRawAsync("CREATE TABLE Signatures (DocId TEXT NOT NULL, SignerId TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000', SignedAt TEXT NOT NULL DEFAULT '2026-01-01', SignatureType TEXT NOT NULL DEFAULT 'PersonalSignature', SignedFilePath TEXT NULL)");
             var doc = new Document { Id = Guid.NewGuid(), Title = "Purge fixture", IsDeleted = deleted, Status = "Published",
                 DocTypeId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002"), MinioPath = "documents/final.pdf",
                 IncomingOriginalPath = "documents/original.pdf", IncomingDirectionPath = "documents/final.pdf", ConcurrencyVersion = Guid.Empty };

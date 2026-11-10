@@ -6,5 +6,6 @@ public class Signature
     public Guid DocId { get; set; }
     public Guid SignerId { get; set; }
     public string SignatureType { get; set; } = string.Empty; // PersonalSignature | LegalSeal
+    public string? SignedFilePath { get; set; }
     public DateTime SignedAt { get; set; } = DateTime.UtcNow;
 }

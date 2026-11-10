@@ -15,6 +15,8 @@ public static class AuthStoreInitializer
 
         await context.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "AppUsers"
+                ADD COLUMN IF NOT EXISTS "Theme" varchar(5) NOT NULL DEFAULT 'light';
+            ALTER TABLE "AppUsers"
                 ADD COLUMN IF NOT EXISTS "EmailVerifiedAt" timestamp with time zone NULL;
             """);
 

@@ -20,7 +20,7 @@ public class DocumentFileRepository : IDocumentFileRepository
         return await _context.DocumentFiles
             .AsNoTracking()
             .Where(d => d.Id == docId)
-            .Select(d => d.MinioPath)
+            .Select(d => d.SignedPdfPath ?? d.MinioPath)
             .FirstOrDefaultAsync();
     }
 
@@ -29,20 +29,8 @@ public class DocumentFileRepository : IDocumentFileRepository
 
     public async Task<IDocumentSigningLease> BeginSigningAsync(Guid docId)
     {
-        // Persist an irreversible signing marker BEFORE touching the external PDF.
-        // A failed signing attempt may already have changed the object; it cannot become deletable.
-        await using (var start = await _context.Database.BeginTransactionAsync())
-        {
-            await LockAsync(docId);
-            var document = await _context.DocumentFiles.AsNoTracking().SingleOrDefaultAsync(d => d.Id == docId)
-                ?? throw new DocumentNotFoundException(docId);
-            if (string.IsNullOrWhiteSpace(document.MinioPath)) throw new DocumentNotFoundException(docId);
-            var version = Guid.NewGuid();
-            await _context.DocumentFiles.Where(d => d.Id == docId).ExecuteUpdateAsync(update => update
-                .SetProperty(d => d.SigningStartedAt, d => d.SigningStartedAt ?? DateTime.UtcNow)
-                .SetProperty(d => d.ConcurrencyVersion, version));
-            await start.CommitAsync();
-        }
+        // Signing writes a new immutable object. Failed preparation must not lock
+        // an unsigned draft; serialize source/OCR edits through this row lock.
         var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
@@ -52,6 +40,24 @@ public class DocumentFileRepository : IDocumentFileRepository
             return new SigningLease(transaction);
         }
         catch { await transaction.DisposeAsync(); throw; }
+    }
+
+    public async Task SaveSignedPdfAsync(Guid docId, string objectName)
+    {
+        var document = await _context.DocumentFiles.SingleAsync(d => d.Id == docId);
+        document.SignedPdfPath = objectName;
+        document.SigningStartedAt ??= DateTime.UtcNow;
+        document.ConcurrencyVersion = Guid.NewGuid();
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ValidateSigningStageAsync(Guid docId, string signatureType)
+    {
+        var document=await _context.DocumentFiles.AsNoTracking().SingleAsync(d=>d.Id==docId);
+        var legacy=document.Status=="DeptSigned" && document.SignedPdfPath==null && !await _context.Signatures.AnyAsync(s=>s.DocId==docId);
+        if (signatureType==Core.Entities.SignatureType.PersonalSignature && document.Status!="PendingDeptReview" && !legacy
+            || signatureType==Core.Entities.SignatureType.LegalSeal && document.Status!="PendingDirectorSign")
+            throw new IncomingConflictException("Giai đoạn công văn đã thay đổi. Hãy tải lại trước khi ký.");
     }
 
     private Task LockAsync(Guid id) => _context.Database.IsNpgsql()

@@ -37,7 +37,7 @@ public class IncomingWorkflowTests
             await db.Database.EnsureCreatedAsync();
             await db.Database.ExecuteSqlRawAsync("""
                 CREATE TABLE "Signatures" ("Id" TEXT PRIMARY KEY, "DocId" TEXT NOT NULL, "SignerId" TEXT NOT NULL,
-                 "SignatureType" TEXT NOT NULL, "SignedAt" TEXT NOT NULL)
+                 "SignatureType" TEXT NOT NULL, "SignedAt" TEXT NOT NULL, "SignedFilePath" TEXT NULL)
                 """);
             db.Add(new Document { Id = Id, Title = "Incoming fixture", CreatedById = Clerk, CreatedAt = DateTime.UtcNow,
                 MinioPath = "original.pdf", DocTypeId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"),
@@ -99,7 +99,7 @@ public class IncomingWorkflowTests
         Assert.Equal(DocumentStatus.PendingAssignment, directed.Status);
         Assert.Equal(f.Department, directed.ProcessingDepartmentId);
         Assert.Equal("original.pdf", directed.IncomingOriginalPath);
-        Assert.Equal(directed.MinioPath, directed.IncomingDirectionPath);
+        Assert.Equal(directed.SignedPdfPath, directed.IncomingDirectionPath);
         Assert.NotEqual(submitted.ConcurrencyVersion, directed.ConcurrencyVersion);
         await f.Service.AssignAsync(f.Id, new(f.Manager, ["Manager"]), new() {
             ExpectedVersion = directed.ConcurrencyVersion, ToUserId = f.Specialist, Comment = "Báo cáo kết quả" });
@@ -107,7 +107,7 @@ public class IncomingWorkflowTests
         Assert.Equal(DocumentStatus.IncomingAssigned, assigned.Status);
         Assert.Equal(f.Specialist, assigned.AssignedToId);
         Assert.NotNull(assigned.FirstAssignedAt);
-        Assert.NotEqual(directed.MinioPath, assigned.MinioPath);
+        Assert.NotEqual(directed.SignedPdfPath, assigned.SignedPdfPath);
         Assert.Equal(3, f.Objects.Count);
         Assert.Equal("source", Encoding.UTF8.GetString(f.Objects["original.pdf"]));
         Assert.Equal(2, await f.SignDb.Signatures.CountAsync());
@@ -196,7 +196,7 @@ public class IncomingWorkflowTests
     {
         await using var f = new Fixture(); await f.Initialize(); await f.Submit(); await f.Direct();
         var directed = await f.Current();
-        f.Objects[directed.MinioPath] = Encoding.UTF8.GetBytes("tampered");
+        f.Objects[directed.SignedPdfPath!] = Encoding.UTF8.GetBytes("tampered");
         await Assert.ThrowsAsync<IncomingConflictException>(() => f.Service.AssignAsync(f.Id, new(f.Manager, ["Manager"]), new() {
             ExpectedVersion = directed.ConcurrencyVersion, ToUserId = f.Specialist, Comment = "Phân công" }));
         Assert.Equal(DocumentStatus.PendingAssignment, (await f.Current()).Status);

@@ -62,6 +62,7 @@ public class DocumentService : IDocumentService
             MinioPath = string.Empty,    // sẽ cập nhật sau khi upload
             Status = DocumentStatus.Draft,
             CreatedById = userId, CreatedAt = DateTime.UtcNow,
+            DepartmentId = dto.DepartmentId, DepartmentName = dto.DepartmentName, IsSchoolWide = dto.IsSchoolWide,
             DeletionEligibilityConfirmed = true
         };
 
@@ -102,6 +103,7 @@ public class DocumentService : IDocumentService
 
     private async Task<DocumentDto> UpdateDocumentCoreAsync(Document document, UpdateDocumentDto dto, Guid userId)
     {
+        RequireUnsigned(document);
         var id = document.Id;
         if (document.Status != DocumentStatus.Draft && document.Status != DocumentStatus.Rejected)
             throw new InvalidWorkflowTransitionException(document.Status, "Update (chỉ sửa Draft hoặc Rejected)");
@@ -132,11 +134,11 @@ public class DocumentService : IDocumentService
         if (string.IsNullOrWhiteSpace(document.MinioPath))
             throw new DocumentNotFoundException("Văn bản chưa có file đính kèm.");
 
-        var path = GetObjectName(document.MinioPath);
+        var path = GetObjectName(document.SignedPdfPath ?? document.MinioPath);
         var stream = await _fileStorageService.DownloadFileAsync(path, BucketName);
         var extension = Path.GetExtension(path);
         return new DocumentFileDto(stream, string.IsNullOrWhiteSpace(document.FileName)
-            ? $"cong-van-{id}{(string.IsNullOrEmpty(extension) ? ".pdf" : extension)}" : document.FileName,
+            ? $"cong-van-{id}{(string.IsNullOrEmpty(extension) ? ".pdf" : extension)}" : document.SignedPdfPath != null ? Path.GetFileNameWithoutExtension(document.FileName) + ".pdf" : document.FileName,
             DocumentFileFormats.GetContentType(path) ?? "application/pdf");
     }
 
@@ -236,6 +238,7 @@ public class DocumentService : IDocumentService
 
     private async Task<DocumentDto> UploadFileCoreAsync(Document document, Stream fileStream, string fileName, string contentType, Guid userId)
     {
+        RequireUnsigned(document);
         var id = document.Id;
 
         var originalFileName = Path.GetFileName(fileName.Replace('\\', '/'));
@@ -309,6 +312,7 @@ public class DocumentService : IDocumentService
     {
         var document = await _documentRepository.GetByIdAsync(id, includeProcesses: false)
             ?? throw new DocumentNotFoundException(id);
+        RequireUnsigned(document);
 
         if (dto.ExpectedVersion.HasValue && dto.ExpectedVersion.Value != document.ConcurrencyVersion)
             throw new DocumentConflictException("Công văn đã thay đổi sau khi bắt đầu OCR. Kết quả cũ không được ghi vào hồ sơ.");
@@ -388,6 +392,8 @@ public class DocumentService : IDocumentService
             ?? throw new DocumentNotFoundException(id);
         RequireOutgoingWorkflow(document);
 
+        if (document.Status == DocumentStatus.DeptSigned && document.SignedPdfPath != null && document.SigningStartedAt.HasValue)
+            return await GetDocumentByIdAsync(id);
         if (document.Status != DocumentStatus.PendingDeptReview)
             throw new InvalidWorkflowTransitionException(document.Status, DocumentStatus.DeptSigned);
 
@@ -538,21 +544,8 @@ public class DocumentService : IDocumentService
             ?? throw new DocumentNotFoundException(id);
         RequireOutgoingWorkflow(document);
 
-        await _documentProcessRepository.CreateAsync(new DocumentProcess
-        {
-            DocId = id,
-            FromUserId = fromUserId,
-            ToUserId = toUserId,
-            Action = DocumentAction.Assign,
-            Comment = comment ?? "Phân công xử lý văn bản.",
-            Timestamp = DateTime.UtcNow
-        });
-
-        _logger.LogInformation("Văn bản ID={Id} phân công từ {From} → {To}", id, fromUserId, toUserId);
-
-        var full = await _documentRepository.GetByIdAsync(document.Id, includeProcesses: true)
-                   ?? document;
-        return MapToDto(full);
+        throw new DocumentServiceException(
+            "Công văn đi không có bước phân công xử lý. Công văn đến phải ký phân công sau khi BGH ký chỉ đạo.");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -588,6 +581,12 @@ public class DocumentService : IDocumentService
             throw new DocumentConflictException("Công văn đến dùng luồng trình Ban Giám hiệu ký chỉ đạo, sau đó lãnh đạo phòng ký phân công.");
     }
 
+    private static void RequireUnsigned(Document document)
+    {
+        if (document.SigningStartedAt.HasValue || !string.IsNullOrWhiteSpace(document.SignedPdfPath))
+            throw new DocumentConflictException("Công văn đã ký được khóa nội dung. Không sửa thông tin, tệp hoặc OCR của bản đã ký.");
+    }
+
     private static DocumentDto MapToDto(Document doc) => new DocumentDto
     {
         Id = doc.Id,
@@ -597,6 +596,7 @@ public class DocumentService : IDocumentService
         CreatedAt = doc.CreatedAt ?? doc.Processes.Where(process => process.Action == DocumentAction.Submit || process.Action == DocumentAction.Create)
             .OrderBy(process => process.Timestamp).Select(process => (DateTime?)process.Timestamp).FirstOrDefault(),
         CreatedById = doc.CreatedById,
+        DepartmentId = doc.DepartmentId, DepartmentName = doc.DepartmentName, IsSchoolWide = doc.IsSchoolWide,
         ConcurrencyVersion = doc.ConcurrencyVersion,
         CanDeleteDraft = !doc.IsDeleted && DocumentDeletionPolicy.IsEligible(doc),
         IsCancelled = doc.Processes.Any(p => p.Action == DocumentAction.Cancel),
@@ -606,8 +606,9 @@ public class DocumentService : IDocumentService
         AssignedToId = doc.AssignedToId, AssignedToName = doc.AssignedToName,
         UpdatedAt = doc.Processes.Select(process => (DateTime?)process.Timestamp).Max(),
         MinioPath = doc.MinioPath,
-        FileName = doc.FileName,
-        FileContentType = DocumentFileFormats.GetContentType(doc.MinioPath) ?? "application/pdf",
+        SignedPdfPath = doc.SignedPdfPath, SigningStartedAt = doc.SigningStartedAt,
+        FileName = doc.SignedPdfPath == null ? doc.FileName : Path.GetFileNameWithoutExtension(doc.FileName ?? doc.Title) + ".pdf",
+        FileContentType = DocumentFileFormats.GetContentType(doc.SignedPdfPath ?? doc.MinioPath) ?? "application/pdf",
         OcrDataRaw = doc.OcrDataRaw,
         Status = doc.Status,
         StatusDisplay = DocumentStatus.GetDisplayName(doc.Status),

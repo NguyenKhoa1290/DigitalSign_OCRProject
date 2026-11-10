@@ -26,6 +26,8 @@ public class AdminService
     public async Task<UserDto?> GetUserAsync(Guid id) => await _api.GetAsync<UserDto>($"api/users/{id}");
 
     public async Task<UserDto?> GetCurrentUserAsync() => await _api.GetAsync<UserDto>("api/users/me");
+    public Task<ThemePreferenceDto?> SetThemeAsync(string theme)
+        => _api.PutAsync<ThemePreferenceDto>("api/users/me/theme", new { Theme = theme });
 
     public async Task<UserDto?> CreateUserAsync(CreateUserDto dto)
     {

@@ -217,6 +217,7 @@ public class UserService : IUserService
         DepartmentId = user.DepartmentId,
         DepartmentName = user.Department?.DeptName,
         IsActive     = user.IsActive,
+        Theme        = user.Theme,
         CreatedAt    = user.CreatedAt,
         Roles        = user.UserRoles?.Select(ur => ur.Role?.RoleName ?? "").Where(r => r != "").ToList() ?? new List<string>()
     };

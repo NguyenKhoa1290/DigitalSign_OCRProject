@@ -19,7 +19,13 @@ public class UserDto
     public Guid? DepartmentId { get; set; }
     public string? DepartmentName { get; set; }
     public bool IsActive { get; set; }
+    public string Theme { get; set; } = "light";
     public DateTime CreatedAt { get; set; }
+}
+
+public class ThemePreferenceDto
+{
+    public string Theme { get; set; } = "light";
 }
 
 public class CreateUserDto

@@ -62,7 +62,7 @@ POST   /api/documents/{id}/submit-director
 POST   /api/documents/{id}/director-sign
 POST   /api/documents/{id}/reject
 POST   /api/documents/{id}/publish
-POST   /api/documents/{id}/assign
+POST   /api/documents/{id}/assign  (đã ngừng, HTTP 410)
 POST   /api/documents/{id}/incoming-submit
 ```
 
@@ -85,7 +85,7 @@ Draft
 
 Ban Giám hiệu ký chỉ đạo và chọn đơn vị qua `POST /api/signatures/incoming/{id}/direction`. Manager của đúng đơn vị ký phân công chuyên viên qua `POST /api/signatures/incoming/{id}/assignment`. Hai bước ký cập nhật PDF, trạng thái, bằng chứng chữ ký và lịch sử trong luồng riêng tại SignService. Clerk không có quyền gọi `assign`.
 
-Các API trình/ký nháy/ký pháp nhân/phát hành và phân công không ký của chiều đi từ chối `CongVanDen`. Không tự chuyển trạng thái hồ sơ cũ; hồ sơ đang Nháp nhưng đã có bằng chứng ký cần đối soát. Chưa có thao tác thời hạn, báo cáo kết quả hoặc xác nhận hoàn thành công việc trong nhánh mới.
+Công văn đi không có bước phân công xử lý ở bất kỳ trạng thái nào. API phân công không ký `/api/documents/{id}/assign` đã ngừng (HTTP 410 cho các vai trò từng được phép); không ghi lịch sử hoặc gọi danh bạ. Công văn đến chỉ phân công qua API ký tại SignService sau khi BGH ký chỉ đạo. Các API trình/ký nháy/ký pháp nhân/phát hành của chiều đi từ chối `CongVanDen`. Không tự chuyển trạng thái hồ sơ cũ; hồ sơ đang Nháp nhưng đã có bằng chứng ký cần đối soát. Chưa có thao tác thời hạn, báo cáo kết quả hoặc xác nhận hoàn thành công việc trong nhánh mới.
 
 ## Lưu ý tích hợp
 
@@ -169,3 +169,24 @@ Phạm vi hiện hành thay hạn chế chiều đi ở ghi chú ngày 25–26/1
 Tệp chính .docx là văn bản hoàn chỉnh, không hiện OCR và bị chặn trước gọi AI. Ảnh/PDF dùng model và tối đa 5 trang đã chọn; upload không tự OCR. Văn thư không gửi OCR/Word hiệu chỉnh sau khi chuyển duyệt/ký/phát hành; kiểm tra lại trước AI và lúc lưu, không ghi đè tệp/chữ ký nguồn. Admin giữ ngoại lệ hỗ trợ đã thống nhất. Chưa tự chuyển Word sang PDF hoặc phân loại PDF có lớp chữ.
 
 GET /api/documents/{id}/ocr-word?expectedVersion=... cho Admin/Clerk hoặc Specialist là người tạo chiều đi, lấy layout từ server và chặn phiên bản cũ. Có bản Word hiệu chỉnh thì trả nguyên bytes/tên; nếu chưa có, dựng DOCX qua POST /api/ocr/internal/export-layout với X-Service-Token, không gọi AI. Route nội bộ từ chối token sai/trống; không mở public export-layout cho Specialist. Trạng thái/nhãn và kết quả realtime giữ nguyên. Thiết kế hiện hành: tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_TAO_VA_TRINH_CONG_VAN.md.
+
+
+### Lịch sử hiệu chỉnh cho người xem hồ sơ (04/11/2026)
+
+Mỗi lần Văn thư/Admin tải Word OCR hiệu chỉnh, hệ thống giữ sự kiện OcrEdited trong Lịch sử xử lý: tên người thực hiện, giờ Việt Nam, lần sửa và tên tệp. Chuyên viên được xem lịch sử ở trang chi tiết của cả hai chiều; không cấp quyền chạy OCR hoặc tải bản Word hiệu chỉnh. API bổ sung processedByName bằng một lượt tra cứu danh tính chung với người tạo, giữ FromUserId gốc; tài khoản không tra được tên có thông báo thiếu thông tin. Lịch sử thao tác không đồng nghĩa lưu mọi tệp phiên bản cũ: vẫn chỉ giữ Word hiện hành theo chính sách dọn tệp hiện có.
+
+
+## Phạm vi đơn vị và danh sách ký (05/11/2026)
+
+Khi tạo, DocumentService đọc phòng ban từ tài khoản đăng nhập và chụp lại `DepartmentId`, `DepartmentName`, `IsSchoolWide` trên công văn. Đơn vị gốc của trường là công văn chung. Tài khoản chưa có đơn vị không thể tạo, trừ Admin; hồ sơ không xác định được đơn vị không tự trở thành công văn chung. Khi người tạo chuyển đơn vị, phạm vi hồ sơ đã tạo giữ nguyên. Migration suy ra phạm vi hồ sơ cũ theo đơn vị **hiện tại** của người tạo, không chứng minh được đơn vị tại thời điểm lịch sử; thiếu thông tin để trống cho Admin đối soát.
+
+Danh sách, chi tiết, file, OCR và thống kê áp dụng phạm vi server trước phân trang: Admin/BGH xem toàn trường; người khác xem đơn vị của mình, công văn chung, công văn được giao, công văn do mình tạo hoặc đã ký. Việc được xem không tự cấp quyền sửa/ký. Trưởng phòng ký nháy và trình BGH ở chiều đi chỉ với hồ sơ đúng đơn vị; chiều đến dùng đơn vị BGH chỉ đạo. `GET /api/documents/signing?view=pending|signed` trả hàng đợi đúng vai trò/đơn vị hoặc lịch sử chữ ký của chính tài khoản. Không nhận userId do client chỉ định.
+
+Chuyển trạng thái ký nháy/pháp nhân yêu cầu bản ghi chữ ký tương ứng của người thực hiện. Frontend ký PDF trước, sau đó cập nhật bước xử lý; nếu lần cập nhật thất bại, nút Hoàn tất cho phép thử lại mà không ký lại. Đây là hai yêu cầu riêng, cần kiểm thử thực tế chứng thư và luồng lỗi trước nghiệm thu.
+
+
+## Khóa nội dung đã ký và nguồn OCR (07/11/2026)
+
+Documents.SignedPdfPath giữ PDF ký hiện hành riêng với MinioPath nguồn. API xem/tải tệp ưu tiên PDF ký; tên tải xuống chuyển đuôi .pdf. SigningStartedAt hoặc bằng chứng chữ ký khóa sửa metadata, thay tệp, ghi/chạy OCR và tải Word hiệu chỉnh, kể cả Admin hoặc trạng thái Rejected. Tệp nguồn và PDF từng chữ ký được đưa vào danh sách dọn khi xóa vĩnh viễn.
+
+Công văn đến có thể trình nguồn PDF/Word hoặc ảnh đã có OCR gắn đúng nguồn; không bắt xuất PDF rồi tải lại. Hoàn tất ký nháy, trình BGH và phát hành phải có PDF ký/bản ghi chữ ký tương ứng. DeptSigned cũ thiếu chữ ký được cảnh báo, đưa vào Chờ ký để người có quyền thực hiện ký thật; không tự sửa/ký dữ liệu cũ. Luồng chi tiết tại `tai_lieu/06_thiet_ke_he_thong/KY_SO_TU_WORD_OCR_VA_XAC_MINH_PDF.md`.

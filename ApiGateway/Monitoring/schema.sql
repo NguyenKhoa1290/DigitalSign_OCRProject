@@ -45,6 +45,7 @@ BEGIN
    SELECT "ProcessingDepartmentId" INTO recipient_department FROM "Documents" WHERE "Id"=NEW."DocId";
  ELSIF NEW."Action"='Submit' AND doc_status='PendingDeptReview' THEN
    event_kind := 'ReviewRequested'; event_message := 'Có công văn đang chờ ký nháy.'; recipient_role := 'Manager';
+   SELECT "DepartmentId" INTO recipient_department FROM "Documents" WHERE "Id"=NEW."DocId";
  ELSIF NEW."Action"='SubmitDirector' THEN
    event_kind := 'ReviewRequested'; event_message := 'Có công văn đang chờ ký số pháp nhân.'; recipient_role := 'BoardOfDirectors';
  ELSIF NEW."Action"='UpdateOCR' THEN
@@ -63,7 +64,7 @@ BEGIN
    '/documents/'||NEW."DocId"::text,NEW."DocId",NEW."Timestamp"
  FROM "AppUsers" u WHERE u."IsActive" AND (
    (NEW."Action"='Assign' AND u."Id"=NEW."ToUserId") OR
-   (recipient_role IS NOT NULL AND (recipient_department IS NULL OR u."DepartmentId"=recipient_department) AND EXISTS (
+   (recipient_role IS NOT NULL AND (recipient_role <> 'Manager' OR (recipient_department IS NOT NULL AND u."DepartmentId"=recipient_department)) AND EXISTS (
      SELECT 1 FROM "AppUserRoles" ur JOIN "AppRoles" r ON r."Id"=ur."RoleId"
      WHERE ur."UserId"=u."Id" AND r."RoleName"=recipient_role)) OR
    (recipient_role IS NULL AND NEW."Action"<>'Assign' AND u."Id"=creator) OR

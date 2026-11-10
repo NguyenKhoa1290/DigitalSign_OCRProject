@@ -73,8 +73,7 @@ public sealed class NotificationStreamController(EventStore store, NotificationS
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
         lifetime.CancelAfter(TimeSpan.FromMinutes(2)); // Reconnect with a refreshed and revalidated JWT.
         var token = lifetime.Token;
-        // The current document GET permits authenticated users to read active documents.
-        // Recheck the active user/document here; never stream OCR text or another user's notices.
+        // Recheck scope on subscription and each update; never stream OCR text.
         if (documentId.HasValue && await store.GetDocumentVersionAsync(documentId.Value, user, token) == null)
         { Response.StatusCode = 404; return; }
         var subscription = signals.Subscribe(user, documentId);

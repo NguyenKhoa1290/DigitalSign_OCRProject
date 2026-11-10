@@ -251,3 +251,7 @@ Phạm vi hiện hành thay hạn chế chiều đi ở ghi chú ngày 25–26/1
 Tệp chính .docx là văn bản hoàn chỉnh, không hiện OCR và bị chặn trước gọi AI. Ảnh/PDF dùng model và tối đa 5 trang đã chọn; upload không tự OCR. Văn thư không gửi OCR/Word hiệu chỉnh sau khi chuyển duyệt/ký/phát hành; kiểm tra lại trước AI và lúc lưu, không ghi đè tệp/chữ ký nguồn. Admin giữ ngoại lệ hỗ trợ đã thống nhất. Chưa tự chuyển Word sang PDF hoặc phân loại PDF có lớp chữ.
 
 GET /api/documents/{id}/ocr-word?expectedVersion=... cho Admin/Clerk hoặc Specialist là người tạo chiều đi, lấy layout từ server và chặn phiên bản cũ. Có bản Word hiệu chỉnh thì trả nguyên bytes/tên; nếu chưa có, dựng DOCX qua POST /api/ocr/internal/export-layout với X-Service-Token, không gọi AI. Route nội bộ từ chối token sai/trống; không mở public export-layout cho Specialist. Trạng thái/nhãn và kết quả realtime giữ nguyên. Thiết kế hiện hành: tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_TAO_VA_TRINH_CONG_VAN.md.
+
+## Xuống dòng thủ công trong đoạn căn đều (07/11/2026)
+
+DOCX xuất từ layout đặt `w:compat/w:doNotExpandShiftReturn=1`: dòng kết thúc bằng ngắt dòng thủ công không bị kéo giãn khoảng trắng hết chiều ngang khi LibreOffice chuyển sang PDF. Các dòng tự ngắt vẫn căn đều bình thường. Giữ nguyên text, runs, ngắt dòng và định dạng đoạn; chỉ thêm thiết lập tương thích. Thiết lập áp dụng cho cả tải Word và Word trung gian để ký từ OCR. PDF đã ký trước sửa không tự thay đổi; cần tạo/ký bản mới.

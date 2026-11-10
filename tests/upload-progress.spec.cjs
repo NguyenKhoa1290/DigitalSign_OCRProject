@@ -48,7 +48,7 @@ async function ui(browser,width){
   await page.evaluate(()=>{window.progressUpload(100);window.uploadSent();});await popup.getByText('Đã tải lên, máy chủ đang xử lý...', {exact:true}).waitFor();assert.equal(await popup.getByText('Tải lên thành công',{exact:true}).count(),0);
   await page.evaluate(()=>window.finishUpload(413,{message:'Too large fixture'}));await popup.getByText('Tải lên thất bại. Vui lòng thử lại.',{exact:true}).waitFor();await page.waitForURL('**/documents/'+id);
   await popup.getByRole('button',{name:'Đóng tiến độ tải tệp'}).click();await popup.waitFor({state:'hidden'});
-  const chooser=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Tải lên file',exact:true}).click();await(await chooser).setFiles({name:'retry.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF')});
+  const chooser=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Thay tệp đính kèm',exact:true}).click();await(await chooser).setFiles({name:'retry.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF')});
   await popup.waitFor();await page.waitForFunction(()=>window.uploadFiles?.[0]?.name==='retry.pdf');await page.evaluate(()=>{window.progressUpload(70);window.uploadSent();});await popup.getByText('Đã tải lên, máy chủ đang xử lý...', {exact:true}).waitFor();
   await page.evaluate(d=>window.finishUpload(200,{success:true,data:d}),doc);await popup.getByText('Tải lên thành công',{exact:true}).waitFor();
   assert.deepEqual(await page.evaluate(()=>window.uploadFiles.map(f=>f.name)),['retry.pdf']);

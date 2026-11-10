@@ -59,14 +59,14 @@ async function check(browser, width) {
     await page.getByText('Đây là tệp văn bản hoàn chỉnh, không cần OCR.', { exact: false }).waitFor();
     assert(await page.getByRole('button', { name: 'Trình BGH chỉ đạo', exact: true }).isDisabled());
     let download = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Tải Word', exact: true }).click();
+    await page.getByRole('button', { name: 'Tải xuống bản gốc', exact: true }).click();
     assert.equal((await download).suggestedFilename(), wordName);
     await page.goto(web + '/documents/' + id + '/ocr');
     await page.getByText('Văn bản Word không cần OCR', { exact: true }).waitFor();
     assert.equal(await page.getByText('Chưa có dữ liệu OCR', { exact: true }).count(), 0);
     await page.goto(web + '/documents/' + id);
     await page.reload();
-    await page.getByRole('button', { name: 'Tải Word', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Tải xuống bản gốc', exact: true }).waitFor();
     assert(await page.locator('.page-container').evaluate(el => el.scrollWidth <= el.clientWidth + 1));
     if (process.env.HAU_TEST_ARTIFACTS) {
       fs.mkdirSync(process.env.HAU_TEST_ARTIFACTS, { recursive: true });
@@ -79,7 +79,7 @@ async function check(browser, width) {
       .some(button => button.textContent.trim() === 'Trình BGH chỉ đạo' && !button.disabled));
     assert(await page.getByRole('button', { name: 'Trình BGH chỉ đạo', exact: true }).isEnabled());
     download = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Tải PDF', exact: true }).click();
+    await page.getByRole('button', { name: 'Tải xuống bản gốc', exact: true }).click();
     assert.equal((await download).suggestedFilename(), 'Bản chốt.pdf');
     assert.equal(uploads, 2); assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
     console.log(`PASS ${width}px: Word create/download/reload, no OCR/PDF viewer, PDF replacement enables incoming submit`);

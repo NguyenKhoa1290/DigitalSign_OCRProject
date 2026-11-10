@@ -28,4 +28,5 @@ public class LoginResponseDto
 
     /// <summary>Nếu true, frontend phải redirect đến trang /first-login để bắt buộc đổi mật khẩu.</summary>
     public bool MustChangePassword { get; set; } = false;
+    public string Theme { get; set; } = "light";
 }

@@ -86,7 +86,8 @@ public class AuthService : IAuthService
             Username           = user.Username,
             FullName           = user.FullName,
             Roles              = roles,
-            MustChangePassword = user.MustChangePassword
+            MustChangePassword = user.MustChangePassword,
+            Theme              = user.Theme
         };
     }
 
@@ -137,7 +138,8 @@ public class AuthService : IAuthService
             Username           = user.Username,
             FullName           = user.FullName,
             Roles              = roles,
-            MustChangePassword = user.MustChangePassword
+            MustChangePassword = user.MustChangePassword,
+            Theme              = user.Theme
         };
     }
 

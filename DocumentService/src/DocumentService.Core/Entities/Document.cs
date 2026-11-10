@@ -7,11 +7,16 @@ public class Document
     public string Title { get; set; } = string.Empty;
     public DateOnly? IssuedDate { get; set; }
     public string MinioPath { get; set; } = string.Empty;
+    public string? SignedPdfPath { get; set; }
     public string? FileName { get; set; }
     public string? OcrDataRaw { get; set; }          // JSON string từ OCR Service
     public string Status { get; set; } = DocumentStatus.Draft;
     public Guid DocTypeId { get; set; }
     public Guid? CreatedById { get; set; }
+    // Immutable snapshot of the creator's organisational unit at creation.
+    public Guid? DepartmentId { get; set; }
+    public string? DepartmentName { get; set; }
+    public bool IsSchoolWide { get; set; }
     public DateTime? CreatedAt { get; set; }
     // Legacy rows remain blocked until their origin and workflow are reconciled.
     public bool DeletionEligibilityConfirmed { get; set; }

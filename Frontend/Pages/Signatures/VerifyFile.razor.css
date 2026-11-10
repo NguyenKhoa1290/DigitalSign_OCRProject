@@ -1,0 +1,7 @@
+.pdf-verification-page { min-width: 0; overflow-wrap: anywhere; }
+.pdf-verification-page .page-header { flex-wrap: wrap; }
+.pdf-verification-page .detail-item { margin: 12px 0; }
+@media (max-width: 600px) {
+    .pdf-verification-page .page-header { flex-direction: column; align-items: stretch; }
+    .pdf-verification-page .page-header .btn { justify-content: center; }
+}

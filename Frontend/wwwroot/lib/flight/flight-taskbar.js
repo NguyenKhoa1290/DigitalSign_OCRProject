@@ -29,7 +29,8 @@ const styles = `
     font-size: var(--label-size,11px); line-height: var(--label-line-height,13px); }
   button { color: #000; background: none; border: 0; border-radius: 999px; cursor: pointer;
     touch-action: none; outline: none; }
-  button .content { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  /* Keep the button as the pointer target while its icon is re-rendered. */
+  button .content { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; pointer-events: none; }
   .content > span:last-child, .accent-item > span:last-child { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   svg { display: block; flex: none; width: var(--icon-size,24px); height: var(--icon-size,24px); }
   .avatar { display: flex; align-items: center; justify-content: center;
@@ -384,12 +385,15 @@ export class FlightTaskbar extends HTMLElement {
     if (!event.isPrimary || event.button !== 0 || this.pointer) return;
     this.ignorePointerClick = false;
     const button = event.target.closest('button');
-    // Original drag handler is attached to the active glass selector.
-    if (!button || Number(button.dataset.index) !== this.selectedIndex) return;
+    if (!button) return;
+    const targetIndex = Number(button.dataset.index);
     this.rect = this.getBoundingClientRect();
     this.pointer = { id: event.pointerId, startX: event.clientX, lastX: event.clientX,
-      index: this.selectedIndex, moved: false };
+      index: this.selectedIndex, tapIndex: targetIndex, tapOnly: targetIndex !== this.selectedIndex, moved: false };
     this.nav.setPointerCapture(event.pointerId);
+    // A non-selected tab commits on pointerup, even if the browser suppresses
+    // the synthetic click after a previous touch drag.
+    if (this.pointer.tapOnly) return;
     this.pendingRelease = false;
     this.press();
     this.highlightSpring.target = 1;
@@ -402,6 +406,7 @@ export class FlightTaskbar extends HTMLElement {
     const dx = event.clientX - pointer.lastX;
     pointer.lastX = event.clientX;
     pointer.moved ||= Math.abs(event.clientX - pointer.startX) > 4;
+    if (pointer.tapOnly) return;
     const sign = this.direction === 'rtl' ? -1 : 1;
     this.indexSpring.target = clamp(this.indexSpring.target + dx / this.tabWidth * sign, 0, this.count - 1);
     this.offsetSpring.snap(event.clientX - pointer.startX);
@@ -414,8 +419,9 @@ export class FlightTaskbar extends HTMLElement {
     this.pointer = null;
     // Clear before releasing capture, since lostpointercapture also fires.
     if (this.nav.hasPointerCapture(pointer.id)) this.nav.releasePointerCapture(pointer.id);
-    const index = cancelled ? pointer.index : Math.round(this.indexSpring.target);
-    this.select(index, { notify: !cancelled });
+    const index = cancelled || pointer.tapOnly && pointer.moved ? pointer.index
+      : pointer.tapOnly ? pointer.tapIndex : Math.round(this.indexSpring.target);
+    this.select(index, { notify: !cancelled && !(pointer.tapOnly && pointer.moved) });
     this.indexSpring.target = index;
     this.ignorePointerClick = true;
     this.pendingRelease = true;

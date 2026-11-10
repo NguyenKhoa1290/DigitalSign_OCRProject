@@ -34,14 +34,14 @@ async function check(browser, width) {
   const page = await context.newPage(), errors = [];
   page.on('pageerror', error => errors.push(error.message)); page.setDefaultTimeout(15000);
   await page.goto(`${web}/documents/${id}`);
-  const downloadButton = page.getByRole('button', { name: 'Tải PDF', exact: true });
+  const downloadButton = page.getByRole('button', { name: 'Tải xuống bản gốc', exact: true });
   await downloadButton.waitFor();
   let downloading = page.waitForEvent('download');
   await downloadButton.click();
   assert.equal((await downloading).suggestedFilename(), `cong-van-${id}.pdf`);
 
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Tải lên file', exact: true }).click();
+  await page.getByRole('button', { name: 'Thay tệp đính kèm', exact: true }).click();
   await (await chooser).setFiles({ name: original, mimeType: 'application/pdf', buffer: pdf });
   await page.getByText('Tải file thành công!', { exact: true }).waitFor();
   await page.locator('iframe.pdf-frame').waitFor();

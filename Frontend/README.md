@@ -161,3 +161,48 @@ Phạm vi hiện hành thay hạn chế chiều đi ở ghi chú ngày 25–26/1
 Tệp chính .docx là văn bản hoàn chỉnh, không hiện OCR và bị chặn trước gọi AI. Ảnh/PDF dùng model và tối đa 5 trang đã chọn; upload không tự OCR. Văn thư không gửi OCR/Word hiệu chỉnh sau khi chuyển duyệt/ký/phát hành; kiểm tra lại trước AI và lúc lưu, không ghi đè tệp/chữ ký nguồn. Admin giữ ngoại lệ hỗ trợ đã thống nhất. Chưa tự chuyển Word sang PDF hoặc phân loại PDF có lớp chữ.
 
 GET /api/documents/{id}/ocr-word?expectedVersion=... cho Admin/Clerk hoặc Specialist là người tạo chiều đi, lấy layout từ server và chặn phiên bản cũ. Có bản Word hiệu chỉnh thì trả nguyên bytes/tên; nếu chưa có, dựng DOCX qua POST /api/ocr/internal/export-layout với X-Service-Token, không gọi AI. Route nội bộ từ chối token sai/trống; không mở public export-layout cho Specialist. Trạng thái/nhãn và kết quả realtime giữ nguyên. Thiết kế hiện hành: tai_lieu/06_thiet_ke_he_thong/PHAN_QUYEN_TAO_VA_TRINH_CONG_VAN.md.
+
+
+### Ranh giới phân công xử lý (04/11/2026)
+
+Công văn đi không có bước phân công xử lý, kể cả khi còn Nháp hoặc đã trình duyệt. Trưởng phòng duyệt/ký nháy theo trạng thái của chiều đi. Nút phân công chỉ hiện ở công văn đến đang `PendingAssignment`, cho Trưởng phòng thuộc đúng đơn vị được BGH chỉ đạo; thao tác phải ký số qua SignService. API phân công không ký cũ trả HTTP 410, không tạo lịch sử phân công.
+
+
+### Lịch sử hiệu chỉnh cho người xem hồ sơ (04/11/2026)
+
+Mỗi lần Văn thư/Admin tải Word OCR hiệu chỉnh, hệ thống giữ sự kiện OcrEdited trong Lịch sử xử lý: tên người thực hiện, giờ Việt Nam, lần sửa và tên tệp. Chuyên viên được xem lịch sử ở trang chi tiết của cả hai chiều; không cấp quyền chạy OCR hoặc tải bản Word hiệu chỉnh. API bổ sung processedByName bằng một lượt tra cứu danh tính chung với người tạo, giữ FromUserId gốc; tài khoản không tra được tên có thông báo thiếu thông tin. Lịch sử thao tác không đồng nghĩa lưu mọi tệp phiên bản cũ: vẫn chỉ giữ Word hiện hành theo chính sách dọn tệp hiện có.
+
+
+### Nhãn thao tác tệp đính kèm (04/11/2026)
+
+Trang chi tiết dùng Tải xuống bản gốc cho ảnh/PDF/Word và Thay tệp đính kèm cho thao tác tải tệp thay thế. Nút Tải Word trong kết quả OCR vẫn riêng để phân biệt bản nhận diện/hiệu chỉnh với tệp nguồn. Không đổi quyền, endpoint hoặc dữ liệu tệp.
+
+
+### Chế độ tối thử nghiệm (04/11/2026)
+
+Trang cá nhân /profile, trong Thông tin tài khoản, có công tắc Chế độ tối · Thử nghiệm. Từ 05/11/2026 lựa chọn lưu ở AppUsers.Theme (light/dark, mặc định light), tự lưu bằng PUT /api/users/me/theme; không phụ thuộc nút Lưu thay đổi hồ sơ. Login/refresh trả Theme và frontend áp dụng trước chuyển trang, nên đăng nhập trên trình duyệt khác nhận cùng lựa chọn. GET /api/users/me trả theme hiện hành để đồng bộ khi mở trang cá nhân. Cache localStorage hau.theme.account.{userId} chỉ giúp giảm nháy màu khi tải lại, tách riêng tài khoản; khóa thử nghiệm cũ hau.theme.preview không còn được dùng. Đăng xuất trả giao diện sáng, không đổi lựa chọn đã lưu trên máy chủ. Nếu lưu API lỗi, giữ chế độ cũ và báo lỗi; cache bị khóa không ảnh hưởng lưu máy chủ.
+
+CSS dark-preview.css chỉ kích hoạt dưới html[data-theme="dark"], đổi bảng màu, nền, biểu mẫu, bảng/popup và nút. liquid-glass.js vẽ lại backdrop và truyền theme cho FlightTaskbarWeb; selector tổ chức dùng tint theo theme. Công tắc native giữ bàn phím/role switch/aria-checked, vùng chạm44px và respects reduced motion, tham khảo kích thước/hiệu ứng LiquidToggle trong tai_nguyen/FlightTaskbarWeb. Ảnh/PDF và mặt giấy nội dung OCR giữ nguyên màu để đọc tài liệu. Đây là bản thử nghiệm, chưa xem là nghiệm thu toàn bộ màn hình/thành phần bên thứ ba.
+
+
+Cập nhật công tắc theo LiquidToggle: track56×28, thumb kính36×24 di chuyển16px, vùng chạm44px; dùng Spring/PressMotion và glass-surface của engine cho hiệu ứng nhấn giãn/khúc xạ/chromatic. Adapter liquid-theme-switch.js giữ button native/Blazor làm nơi đổi trạng thái, hỗ trợ kéo/chạm/hủy kéo mà không toggle hai lần, dọn listener/motion khi rời trang. Không đổi các nút Lưu/Đăng xuất hoặc quyền tài khoản.
+
+
+Ngày05/11/2026: màu bật của công tắc tối đổi riêng sang xanh nước biển #0088ff, gồm CSS fallback và màu nội suy/overlay kính; giữ cơ chế nhấn/kéo/lò xo và nền ứng dụng.
+
+
+Công tắc tối chỉ hiện focus outline cho thao tác bàn phím; pointerdown gắn data-input=pointer để bấm/chạm không hiện viền ngoài. Tab hoặc keydown trong công tắc khôi phục data-input=keyboard.
+
+Điều hướng taskbar mobile dùng cùng URL `js/liquid-glass.js` trong index.html và NavMenu. Không thêm query phiên bản riêng ở từng nơi: hai URL khác nhau tạo hai ES module instance, khiến listener tabchange có thể không nhận được tham chiếu điều hướng Blazor. Nginx đã gửi no-cache/no-store cho JavaScript để nhận bản mới sau triển khai. Kiểm thử hồi quy `tests/mobile-taskbar-theme.spec.cjs` kiểm tra vuốt cảm ứng, chạm tab, đổi theme, Back và không reload trang ở 300/390px, gồm WebGL và CSS fallback.
+
+
+### Danh sách ký và phạm vi công văn (05/11/2026)
+
+Tab Công văn hiển thị đơn vị, đánh dấu công văn chung và có bộ lọc phạm vi. Tab Ký số có Chờ ký/Đã ký, phân trang từ API. Chờ ký dựa trên đơn vị, vai trò và trạng thái; Đã ký là lịch sử chữ ký của người đăng nhập. Tại công văn đi, nút ký chuyển tới màn ký PDF, sau khi ký mới cập nhật trạng thái; nếu cập nhật thất bại có nút hoàn tất lại. Kết quả được kiểm tra lại tại API, không dựa vào điều kiện ẩn nút của giao diện.
+
+
+## Ký từ Word OCR và kiểm tra PDF (07/11/2026)
+
+Ký số cho phép nguồn ảnh/Word; server tự chọn Word OCR/chuyển PDF, ảnh thiếu OCR sẽ nhận lỗi có giải thích. Bỏ ô PIN chưa được backend hỗ trợ. Sau ký hiển thị/tải PDF đã ký, ẩn sửa/đổi tệp/OCR/tải Word hiệu chỉnh; cả hồ sơ trả lại và Admin. Trạng thái ký nháy cũ thiếu bằng chứng được cảnh báo để ký thực sự; không hiển thị huy hiệu hợp lệ chỉ dựa trên một bản ghi DB.
+
+Có liên kết Kiểm tra PDF bên ngoài tại chi tiết công văn và mục Ký số, tới `/verify-signature`, mọi tài khoản đăng nhập truy cập được. Chọn PDF qua upload trình duyệt, kết quả phân biệt toàn vẹn, nội dung thêm sau ký, thời hạn, thu hồi và CA chưa được tin cậy. Không lưu PDF này vào hồ sơ. UI fixtures 1366/300px và hồi quy hàng đợi/thử hoàn tất lại đạt; không thay theme/taskbar.

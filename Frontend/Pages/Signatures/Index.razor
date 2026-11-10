@@ -14,13 +14,16 @@
         <h1 class="page-title">Ký số Tài liệu</h1>
         <p class="page-subtitle">Quản lý chữ ký số cho các văn bản</p>
     </div>
-    <a href="@(DocId.HasValue ? $"/documents/{DocId.Value}" : "/documents")"
-       class="btn btn-outline signature-back-button">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m15 18-6-6 6-6" />
-        </svg>
-        Quay lại
-    </a>
+    <div class="signature-header-actions">
+        <a href="@(DocId.HasValue ? $"/documents/{DocId.Value}" : "/documents")"
+           class="btn btn-outline signature-back-button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+            </svg>
+            Quay lại
+        </a>
+        <a class="btn btn-outline" href="/verify-signature">Kiểm tra PDF bên ngoài</a>
+    </div>
 </div>
 
 @if (DocId.HasValue)
@@ -61,21 +64,35 @@
                     <div class="signature-actions">
                         @if (CanPersonalSign)
                         {
+                            @if (_alreadySignedPersonal)
+                            {
+                                <button class="btn btn-success" @onclick="FinishPersonalSign" disabled="@_isActionLoading">Hoàn tất bước ký nháy</button>
+                            }
+                            else
+                            {
                             <button class="btn btn-success" @onclick='() => ShowSignModal("DeptSign")' disabled="@_isActionLoading">
                                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                 </svg>
                                 Ký nháy (Manager)
                             </button>
+                            }
                         }
                         @if (CanLegalSeal)
                         {
+                            @if (_alreadySignedLegal)
+                            {
+                                <button class="btn btn-primary" @onclick="FinishLegalSign" disabled="@_isActionLoading">Hoàn tất bước ký pháp nhân</button>
+                            }
+                            else
+                            {
                             <button class="btn btn-primary" @onclick='() => ShowSignModal("DirectorSign")' disabled="@_isActionLoading">
                                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                                 </svg>
                                 Ký số pháp nhân (BGH)
                             </button>
+                            }
                         }
                         <button class="btn btn-outline" @onclick="VerifySignatures" disabled="@(_isActionLoading || !IsPdfFile)">
                             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -90,11 +107,11 @@
                         <div class="alert signature-verification @(_verifyResult.AllValid ? "alert-success" : "alert-danger")">
                             @if (_verifyResult.AllValid)
                             {
-                                <span>✓ Tất cả @_verifyResult.TotalSignatures chữ ký đều hợp lệ</span>
+                                <span>@_verifyResult.Message</span>
                             }
                             else
                             {
-                                <span>⚠ @_verifyResult.ValidSignatures/@_verifyResult.TotalSignatures chữ ký hợp lệ</span>
+                                <span>@(_verifyResult.Message ?? "Không xác nhận được toàn bộ chữ ký trên tài liệu.")</span>
                             }
                         </div>
                     }
@@ -132,8 +149,7 @@
                                     {
                                         <div class="sig-meta">@sig.CertificateSubject</div>
                                     }
-                                    @if (sig.IsValid) { <span class="sig-valid">✓ Hợp lệ</span> }
-                                    else { <span class="sig-invalid">✗ Không hợp lệ</span> }
+                                    <span class="sig-meta">Đã ghi nhận chữ ký. Chọn Xác minh chữ ký để kiểm tra tệp hiện tại.</span>
                                 </div>
                             </div>
                         }
@@ -145,21 +161,54 @@
 }
 else
 {
-    <!-- List of pending documents to sign -->
+    <!-- Actor-scoped pending queue and personal signature history. -->
     @if (_isLoading)
     {
         <LoadingSpinner />
     }
     else
     {
-        <div class="card">
-            <div class="card-header"><span class="card-title">Tài liệu cần ký</span></div>
-            <div class="card-body">
-                <p class="signature-help">
-                    Chọn tài liệu cụ thể từ <a href="/documents">danh sách công văn</a> để thực hiện ký số.
-                </p>
-            </div>
+        <div class="tab-bar signature-tabs" role="tablist" aria-label="Danh sách ký số">
+            <button type="button" class="tab-btn @(_listView == "pending" ? "active" : "")" role="tab" aria-selected="@(_listView == "pending")" @onclick='() => SetListView("pending")'>Chờ ký</button>
+            <button type="button" class="tab-btn @(_listView == "signed" ? "active" : "")" role="tab" aria-selected="@(_listView == "signed")" @onclick='() => SetListView("signed")'>Đã ký</button>
         </div>
+        @if (_list == null)
+        {
+            <p class="alert alert-danger" role="alert">Không tải được danh sách. Hãy thử lại.</p>
+            <button class="btn btn-outline" @onclick="LoadList">Thử lại</button>
+        }
+        else if (_list.Items.Count == 0)
+        {
+            <div class="card"><div class="empty-state"><p class="empty-state-title">@(_listView == "pending" ? "Không có tài liệu chờ bạn ký" : "Bạn chưa ký tài liệu nào")</p></div></div>
+        }
+        else
+        {
+            <div class="signature-queue">
+                <div class="signature-document-list">
+                    @foreach (var doc in _list.Items)
+                    {
+                        <article class="card signature-list-item" @key="doc.Id">
+                            <div class="card-body">
+                                <a class="table-title" href="@($"/documents/{doc.Id}")">@doc.Title</a>
+                                <div class="signature-document-meta">
+                                    <StatusBadge Status="@doc.Status" />
+                                    <span class="table-meta">@(doc.IsSchoolWide ? "Công văn chung" : doc.DepartmentName ?? "Chưa xác định đơn vị")</span>
+                                </div>
+                                @if (_listView == "signed") { <p class="table-meta">Bạn đã ký: @VietnamTime.Format(doc.MySignedAt)</p> }
+                                <a class="btn btn-outline" href="@($"/documents/{doc.Id}")">@(_listView == "pending" ? "Xem và xử lý" : "Xem công văn")</a>
+                            </div>
+                        </article>
+                    }
+                </div>
+                <div class="pagination signature-pagination">
+                    <span class="pagination-info">@_list.TotalCount tài liệu · Trang @_list.Page / @_list.TotalPages</span>
+                    <div class="pagination-controls">
+                        <button class="page-btn" disabled="@(!_list.HasPreviousPage)" aria-label="Trang trước" @onclick="PreviousListPage">‹</button>
+                        <button class="page-btn" disabled="@(!_list.HasNextPage)" aria-label="Trang sau" @onclick="NextListPage">›</button>
+                    </div>
+                </div>
+            </div>
+        }
     }
 }
 
@@ -179,10 +228,7 @@ else
                     </svg>
                     <span>Bạn sắp ký số tài liệu này bằng chứng thư số của mình.</span>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Mã PIN chứng thư (nếu có)</label>
-                    <input type="password" class="form-control" placeholder="Nhập mã PIN..." @bind="_pinCode" />
-                </div>
+                <p class="form-hint">Word hoặc nội dung OCR của ảnh sẽ được chuyển sang PDF trước khi ký. Sau khi ký, nội dung và tệp được khóa sửa.</p>
                 <div class="form-group">
                     <label class="form-label">Ghi chú</label>
                     <textarea class="form-control" placeholder="Ghi chú..." @bind="_signComment" rows="2"></textarea>
@@ -215,39 +261,59 @@ else
     private string? _role;
     private bool _isLoading = true;
     private bool _isActionLoading;
+    private bool _alreadySignedPersonal;
+    private bool _alreadySignedLegal;
+    private PagedResult<DocumentDto>? _list;
+    private string _listView = "pending";
+    private int _listPage = 1;
 
     private bool _showSignModal;
     private string _signType = "";
-    private string? _pinCode;
     private string _signComment = "";
 
-    private bool IsPdfFile => _document?.MinioPath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true;
+    private bool IsPdfFile => (_document?.SignedPdfPath ?? _document?.MinioPath)?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true;
+    private bool HasSigningSource => !string.IsNullOrWhiteSpace(_document?.MinioPath);
     private bool CanPersonalSign =>
-        _document != null && IsPdfFile && _document.DocTypeName != "CongVanDen" &&
-        ((_role == "Manager" && _document.Status == "PendingDeptReview") || _role == "Admin");
+        _document != null && HasSigningSource && _document.DocTypeName != "CongVanDen" &&
+        (_document.Status == "PendingDeptReview" || _document.Status == "DeptSigned" && _signatures?.Count == 0 && _document.SignedPdfPath == null)
+        && ((_role == "Manager" && _document.CanReview) || _role == "Admin");
 
     private bool CanLegalSeal =>
         _document != null && IsPdfFile && _document.DocTypeName != "CongVanDen" &&
-        ((_role == "BoardOfDirectors" && (_document.Status == "PendingDirectorSign" || _document.Status == "DeptSigned")) ||
-         _role == "Admin");
+        _document.Status == "PendingDirectorSign" && (_role == "BoardOfDirectors" || _role == "Admin");
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        _isLoading = true;
+        _document = null; _signatures = null; _verifyResult = null;
         _role = await AuthService.GetRoleAsync();
 
         if (DocId.HasValue)
         {
             _document = await DocumentService.GetDocumentAsync(DocId.Value);
             _signatures = await SignatureService.GetSignaturesAsync(DocId.Value);
+            var actor = await AuthService.GetUserIdAsync();
+            _alreadySignedPersonal = Guid.TryParse(actor, out var actorId) && _signatures?.Any(s => s.SignerId == actorId && s.SignatureType == "PersonalSignature") == true;
+            _alreadySignedLegal = Guid.TryParse(actor, out actorId) && _signatures?.Any(s => s.SignerId == actorId && s.SignatureType == "LegalSeal") == true;
         }
+        else await LoadList();
 
         _isLoading = false;
     }
 
+    private async Task LoadList()
+    {
+        _isLoading = true;
+        _list = await DocumentService.GetSigningDocumentsAsync(_listView, _listPage);
+        _isLoading = false;
+    }
+    private async Task SetListView(string view) { _listView = view; _listPage = 1; await LoadList(); }
+    private async Task PreviousListPage() { if (_listPage > 1) { _listPage--; await LoadList(); } }
+    private async Task NextListPage() { if (_list?.HasNextPage == true) { _listPage++; await LoadList(); } }
+
     private void ShowSignModal(string type)
     {
         _signType = type;
-        _pinCode = null;
         _signComment = "";
         _showSignModal = true;
     }
@@ -278,7 +344,6 @@ else
             SignerName = signerName,
             Reason = reason,
             SignatureType = _signType,
-            PinCode = _pinCode,
             Comment = _signComment
         };
 
@@ -289,7 +354,16 @@ else
 
         if (result != null)
         {
-            Toast.ShowSuccess(string.IsNullOrWhiteSpace(result.Message) ? "Ký số thành công!" : result.Message);
+            if (_signType == "DeptSign")
+            {
+                _alreadySignedPersonal = true;
+                await FinishPersonalSign();
+            }
+            else
+            {
+                _alreadySignedLegal = true;
+                await FinishLegalSign();
+            }
             _document = await DocumentService.GetDocumentAsync(DocId.Value);
             _signatures = await SignatureService.GetSignaturesAsync(DocId.Value);
         }
@@ -297,6 +371,38 @@ else
         {
             Toast.ShowError("Ký số thất bại. Vui lòng kiểm tra chứng thư số.");
         }
+    }
+
+    private async Task FinishPersonalSign()
+    {
+        if (!DocId.HasValue) return;
+        _isActionLoading = true;
+        try
+        {
+            if (await DocumentService.DeptSignDocumentAsync(DocId.Value, _signComment))
+            {
+                _document = await DocumentService.GetDocumentAsync(DocId.Value);
+                Toast.ShowSuccess("Đã ký nháy và cập nhật trạng thái công văn.");
+            }
+            else Toast.ShowError("Đã ký PDF nhưng chưa cập nhật trạng thái. Hãy bấm Hoàn tất bước ký nháy để thử lại.");
+        }
+        finally { _isActionLoading = false; }
+    }
+
+    private async Task FinishLegalSign()
+    {
+        if (!DocId.HasValue) return;
+        _isActionLoading = true;
+        try
+        {
+            if (await DocumentService.DirectorSignDocumentAsync(DocId.Value, _signComment))
+            {
+                _document = await DocumentService.GetDocumentAsync(DocId.Value);
+                Toast.ShowSuccess("Đã ký pháp nhân và cập nhật trạng thái công văn.");
+            }
+            else Toast.ShowError("Đã ký PDF nhưng chưa cập nhật trạng thái. Hãy bấm Hoàn tất bước ký pháp nhân để thử lại.");
+        }
+        finally { _isActionLoading = false; }
     }
 
     private async Task VerifySignatures()

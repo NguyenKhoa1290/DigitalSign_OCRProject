@@ -15,15 +15,17 @@ export function createOrganizationSwitch(element, selected) {
         const progress = clamp(state.progress.value, 0, 1);
         const distance = buttons[1].offsetLeft - buttons[0].offsetLeft;
         glass.style.transform = `translateX(${distance * clamp(value.value, 0, 1)}px) scale(${state.scaleX.value},${state.scaleY.value})`;
+        const tint = document.documentElement.dataset.theme === 'dark' ? [.14, .24, .35] : [1, 1, 1];
         glass.configure({ radius: 10, blur: 8 * (1 - progress), refractionHeight: 5 * progress,
             refractionAmount: 10 * progress, chromatic: true,
-            tint: [1, 1, 1, 1 - progress], highlight: progress });
+            tint: [...tint, 1 - progress], highlight: progress });
     }, 1.04);
     motion.springs.push(value);
     element.addEventListener('pointerdown', event => {
         if (event.isPrimary && event.button === 0 && event.target.closest('[role="tab"]')) motion.press();
     }, options);
     const release = () => motion.release();
+    window.addEventListener('hau-theme-change', () => motion.update(motion), options);
     for (const type of ['pointerup', 'pointercancel']) window.addEventListener(type, release, options);
     window.addEventListener('blur', release, options);
     element.addEventListener('keydown', event => {

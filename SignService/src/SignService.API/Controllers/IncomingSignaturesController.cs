@@ -17,12 +17,12 @@ public class IncomingSignaturesController(IIncomingWorkflow workflow) : Controll
         User.FindAll(ClaimTypes.Role).Select(c => c.Value).Concat(User.FindAll("role").Select(c => c.Value)).Distinct().ToArray());
 
     [HttpPost("{id:guid}/direction")]
-    [Authorize(Roles = "BoardOfDirectors")]
+    [Authorize(Roles = "BoardOfDirectors,Admin")]
     public async Task<IActionResult> Direct(Guid id, IncomingDirectionRequest request)
         => Ok(ApiResponse<SignResultDto>.Ok(await workflow.DirectAsync(id, Actor(), request), "Đã ký chỉ đạo và chuyển đơn vị xử lý."));
 
     [HttpPost("{id:guid}/assignment")]
-    [Authorize(Roles = "Manager")]
+    [Authorize(Roles = "Manager,Admin")]
     public async Task<IActionResult> Assign(Guid id, IncomingAssignmentRequest request)
         => Ok(ApiResponse<SignResultDto>.Ok(await workflow.AssignAsync(id, Actor(), request), "Đã ký phân công chuyên viên."));
 }

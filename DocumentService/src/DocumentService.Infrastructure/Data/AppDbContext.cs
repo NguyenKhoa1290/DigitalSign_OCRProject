@@ -12,6 +12,19 @@ public class AppDbContext : DbContext
     public DbSet<DocumentProcess> DocumentProcesses => Set<DocumentProcess>();
     public DbSet<SignatureEvidence> SignatureEvidence => Set<SignatureEvidence>();
     public DbSet<DocumentPurgeRecord> DocumentPurgeRecords => Set<DocumentPurgeRecord>();
+    // Only API requests set this. Workers/migrations use their own trusted scope.
+    public DocumentAccessScope? AccessScope { get; set; }
+    public IQueryable<Document> VisibleDocuments
+    {
+        get
+        {
+            var scope = AccessScope;
+            if (scope == null || scope.ReadAll) return Documents;
+            return Documents.Where(d => d.IsSchoolWide || d.CreatedById == scope.UserId || d.AssignedToId == scope.UserId
+                || scope.DepartmentId.HasValue && (d.DepartmentId == scope.DepartmentId || d.ProcessingDepartmentId == scope.DepartmentId)
+                || SignatureEvidence.Any(s => s.DocId == d.Id && s.SignerId == scope.UserId));
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +53,8 @@ public class AppDbContext : DbContext
             e.Property(x => x.ConcurrencyVersion).IsConcurrencyToken();
             e.Property(x => x.DeleteReason).HasMaxLength(1000);
             e.Property(x => x.ProcessingDepartmentName).HasMaxLength(255);
+            e.Property(x => x.DepartmentName).HasMaxLength(255);
+            e.HasIndex(x => new { x.DepartmentId, x.IsSchoolWide });
             e.Property(x => x.AssignedToName).HasMaxLength(100);
             e.HasIndex(x => new { x.IsDeleted, x.DeletedAt });
 

@@ -184,6 +184,12 @@
     private int    _strength;
     private string _strengthLabel = "";
 
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await AuthService.GetCurrentUserAsync();
+        _model.Email = user?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value?.Trim();
+    }
+
     private void CheckStrength(ChangeEventArgs e)
     {
         var pw = e.Value?.ToString() ?? "";

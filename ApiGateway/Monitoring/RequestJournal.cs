@@ -13,7 +13,7 @@ public static class RequestJournal
         "change-password","send-email-verification","users","roles","departments","tree","stats","assignees","me",
         "documents","types","file","upload","ocr","submit","dept-sign","submit-director","director-sign","reject","publish","assign",
         "signatures","certificates","issue","personal-sign","legal-seal","document","verify","health","process","process-upload",
-        "incoming-submit","incoming","direction","assignment","cancel","purge"
+        "incoming-submit","incoming","direction","assignment","cancel","purge","public-link"
     };
     public static (string Service,string Path,Guid? Resource)? Describe(string path)
     {
@@ -50,6 +50,7 @@ public static class RequestJournal
         if(path.StartsWith("/api/ocr/"))return "ProcessOCR";
         if(path.StartsWith("/api/documents/"))
         {
+            if (operation == "public-link") return method == "DELETE" ? "RevokePublicLink" : "CreatePublicLink";
             var workflow=operation switch
             {
                 "upload"=>"UploadDocument", "submit"=>"Submit", "dept-sign"=>"DeptSign", "submit-director"=>"SubmitDirector",
@@ -105,7 +106,7 @@ public static class RequestJournal
                 if(method is "POST" or "PUT" or "PATCH" or "DELETE"
                     && path!="/api/[unmapped]"
                     && !path.EndsWith("validate-token") && !path.EndsWith("refresh-token")
-                    && (service!="DocumentService" || status>=400 || method=="DELETE" || path.EndsWith("/upload")))
+                    && (service!="DocumentService" || status>=400 || method=="DELETE" || path.EndsWith("/upload") || path.EndsWith("/public-link")))
                     await store.RecordAsync("Audit",service,Action(method,path),actor,resource,method,path,status,trace,Stopwatch.GetElapsedTime(start).TotalMilliseconds);
             }
             catch(Exception ex) when(ex is not OutOfMemoryException)

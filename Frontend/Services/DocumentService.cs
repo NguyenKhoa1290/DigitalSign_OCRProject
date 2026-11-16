@@ -9,6 +9,12 @@ public class DocumentService
 
     public DocumentService(ApiService api) => _api = api;
 
+    public Task<PublicDocumentLinkDto?> CreatePublicLinkAsync(Guid id)
+        => _api.PostAsync<PublicDocumentLinkDto>($"api/documents/{id}/public-link");
+
+    public Task<bool> RevokePublicLinkAsync(Guid id)
+        => _api.DeleteWithResultAsync($"api/documents/{id}/public-link");
+
     public async Task<PagedResult<DocumentDto>?> GetDocumentsAsync(
         int page = 1, int pageSize = 15, string? status = null, string? typeId = null, string? search = null, string? scope = null)
     {

@@ -34,6 +34,7 @@ try
     builder.Services.AddSingleton(_ => Npgsql.NpgsqlDataSource.Create(configuration.GetConnectionString("DefaultConnection")!));
     builder.Services.AddSingleton<DocumentService.API.Services.OcrJobStore>();
     builder.Services.AddScoped<DocumentService.API.Services.OcrEditedFileStore>();
+    builder.Services.AddScoped<DocumentService.API.Services.PublicDocumentLinks>();
     builder.Services.AddHostedService<DocumentService.API.Services.OcrEditedFileCleanupWorker>();
     builder.Services.AddSingleton<DocumentService.API.Services.IOcrJobQueue, DocumentService.API.Services.OcrJobKafkaQueue>();
     builder.Services.AddHostedService<DocumentService.API.Services.OcrJobOutbox>();
@@ -162,6 +163,7 @@ try
             await db.Database.MigrateAsync();
             await app.Services.GetRequiredService<DocumentService.API.Services.OcrJobStore>().InitializeAsync();
             await DocumentService.API.Services.OcrEditedFileStore.InitializeAsync(app.Services.GetRequiredService<Npgsql.NpgsqlDataSource>());
+            await DocumentService.API.Services.PublicDocumentLinks.InitializeAsync(app.Services.GetRequiredService<Npgsql.NpgsqlDataSource>());
             Log.Information("Database migration hoàn thành.");
         }
         catch (Exception ex)

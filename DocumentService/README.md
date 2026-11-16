@@ -190,3 +190,12 @@ Chuyển trạng thái ký nháy/pháp nhân yêu cầu bản ghi chữ ký tư�
 Documents.SignedPdfPath giữ PDF ký hiện hành riêng với MinioPath nguồn. API xem/tải tệp ưu tiên PDF ký; tên tải xuống chuyển đuôi .pdf. SigningStartedAt hoặc bằng chứng chữ ký khóa sửa metadata, thay tệp, ghi/chạy OCR và tải Word hiệu chỉnh, kể cả Admin hoặc trạng thái Rejected. Tệp nguồn và PDF từng chữ ký được đưa vào danh sách dọn khi xóa vĩnh viễn.
 
 Công văn đến có thể trình nguồn PDF/Word hoặc ảnh đã có OCR gắn đúng nguồn; không bắt xuất PDF rồi tải lại. Hoàn tất ký nháy, trình BGH và phát hành phải có PDF ký/bản ghi chữ ký tương ứng. DeptSigned cũ thiếu chữ ký được cảnh báo, đưa vào Chờ ký để người có quyền thực hiện ký thật; không tự sửa/ký dữ liệu cũ. Luồng chi tiết tại `tai_lieu/06_thiet_ke_he_thong/KY_SO_TU_WORD_OCR_VA_XAC_MINH_PDF.md`.
+
+
+## Link công khai cho công văn đã phát hành (15/11/2026)
+
+Văn thư/Admin trong phạm vi hồ sơ dùng `POST /api/documents/{id}/public-link` để tạo link và `DELETE` cùng đường dẫn để thu hồi. Chỉ chấp nhận Published có SignedPdfPath khớp chữ ký LegalSeal. Trang chi tiết có nút tạo, sao chép, mở và thu hồi. Tạo lại sẽ đổi khóa, vô hiệu link trước.
+
+`GET /api/public/documents/{id}?key=...` cho người nhận mở PDF, thêm `download=true` để tải với tên tệp gốc đổi đuôi .pdf. Endpoint dùng khóa ngẫu nhiên 256 bit, kiểm tra trạng thái/xóa/tham chiếu bản ký ở mỗi lần đọc. Khóa chỉ trả lúc tạo, DB lưu SHA-256 trong PublicDocumentLinks, khởi tạo idempotent lúc startup, FK cascade khi xóa hồ sơ. Link tồn tại tới khi thu hồi hoặc bị vô hiệu bởi trạng thái/nguồn ký thay đổi.
+
+Gateway mở riêng tuyến public, các tuyến quản trị link vẫn yêu cầu JWT và Clerk/Admin. Nginx tắt access log riêng tuyến public, Gateway giảm log YARP URI xuống Warning để hạn chế lưu khóa query trong log thông thường. Thao tác tạo/thu hồi được audit theo actor/document, không đưa khóa vào audit. Response PDF có no-store, no-referrer và noindex. Bằng chứng kiểm tra tại backup/public_links_20261115.

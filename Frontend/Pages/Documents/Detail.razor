@@ -181,6 +181,28 @@ else
         }
     </div>
 
+    @if (_document.Status == "Published" && (_isAdmin || _role == "Clerk"))
+    {
+        <section class="card" style="margin-bottom:20px">
+            <div class="card-header"><span class="card-title">Link công khai</span></div>
+            <div class="card-body">
+                <p class="form-hint">Ai có link đều có thể xem và tải PDF đã ký. Tạo link mới sẽ vô hiệu link cũ.</p>
+                <div class="page-actions" style="flex-wrap:wrap">
+                    <button class="btn btn-outline" disabled="@_sharingBusy" @onclick="CreatePublicLink">Tạo link công khai</button>
+                    <button class="btn btn-outline" disabled="@_sharingBusy" @onclick="RevokePublicLink">Thu hồi link</button>
+                </div>
+                @if (_publicLink != null && _publicLinkDocumentId == Id)
+                {
+                    <input class="form-control" style="margin-top:12px" aria-label="Đường dẫn công khai" readonly value="@_publicLink" />
+                    <div class="page-actions" style="margin-top:12px;flex-wrap:wrap">
+                        <button class="btn btn-outline" @onclick="CopyPublicLink">Sao chép link</button>
+                        <a class="btn btn-outline" href="@_publicLink" target="_blank" rel="noreferrer">Mở link</a>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
     @if (IsIncoming && _document.Status == "Draft" && _role == "Clerk" && _document.MinioPath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) != true)
     {
         <p class="form-hint">PDF ký trực tiếp; Word hoặc nội dung OCR của ảnh được chuyển sang PDF trước khi ký.</p>
@@ -563,6 +585,51 @@ else
     private bool _showActionModal;
     private string _currentAction = "";
     private string _actionComment = "";
+
+    private string? _publicLink;
+    private Guid _publicLinkDocumentId;
+    private bool _sharingBusy;
+
+    private async Task CreatePublicLink()
+    {
+        if (_sharingBusy) return;
+        var documentId = Id;
+        _sharingBusy = true;
+        try
+        {
+            var result = await DocumentService.CreatePublicLinkAsync(documentId);
+            if (result == null) { Toast.ShowError("Chưa tạo được link. Hãy kiểm tra công văn đã phát hành và thử lại."); return; }
+            if (documentId != Id) return;
+            _publicLink = NavManager.ToAbsoluteUri(result.Url).AbsoluteUri;
+            _publicLinkDocumentId = documentId;
+            Toast.ShowSuccess("Đã tạo link công khai.");
+        }
+        catch (Exception) { Toast.ShowError("Không tạo được link công khai. Hãy thử lại."); }
+        finally { _sharingBusy = false; }
+    }
+
+    private async Task RevokePublicLink()
+    {
+        if (_sharingBusy) return;
+        var documentId = Id;
+        _sharingBusy = true;
+        try
+        {
+            if (!await DocumentService.RevokePublicLinkAsync(documentId))
+            { Toast.ShowError("Chưa thu hồi được link. Hãy thử lại."); return; }
+            if (documentId != Id) return;
+            _publicLink = null;
+            Toast.ShowSuccess("Đã thu hồi link công khai.");
+        }
+        catch (Exception) { Toast.ShowError("Không thu hồi được link. Hãy thử lại."); }
+        finally { _sharingBusy = false; }
+    }
+
+    private async Task CopyPublicLink()
+    {
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", _publicLink); Toast.ShowSuccess("Đã sao chép link."); }
+        catch (JSException) { Toast.ShowInfo("Hãy chọn và sao chép đường dẫn trong ô link công khai."); }
+    }
 
     protected override async Task OnParametersSetAsync()
     {

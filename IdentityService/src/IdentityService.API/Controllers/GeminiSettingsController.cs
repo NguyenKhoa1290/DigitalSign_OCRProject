@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IdentityService.API.Controllers;
 
 [ApiController]
+[Route("api/admin/llm-settings")]
 [Route("api/admin/gemini-settings")]
 [Authorize(Roles = "Admin")]
 public sealed class GeminiSettingsController : ControllerBase
@@ -39,13 +40,13 @@ public sealed class GeminiSettingsController : ControllerBase
     {
         var key = request.ApiKey?.Trim();
         if (string.IsNullOrWhiteSpace(key) || key.Length > 512)
-            return BadRequest(new { message = "API key Gemini không hợp lệ." });
+            return BadRequest(new { message = "API key LLM không hợp lệ." });
 
         try
         {
             var models = await GetGenerativeGeminiModels(key);
             if (models.Count == 0)
-                return BadRequest(new { message = "Khóa hợp lệ nhưng không tìm thấy model Gemini hỗ trợ generateContent." });
+                return BadRequest(new { message = "Khóa hợp lệ nhưng không tìm thấy model LLM hỗ trợ generateContent." });
 
             var config = await _db.GeminiApiConfigs.SingleOrDefaultAsync(x => x.Id == 1);
             if (config is null)
@@ -60,7 +61,7 @@ public sealed class GeminiSettingsController : ControllerBase
         }
         catch (InvalidGeminiKeyException)
         {
-            return BadRequest(new { message = "Google AI Studio từ chối API key. Hãy kiểm tra khóa và quyền Gemini API." });
+            return BadRequest(new { message = "Google AI Studio từ chối API key. Hãy kiểm tra khóa và quyền API của nhà cung cấp LLM." });
         }
         catch (HttpRequestException)
         {
@@ -119,6 +120,7 @@ public sealed class GeminiSettingsController : ControllerBase
 public sealed record GeminiApiKeyRequest(string? ApiKey);
 
 [ApiController]
+[Route("api/internal/llm-settings")]
 [Route("api/internal/gemini-settings")]
 [AllowAnonymous]
 public sealed class InternalGeminiSettingsController : ControllerBase
@@ -145,7 +147,7 @@ public sealed class InternalGeminiSettingsController : ControllerBase
 
         var config = await _db.GeminiApiConfigs.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1);
         return config is null
-            ? NotFound(new { message = "Gemini API key chưa được cấu hình." })
+            ? NotFound(new { message = "API key LLM chưa được cấu hình." })
             : Ok(new { apiKey = _protector.Unprotect(config.ProtectedApiKey) });
     }
 }

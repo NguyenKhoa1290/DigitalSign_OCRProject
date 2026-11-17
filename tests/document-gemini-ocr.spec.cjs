@@ -22,8 +22,8 @@ async function run(browser,width,{fail=false,role='Clerk',missing=false,stay=fal
   if(req.method()==='GET'&&p==='/api/documents/'+id)return route.fulfill({json:{success:true,data:doc}});
   if(p==='/api/documents/'+id+'/file')return route.fulfill({contentType:'application/pdf',body:Buffer.from('%PDF-1.4\n%%EOF')});
   if(req.method()==='GET'&&p==='/api/documents/'+id+'/ocr-jobs/latest')return route.fulfill({json:{success:true,data:job}});
-  if(p==='/api/ocr/gemini/documents/'+id+'/input-info'){inspections++;assert.equal(req.postDataJSON().expectedVersion,version);return route.fulfill({json:{totalPages:89}});}
-  if(p==='/api/ocr/gemini/models')return route.fulfill({json:[{id:'gemini-fixture',displayName:'Fixture'}]});
+  if(p==='/api/ocr/llm/documents/'+id+'/input-info'){inspections++;assert.equal(req.postDataJSON().expectedVersion,version);return route.fulfill({json:{totalPages:89}});}
+  if(p==='/api/ocr/llm/models')return route.fulfill({json:[{id:'gemini-fixture',displayName:'Fixture'}]});
   if(req.method()==='POST'&&p==='/api/documents/'+id+'/ocr-jobs'){
    queued++;assert.deepEqual(req.postDataJSON(),{expectedVersion:version,modelId:'gemini-fixture',pages:'2,6'});
    job={id:'dddddddd-0000-0000-0000-000000000001',documentId:id,status:'Queued',modelId:'gemini-fixture',pages:'2,6',createdAt:'2026-10-25T07:00:00Z'};

@@ -21,7 +21,7 @@ async function check(browser, role, width) {
       status: 'Draft', minioPath: '', processes: []
     };
     else if (url.pathname === '/api/documents/types') data = [];
-    else if (url.pathname === '/api/ocr/gemini/models') {
+    else if (url.pathname === '/api/ocr/llm/models') {
       modelRequests++;
       assert.equal(role, 'Clerk', 'Specialist must not load OCR models');
       data = [{ id: 'fixture-model', displayName: 'Fixture model' }];

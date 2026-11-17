@@ -1,5 +1,10 @@
 # Frontend
 
+## Thuật ngữ LLM ngày 16/11/2026
+
+Tên chức năng và API công khai dùng LLM; nhà cung cấp hiện tại vẫn là Google AI Studio. Giao diện Admin dùng `/admin/llm-settings`, API cấu hình dùng `/api/admin/llm-settings`, OCR dùng `/api/ocr/llm/...`. Các route cũ, bảng/key mã hóa, provider JSON, ID model và hàng đợi vẫn tương thích. Chi tiết: [LLM và nhà cung cấp](../tai_lieu/06_thiet_ke_he_thong/LLM_VA_NHA_CUNG_CAP.md). Các mục có ngày bên dưới giữ ngữ cảnh triển khai tại thời điểm ghi.
+
+
 Frontend là Blazor WebAssembly app cho hệ thống HAU DigitalSign OCR.
 
 ## Chạy local
@@ -75,7 +80,7 @@ docker compose up -d frontend
 
 - JWT được lưu trong localStorage.
 - Frontend đã có các màn hình auth, dashboard, admin, documents, signatures.
-- Có màn hình Quét OCR và xuất Word, chọn trang và model Gemini.
+- Có màn hình Quét OCR và xuất Word, chọn trang và model LLM.
 - DTO ký số frontend đã đồng bộ với backend SignService: gửi `DocId`, `SignerId`, `SignerName`, `Reason` và map thao tác UI sang endpoint ký phù hợp.
 
 
@@ -104,24 +109,24 @@ ADB trên điện thoại thật xác nhận JPEG có HDR gain map làm Android 
 Kiểm tra hồi quy preview xác minh header PNG và URL riêng, byte File được native FormData sử dụng và byte tệp gốc dùng tải xuống. Kiểm tra thực tế sau reload điện thoại: ảnh gốc5040489bytes, SHA-256 không đổi; previewPNG1536×2048; SurfaceFlinger giữ lớp HDR ở0 sau các lượt vuốt. Không chỉ dựa vào CSS dynamic-range-limit: máy thử hỗ trợ cú pháp nhưng vẫn giữ lớp HDR khi dùng ảnh gốc.
 
 
-## OCR Gemini trong chi tiết công văn (25/10/2026)
+## OCR LLM trong chi tiết công văn (25/10/2026)
 
 Văn thư/Admin bấm **Chạy OCR** trong chi tiết để chọn model và tối đa5 trang từ chính tệp đã đính kèm công văn; không có ô chọn/tải lại tệp. Khi MinioPath trống, báo tải tệp lên trước. Backend đọc nguồn từ MinIO sau khi kiểm tra JWT/trạng thái/ExpectedVersion. Trang `/documents/ocr-scan` độc lập vẫn cho chọn một PDF/nhiều ảnh và tải Word như trước; ảnh xem trước vẫn qua bản SDR.
 
-Chi tiết gọi `POST /api/ocr/gemini/documents/{id}/input-info` để đếm trang, sau đó **Gửi yêu cầu OCR** qua `POST /api/documents/{id}/ocr-jobs` với expectedVersion/modelId/pages. API trả **202 Accepted** cùng mã tác vụ sau khi lưu PostgreSQL; đóng hộp chọn trang và cho phép sửa thông tin, tải tệp hoặc rời trang. Một công văn chỉ có một tác vụ Queued/Running, không tự chạy lại AI khi lỗi. Các yêu cầu trùng dùng cùng mã tác vụ đang hoạt động.
+Chi tiết gọi `POST /api/ocr/llm/documents/{id}/input-info` để đếm trang, sau đó **Gửi yêu cầu OCR** qua `POST /api/documents/{id}/ocr-jobs` với expectedVersion/modelId/pages. API trả **202 Accepted** cùng mã tác vụ sau khi lưu PostgreSQL; đóng hộp chọn trang và cho phép sửa thông tin, tải tệp hoặc rời trang. Một công văn chỉ có một tác vụ Queued/Running, không tự chạy lại AI khi lỗi. Các yêu cầu trùng dùng cùng mã tác vụ đang hoạt động.
 
-DocumentService outbox gửi JobId qua Kafka; worker consume topic riêng rồi gọi nội bộ OCRService bằng service token, giữ pipeline Paddle evidence + Gemini. Backend tự lưu `OcrDataRaw`, lịch sử và thông báo người đã yêu cầu trong cùng transaction; trình duyệt không còn đợi nhận diện hoặc PATCH kết quả. Chỉ cập nhật nội dung OCR/phiên bản, giữ các thông tin công văn được sửa trong lúc chờ. Nếu tệp bị thay hoặc công văn bị xóa, báo lỗi và không gắn kết quả vào nguồn mới.
+DocumentService outbox gửi JobId qua Kafka; worker consume topic riêng rồi gọi nội bộ OCRService bằng service token, giữ pipeline Paddle evidence + LLM. Backend tự lưu `OcrDataRaw`, lịch sử và thông báo người đã yêu cầu trong cùng transaction; trình duyệt không còn đợi nhận diện hoặc PATCH kết quả. Chỉ cập nhật nội dung OCR/phiên bản, giữ các thông tin công văn được sửa trong lúc chờ. Nếu tệp bị thay hoặc công văn bị xóa, báo lỗi và không gắn kết quả vào nguồn mới.
 
 Trạng thái khôi phục bằng `GET /api/documents/{id}/ocr-jobs/latest` sau reload. Khi ở trang chi tiết, SSE thông báo và kiểm tra trạng thái mỗi5 giây cập nhật kết quả tự động. Khi đã rời trang, chuông/trung tâm thông báo nhận **OCR hoàn tất** hoặc **OCR thất bại**; bấm thông báo đánh dấu đã đọc và mở công văn/kết quả. Tác vụ đang chạy bị gián đoạn khi backend khởi động lại được báo lỗi; tác vụ đang xếp hàng vẫn còn. Không tự gọi lại AI vì có thể đã phát sinh chi phí. Thông báo được lưu để đọc lại; không phải Web Push khi đóng trình duyệt. Trang quét độc lập/tải Word vẫn dùng luồng đồng bộ cũ.
 
 `GeminiOcrResultView`/`GeminiLayoutBlock` hiển thị văn bản, định dạng chữ, cột, bảng và dòng trống bằng Razor mã hóa nội dung; không render HTML do model cung cấp. Kết quả đã lưu hiện lại sau reload và tại đường dẫn OCR cũ. Giao diện bỏ trường bóc tách/JSON/dòng Paddle cũ; dữ liệu cũ không bị xóa tự động. Chuyên viên xem kết quả, không có nút chạy OCR hoặc tải Word OCR để sửa.
 
-**Tải Word** gọi `POST /api/ocr/gemini/export-layout` với layout đã nhận diện; chỉ dựng DOCX, không gọi Google/Paddle lần nữa. Không lưu DOCX/base64 vào database hoặc tạo object mới trong MinIO. Giới hạn5 trang,500 khối,10000 ô bảng/2000 đoạn và payload2MB khi xuất. PDF/Word gốc và luồng ký không thay đổi. Cần tải lại trang sau cập nhật Docker.
+**Tải Word** gọi `POST /api/ocr/llm/export-layout` với layout đã nhận diện; chỉ dựng DOCX, không gọi Google/Paddle lần nữa. Không lưu DOCX/base64 vào database hoặc tạo object mới trong MinIO. Giới hạn5 trang,500 khối,10000 ô bảng/2000 đoạn và payload2MB khi xuất. PDF/Word gốc và luồng ký không thay đổi. Cần tải lại trang sau cập nhật Docker.
 
 
 ## Thời gian Việt Nam (25/10/2026)
 
-Database/API lưu thời điểm theo UTC (`timestamptz`), không đổi đồng hồ container hoặc cộng7 giờ vào dữ liệu đã lưu. Lịch sử xử lý và chữ ký trước đây định dạng trực tiếp UTC nên lệch7 giờ so với ngày tạo. `VietnamTime.Format` thống nhất hiển thị UTC+7 ở ngày tạo công văn/người dùng, lịch sử, chữ ký/chứng thư, thùng rác, Gemini, nhật ký và thông báo, không phụ thuộc múi giờ thiết bị.
+Database/API lưu thời điểm theo UTC (`timestamptz`), không đổi đồng hồ container hoặc cộng7 giờ vào dữ liệu đã lưu. Lịch sử xử lý và chữ ký trước đây định dạng trực tiếp UTC nên lệch7 giờ so với ngày tạo. `VietnamTime.Format` thống nhất hiển thị UTC+7 ở ngày tạo công văn/người dùng, lịch sử, chữ ký/chứng thư, thùng rác, LLM, nhật ký và thông báo, không phụ thuộc múi giờ thiết bị.
 
 Hàm dùng DateTimeOffset.ToOffset(+07:00); DateTime Kind.Unspecified từ dữ liệu API cũ được hiểu là UTC. Timestamp có offset sẵn được chuyển đúng một lần. Ngày ban hành DateOnly vẫn giữ ngày người dùng nhập; xác thực/thời hạn token và khoảng lọc ngày nhật ký không đổi. Test `tests/vietnam-time.spec.cjs` kiểm tra UTC/America/Los_Angeles, desktop/mobile, qua mốc nửa đêm và timestamp Z/+07/không hậu tố.
 

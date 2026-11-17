@@ -13,9 +13,9 @@ async function run(browser, width) {
   await context.route('**/api/**', async route => {
     if (new URL(route.request().url()).pathname === "/api/notifications/stream") return route.fulfill({ contentType: "text/event-stream", body: 'data: {"unreadCount":0}\n\n' });
     const req = route.request(), url = new URL(req.url());
-    if (url.pathname === '/api/ocr/gemini/models') return route.fulfill({ json: { success: true, data: [{ id: 'gemini-first', displayName: 'First Gemini' },{ id: 'gemini-second', displayName: 'Second Gemini' }] } });
+    if (url.pathname === '/api/ocr/llm/models') return route.fulfill({ json: { success: true, data: [{ id: 'gemini-first', displayName: 'First Gemini' },{ id: 'gemini-second', displayName: 'Second Gemini' }] } });
     if (url.pathname === '/api/ocr/input-info') return route.fulfill({ json: { totalPages: 89 } });
-    if (url.pathname === '/api/ocr/gemini/export-word-upload') {
+    if (url.pathname === '/api/ocr/llm/export-word-upload') {
       exports.push({ pages: url.searchParams.get('pages'), model: url.searchParams.get('model_id'), body: req.postDataBuffer().toString('latin1') });
       if (fail) return route.fulfill({ status: 429, json: { detail: 'Hết hạn mức fixture; chọn model khác.' } });
       return route.fulfill({ contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', body: Buffer.from('fixture-docx') });

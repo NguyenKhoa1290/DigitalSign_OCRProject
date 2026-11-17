@@ -38,11 +38,11 @@ async function check(browser, width) {
       return route.fulfill({ contentType: document.fileContentType, body: document.fileContentType === 'image/png' ? image : pdf });
     else if (req.method() === 'POST' && url.pathname === '/api/ocr/process') {
       ocrCalls++; return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ detail: limitMessage }) });
-    } else if (req.method() === 'GET' && url.pathname === '/api/ocr/gemini/models')
+    } else if (req.method() === 'GET' && url.pathname === '/api/ocr/llm/models')
       data = [{ id: 'gemini-fixture', displayName: 'Fixture Gemini' }];
     else if (req.method() === 'POST' && url.pathname === '/api/ocr/input-info') {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ totalPages: 6 }) });
-    } else if (req.method() === 'POST' && url.pathname === '/api/ocr/gemini/export-word-upload') {
+    } else if (req.method() === 'POST' && url.pathname === '/api/ocr/llm/export-word-upload') {
       exports++; return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ detail: limitMessage }) });
     } else throw new Error(`Unexpected fixture API ${req.method()} ${url.pathname}`);
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data }) });

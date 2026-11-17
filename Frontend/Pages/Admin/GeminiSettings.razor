@@ -1,20 +1,21 @@
+@page "/admin/llm-settings"
 @page "/admin/gemini-settings"
 @attribute [Authorize(Roles = "Admin")]
 @inject AdminService AdminService
 @inject IToastService Toast
 
-<PageTitle>Cấu hình Gemini - HAU Admin</PageTitle>
+<PageTitle>Cấu hình LLM - HAU Admin</PageTitle>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Cấu hình Gemini</h1>
-        <p class="page-subtitle">Quản lý Google AI Studio API key dùng cho chức năng dựng Word từ bản quét.</p>
+        <h1 class="page-title">Cấu hình LLM</h1>
+        <p class="page-subtitle">Quản lý API key LLM dùng cho chức năng dựng Word từ bản quét. Nhà cung cấp hiện tại: Google AI Studio.</p>
     </div>
     <a href="/" class="btn btn-outline">Quay lại Dashboard</a>
 </div>
 
 <div class="card gemini-settings-card">
-    <div class="card-header"><span class="card-title">Google AI Studio</span></div>
+    <div class="card-header"><span class="card-title">Cấu hình nhà cung cấp LLM</span></div>
     <div class="card-body">
         @if (_loading)
         {
@@ -35,7 +36,7 @@
                 else
                 {
                     <strong>Chưa có API key</strong>
-                    <span>Nhập khóa để Văn thư có thể chọn model Gemini khi xử lý bản quét.</span>
+                    <span>Nhập khóa để Văn thư có thể chọn model LLM khi xử lý bản quét.</span>
                 }
             </div>
 
@@ -65,7 +66,7 @@
             @if (_models.Count > 0)
             {
                 <div class="gemini-model-list">
-                    <strong>Model Gemini khả dụng (@_models.Count)</strong>
+                    <strong>Model LLM khả dụng (@_models.Count)</strong>
                     <div>@string.Join(" · ", _models)</div>
                 </div>
             }
@@ -99,7 +100,7 @@
             if (result is null)
             {
                 _isError = true;
-                _message = "Không lưu được khóa. Hãy kiểm tra API key, quyền truy cập Gemini và kết nối Google AI Studio.";
+                _message = "Không lưu được khóa. Hãy kiểm tra API key, quyền truy cập LLM và kết nối Google AI Studio.";
                 return;
             }
             _status = result;
@@ -111,7 +112,7 @@
         catch (Exception)
         {
             _isError = true;
-            _message = "Không lưu được cấu hình Gemini.";
+            _message = "Không lưu được cấu hình LLM.";
         }
         finally { _saving = false; }
     }
@@ -125,13 +126,13 @@
             {
                 _status = new GeminiSettingsStatus();
                 _models.Clear();
-                _message = "Đã xóa API key Gemini.";
+                _message = "Đã xóa API key LLM.";
                 Toast.ShowSuccess(_message);
             }
             else
             {
                 _isError = true;
-                _message = "Không xóa được API key Gemini.";
+                _message = "Không xóa được API key LLM.";
             }
         }
         finally { _saving = false; }

@@ -139,13 +139,13 @@ public class AdminService
     public async Task<List<RoleDto>?> GetRolesAsync() => await _api.GetAsync<List<RoleDto>>("api/roles");
 
     public Task<GeminiSettingsStatus?> GetGeminiSettingsAsync()
-        => _api.GetAsync<GeminiSettingsStatus>("api/admin/gemini-settings");
+        => _api.GetAsync<GeminiSettingsStatus>("api/admin/llm-settings");
 
     public Task<GeminiSettingsSaveResult?> SaveGeminiApiKeyAsync(string apiKey)
-        => _api.PutAsync<GeminiSettingsSaveResult>("api/admin/gemini-settings", new { apiKey });
+        => _api.PutAsync<GeminiSettingsSaveResult>("api/admin/llm-settings", new { apiKey });
 
     public Task<bool> RemoveGeminiApiKeyAsync()
-        => _api.DeleteWithResultAsync("api/admin/gemini-settings");
+        => _api.DeleteWithResultAsync("api/admin/llm-settings");
 }
 
 public class GeminiSettingsStatus

@@ -42,7 +42,7 @@ public sealed class OcrJobStore(NpgsqlDataSource source)
     {
         var model = (request.ModelId ?? "").Trim();
         if (model.Length is < 5 or > 100 || !Regex.IsMatch(model, @"^gemini-[a-zA-Z0-9._-]+$"))
-            throw new DocumentServiceException("Chọn model Gemini hợp lệ.");
+            throw new DocumentServiceException("Chọn model LLM hợp lệ.");
         var pages = CanonicalPages(request.Pages);
         await using var connection = await OpenAsync(token);
         await using var transaction = await connection.BeginTransactionAsync(token);
@@ -151,7 +151,7 @@ public sealed class OcrJobStore(NpgsqlDataSource source)
         await using (var cmd = Command(connection,transaction,"""
             INSERT INTO "DocumentProcesses" ("Id","DocId","FromUserId","Action","Comment","Timestamp")
             VALUES (@id,@doc,@actor,'GeminiOcrCompleted',@comment,now())
-            """,("id",job.Info.Id),("doc",job.Info.DocumentId),("actor",job.ActorId),("comment",$"Hoàn tất OCR Gemini {job.Info.ModelId}, trang {job.Info.Pages}.")))
+            """,("id",job.Info.Id),("doc",job.Info.DocumentId),("actor",job.ActorId),("comment",$"Hoàn tất OCR LLM {job.Info.ModelId}, trang {job.Info.Pages}.")))
             await cmd.ExecuteNonQueryAsync(token);
         await using (var cmd = Command(connection,transaction,"UPDATE \"OcrJobs\" SET \"Status\"='Succeeded',\"CompletedAt\"=now(),\"Error\"=NULL WHERE \"Id\"=@id",("id",job.Info.Id)))
             await cmd.ExecuteNonQueryAsync(token);

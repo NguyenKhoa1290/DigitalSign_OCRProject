@@ -45,7 +45,7 @@ public sealed class OcrJobWorker(OcrJobStore jobs,IOcrJobQueue queue,IHttpClient
                             {
                                 var error=ex is DocumentServiceException ? ex.Message : ex is OperationCanceledException
                                     ? "OCR quá thời gian xử lý. Hệ thống không tự chạy lại; bạn có thể chọn model khác."
-                                    : "Không xử lý được OCR. Hãy thử lại hoặc chọn model Gemini khác.";
+                                    : "Không xử lý được OCR. Hãy thử lại hoặc chọn model LLM khác.";
                                 logger.LogWarning("OCR job {JobId} failed: {ErrorType}",job.Info.Id,ex.GetType().Name);
                                 await jobs.FailAsync(connection,job,error,stoppingToken);
                             }

@@ -7,18 +7,18 @@
     <div class="card-body">
         @if (_loading)
         {
-            <LoadingSpinner Message="Đang tải model Gemini..." />
+            <LoadingSpinner Message="Đang tải model LLM..." />
         }
         else if (_models.Count == 0)
         {
-            <div class="alert alert-warning">Chưa tải được danh sách model. Admin cần cấu hình API key tại <a href="/admin/gemini-settings">Cấu hình Gemini</a>.</div>
+            <div class="alert alert-warning">Chưa tải được danh sách model. Admin cần cấu hình API key tại <a href="/admin/llm-settings">Cấu hình LLM</a>.</div>
             <button class="btn btn-outline" @onclick="LoadModels">Thử tải lại</button>
         }
         else
         {
             <div class="gemini-scan-form">
                 <div class="form-group">
-                    <label class="form-label" for="gemini-model">Model Gemini</label>
+                    <label class="form-label" for="gemini-model">Model LLM</label>
                     <select id="gemini-model" class="form-control" @bind="_modelId" disabled="@_working">
                         @foreach (var model in _models)
                         {
@@ -93,7 +93,7 @@
                 @if (TrySelectedPages(out var selected, out var selectionError))
                 { <p>Đã chọn @selected.Count/5: @string.Join(", ", selected)</p> }
                 else { <p class="alert alert-warning" role="alert">@selectionError</p> }
-                <label class="form-label" for="ocr-dialog-model">Model Gemini</label>
+                <label class="form-label" for="ocr-dialog-model">Model LLM</label>
                 <select id="ocr-dialog-model" class="form-control" @bind="_modelId" disabled="@_working">
                     @foreach (var model in _models) { <option value="@model.Id">@model.DisplayName (@model.Id)</option> }
                 </select>
@@ -141,7 +141,7 @@
         _isPdf = AttachedFileName?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true;
         try
         {
-            using var response = await Api.PostResponseAsync($"api/ocr/gemini/documents/{AttachedDocumentId}/input-info", new { expectedVersion = AttachedVersion });
+            using var response = await Api.PostResponseAsync($"api/ocr/llm/documents/{AttachedDocumentId}/input-info", new { expectedVersion = AttachedVersion });
             if (!response.IsSuccessStatusCode) throw new HttpRequestException(await ReadError(response));
             using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             _totalPages = json.RootElement.GetProperty("totalPages").GetInt32();
@@ -157,7 +157,7 @@
         _message = null;
         try
         {
-            _models = await Api.GetAsync<List<GeminiModelOption>>("api/ocr/gemini/models") ?? new();
+            _models = await Api.GetAsync<List<GeminiModelOption>>("api/ocr/llm/models") ?? new();
             if (_models.All(model => model.Id != _modelId))
                 _modelId = (_models.FirstOrDefault(model => model.Id.Contains("3.8-flash", StringComparison.OrdinalIgnoreCase))
                     ?? _models.FirstOrDefault(model => model.Id.Contains("flash", StringComparison.OrdinalIgnoreCase))
@@ -234,7 +234,7 @@
                 ? await Api.PostResponseAsync($"api/documents/{AttachedDocumentId}/ocr-jobs", new
                     { expectedVersion = AttachedVersion, modelId = _modelId, pages = string.Join(",", selectedPages) })
                 : await Api.UploadInputAsync(
-                $"api/ocr/gemini/{action}?model_id={Uri.EscapeDataString(_modelId)}&pages={Uri.EscapeDataString(string.Join(",", selectedPages))}",
+                $"api/ocr/llm/{action}?model_id={Uri.EscapeDataString(_modelId)}&pages={Uri.EscapeDataString(string.Join(",", selectedPages))}",
                 "ocr-file", _files.Count == 1 ? _files[0].Name : $"{_files.Count} ảnh", "files", MaxFileSize);
 
             if (!response.IsSuccessStatusCode)
@@ -255,7 +255,7 @@
                     return;
                 }
                 var result = GeminiOcrResult.Parse(await response.Content.ReadAsStringAsync())
-                    ?? throw new InvalidOperationException("Gemini chưa trả về nội dung có thể hiển thị.");
+                    ?? throw new InvalidOperationException("LLM chưa trả về nội dung có thể hiển thị.");
                 if (AttachedDocumentId.HasValue && !string.IsNullOrWhiteSpace(AttachedFileName)) result.SourceFileNames = new[] { AttachedFileName };
                 await OnRecognized.InvokeAsync(result);
                 _isError = false; _selecting = false;
@@ -266,7 +266,7 @@
             var bytes = await response.Content.ReadAsByteArrayAsync();
             var url = await JS.InvokeAsync<string>("documentFiles.createDownloadUrl", bytes,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-            await JS.InvokeVoidAsync("documentFiles.download", url, "ban-nhap-ocr-gemini.docx");
+            await JS.InvokeVoidAsync("documentFiles.download", url, "ban-nhap-ocr-llm.docx");
             await JS.InvokeVoidAsync("documentFiles.releaseUrl", url);
             _isError = false;
             _selecting = false;
@@ -280,7 +280,7 @@
         catch (Exception)
         {
             _isError = true;
-            _message = "Không xử lý được tệp. Hãy thử lại hoặc chọn model Gemini khác.";
+            _message = "Không xử lý được tệp. Hãy thử lại hoặc chọn model LLM khác.";
         }
         finally { _working = false; await BusyChanged.InvokeAsync(false); }
     }
@@ -298,7 +298,7 @@
         catch { }
         return response.StatusCode == System.Net.HttpStatusCode.TooManyRequests
             ? "Model đang hết hạn mức. Chọn model khác rồi thử lại."
-            : "Không xử lý được tài liệu. Hãy thử lại hoặc chọn model Gemini khác.";
+            : "Không xử lý được tài liệu. Hãy thử lại hoặc chọn model LLM khác.";
     }
 
     private sealed class GeminiModelOption

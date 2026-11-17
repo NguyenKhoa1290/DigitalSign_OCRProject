@@ -32,7 +32,7 @@ async function run(browser,width,role='Clerk',docTypeName='CongVanDen',status='D
    downloads++;assert.equal(url.searchParams.get('expectedVersion'),doc.concurrencyVersion);
    return route.fulfill({contentType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',body:word});
   }
-  if(p==='/api/ocr/gemini/export-layout'){exports++;return route.fulfill({body:Buffer.from('original-word-fixture')});}
+  if(p==='/api/ocr/llm/export-layout'){exports++;return route.fulfill({body:Buffer.from('original-word-fixture')});}
   unexpected.push(req.method()+' '+p);return route.abort();
  });
  const page=await context.newPage();page.setDefaultTimeout(60000);page.on('pageerror',e=>errors.push(e.message));

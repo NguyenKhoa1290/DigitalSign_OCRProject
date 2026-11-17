@@ -90,7 +90,7 @@
                 bytes = await Api.GetBytesAsync($"api/documents/{documentId}/ocr-word?expectedVersion={ExpectedVersion}");
             else
             {
-                using var response = await Api.PostResponseAsync("api/ocr/gemini/export-layout", new { layout = Result.Layout });
+                using var response = await Api.PostResponseAsync("api/ocr/llm/export-layout", new { layout = Result.Layout });
                 if (!response.IsSuccessStatusCode) throw new HttpRequestException();
                 bytes = await response.Content.ReadAsByteArrayAsync();
             }

@@ -63,6 +63,25 @@ class AttachedOcrTests(unittest.TestCase):
         self.assertEqual(self.get.call_args.kwargs["headers"], {"Authorization": "Bearer fixture"})
         self.engine.assert_not_called(); self.key.assert_not_awaited()
 
+    def test_llm_alias_keeps_attachment_auth_and_source_checks(self):
+        path = f"/api/ocr/llm/documents/{DOC}/input-info"
+        self.assertEqual(self.client.post(path, json={"expectedVersion": VERSION}).status_code, 401)
+        self.download.assert_not_called()
+        response = self.client.post(path, headers={"Authorization": "Bearer fixture"},
+                                    json={"expectedVersion": VERSION, "minioPath": "forged.pdf"})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["totalPages"], 8)
+        self.download.assert_called_once_with("actual.pdf", max_bytes=25 * 1024 * 1024)
+        self.engine.assert_not_called(); self.key.assert_not_awaited()
+
+    def test_llm_and_legacy_paths_share_endpoints(self):
+        registered = {r.path: r for r in routes.router.routes}
+        for name in ["models", "export-word-upload", "recognize-upload", "export-layout",
+                     "documents/{doc_id}/input-info", "documents/{doc_id}/recognize"]:
+            current, legacy = registered[f"/api/ocr/llm/{name}"], registered[f"/api/ocr/gemini/{name}"]
+            self.assertIs(current.endpoint, legacy.endpoint)
+            self.assertFalse(legacy.include_in_schema)
+
     def test_recognition_reads_saved_file_and_only_selected_pages_with_chosen_model(self):
         response = self.request("recognize", modelId="gemini-fixture", pages="8,2", minioPath="ignored.pdf")
         self.assertEqual(response.status_code, 200, response.text)

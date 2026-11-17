@@ -126,7 +126,8 @@ async def export_word_upload(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/gemini/models", summary="Danh sách model Gemini khả dụng")
+@router.get("/llm/models", summary="Danh sách model LLM khả dụng")
+@router.get("/gemini/models", include_in_schema=False)
 async def gemini_models():
     try:
         return await gemini_service.list_gemini_models()
@@ -135,7 +136,7 @@ async def gemini_models():
     except httpx.HTTPStatusError as exc:
         logger.warning("Google model-list request failed with HTTP %s", exc.response.status_code)
         status = 429 if exc.response.status_code == 429 else 503
-        raise HTTPException(status_code=status, detail="Không tải được danh sách model Gemini. Kiểm tra khóa ở trang Admin.") from exc
+        raise HTTPException(status_code=status, detail="Không tải được danh sách model LLM. Kiểm tra khóa ở trang Admin.") from exc
     except httpx.RequestError as exc:
         raise HTTPException(status_code=503, detail="Không kết nối được Google AI Studio.") from exc
 
@@ -151,7 +152,8 @@ async def input_info(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@router.post("/gemini/export-word-upload", summary="Dựng Word từ bản quét bằng PaddleOCR và Gemini")
+@router.post("/llm/export-word-upload", summary="Dựng Word từ bản quét bằng PaddleOCR và LLM")
+@router.post("/gemini/export-word-upload", include_in_schema=False)
 async def gemini_export_word_upload(
     file: UploadFile | None = File(None),
     files: list[UploadFile] | None = File(None),
@@ -187,7 +189,7 @@ async def gemini_export_word_upload(
         api_key = await gemini_service.get_gemini_api_key()
         models = await gemini_service.list_gemini_models(api_key)
         if model_id not in {model["id"] for model in models}:
-            raise HTTPException(status_code=400, detail="Model Gemini không nằm trong danh sách khả dụng.")
+            raise HTTPException(status_code=400, detail="Model LLM không nằm trong danh sách khả dụng.")
 
         layouts = []
         engine = ocr_processor.get_engine()
@@ -208,7 +210,7 @@ async def gemini_export_word_upload(
                     "selectedPages": selected, "sourceFileNames": [item.filename or "" for item in inputs],
                     "createdAt": datetime.now(timezone.utc).isoformat(), "layout": combined}
         docx_bytes = create_layout_docx(combined)
-        headers = {"Content-Disposition": 'attachment; filename="ban-nhap-ocr-gemini.docx"', "X-OCR-Pages": ",".join(map(str, selected))}
+        headers = {"Content-Disposition": 'attachment; filename="ban-nhap-ocr-llm.docx"', "X-OCR-Pages": ",".join(map(str, selected))}
         return StreamingResponse(io.BytesIO(docx_bytes), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
     except HTTPException:
         raise
@@ -217,7 +219,7 @@ async def gemini_export_word_upload(
     except httpx.HTTPStatusError as exc:
         logger.warning("Gemini OCR request failed with HTTP %s", exc.response.status_code)
         status = 429 if exc.response.status_code == 429 else 503
-        message = "Google AI Studio hết hạn mức. Hãy chọn model Gemini khác." if status == 429 else "Không gọi được Google AI Studio. Hãy thử model khác hoặc thử lại sau."
+        message = "Google AI Studio hết hạn mức. Hãy chọn model LLM khác." if status == 429 else "Không gọi được Google AI Studio. Hãy thử model khác hoặc thử lại sau."
         raise HTTPException(status_code=status, detail=message) from exc
     except httpx.RequestError as exc:
         raise HTTPException(status_code=503, detail="Không kết nối được dịch vụ cấu hình hoặc Google AI Studio.") from exc
@@ -226,7 +228,8 @@ async def gemini_export_word_upload(
         raise HTTPException(status_code=500, detail="Không thể tạo Word từ bản quét.") from exc
 
 
-@router.post("/gemini/recognize-upload", summary="Nhận diện bố cục để lưu và hiển thị trong công văn")
+@router.post("/llm/recognize-upload", summary="Nhận diện bố cục để lưu và hiển thị trong công văn")
+@router.post("/gemini/recognize-upload", include_in_schema=False)
 async def gemini_recognize_upload(
     file: UploadFile | None = File(None),
     files: list[UploadFile] | None = File(None),
@@ -241,7 +244,8 @@ class LayoutExportRequest(BaseModel):
     layout: dict
 
 
-@router.post("/gemini/export-layout", summary="Tạo Word từ kết quả đã lưu, không gọi lại AI")
+@router.post("/llm/export-layout", summary="Tạo Word từ kết quả đã lưu, không gọi lại AI")
+@router.post("/gemini/export-layout", include_in_schema=False)
 async def gemini_export_layout(request: LayoutExportRequest):
     layout = request.layout
     blocks = layout.get("blocks")
@@ -307,7 +311,8 @@ async def _attached_input(doc_id: UUID, request: AttachedOcrInput, authorization
         raise HTTPException(status_code=status, detail="Không đọc được tệp đính kèm. Hãy kiểm tra hoặc tải tệp lên trước khi chạy OCR.") from exc
 
 
-@router.post("/gemini/documents/{doc_id}/input-info", summary="Đếm trang tệp đã đính kèm công văn, không gọi AI")
+@router.post("/llm/documents/{doc_id}/input-info", summary="Đếm trang tệp đã đính kèm công văn, không gọi AI")
+@router.post("/gemini/documents/{doc_id}/input-info", include_in_schema=False)
 async def attached_input_info(doc_id: UUID, request: AttachedOcrInput, authorization: str = Header("")):
     filename, content = await _attached_input(doc_id, request, authorization)
     try:
@@ -316,7 +321,8 @@ async def attached_input_info(doc_id: UUID, request: AttachedOcrInput, authoriza
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@router.post("/gemini/documents/{doc_id}/recognize", summary="Nhận diện chính tệp đã lưu của công văn bằng Gemini")
+@router.post("/llm/documents/{doc_id}/recognize", summary="Nhận diện chính tệp đã lưu của công văn bằng LLM")
+@router.post("/gemini/documents/{doc_id}/recognize", include_in_schema=False)
 async def attached_recognize(doc_id: UUID, request: AttachedOcrRun, authorization: str = Header("")):
     if not 5 <= len(request.modelId) <= 100 or len(request.pages) > 200:
         raise HTTPException(status_code=400, detail="Model hoặc lựa chọn trang không hợp lệ.")

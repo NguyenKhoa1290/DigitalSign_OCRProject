@@ -1,4 +1,6 @@
 **/bin/
+/tools/
+/tests/
 **/obj/
 **/.vs/
 **/.vscode/
@@ -15,9 +17,11 @@
 .env.*
 !.env.example
 !**/.env.example
-
+/graphify-out/
 *.user
 *.suo
 *.pdb
 *.docx
 backup/
+nguyenkhoa.json
+tent.json

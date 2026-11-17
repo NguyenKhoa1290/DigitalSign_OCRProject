@@ -1,5 +1,10 @@
 # Document Service
 
+## Thuật ngữ LLM ngày 16/11/2026
+
+Tên chức năng và API công khai dùng LLM; nhà cung cấp hiện tại vẫn là Google AI Studio. Giao diện Admin dùng `/admin/llm-settings`, API cấu hình dùng `/api/admin/llm-settings`, OCR dùng `/api/ocr/llm/...`. Các route cũ, bảng/key mã hóa, provider JSON, ID model và hàng đợi vẫn tương thích. Chi tiết: [LLM và nhà cung cấp](../tai_lieu/06_thiet_ke_he_thong/LLM_VA_NHA_CUNG_CAP.md). Các mục có ngày bên dưới giữ ngữ cảnh triển khai tại thời điểm ghi.
+
+
 DocumentService quản lý metadata công văn, upload tệp lên MinIO, ghi workflow và phân phối tác vụ OCR do người dùng yêu cầu qua Kafka `ocr.gemini.requested.v1`. Tải tệp không tự chạy OCR hoặc phát `document.uploaded`.
 
 File công văn hỗ trợ PDF, Word `.docx`, PNG, JPG/JPEG và WEBP, tối đa 50 MiB. API trả `fileName` gốc và `fileContentType`; endpoint `/api/documents/{id}/file` trả MIME tương ứng, thêm `?download=true` để tải xuống đúng tên gốc. Thay file thành công sẽ xóa object cũ; chưa lưu lịch sử phiên bản tệp. Word được coi là tệp văn bản hoàn chỉnh, không cần OCR, không phát Kafka event OCR và không tính vào thống kê chờ OCR. OCRService chỉ xử lý PDF/ảnh, tối đa 5 trang mỗi lượt. Ký số vẫn cần PDF.
@@ -91,7 +96,7 @@ Công văn đi không có bước phân công xử lý ở bất kỳ trạng th
 
 - File upload lên MinIO bucket `documents`.
 - `Document.MinioPath` được lưu dạng `documents/{storedFileName}`.
-- Nhánh `document.uploaded` tự OCR sau upload đã dừng từ 26/10/2026; không gửi đường dẫn/JWT trong lệnh cũ. Tác vụ Gemini dùng JobId, model và trang được chọn, xác minh nguồn trên server.
+- Nhánh `document.uploaded` tự OCR sau upload đã dừng từ 26/10/2026; không gửi đường dẫn/JWT trong lệnh cũ. Tác vụ LLM dùng JobId, model và trang được chọn, xác minh nguồn trên server.
 - Endpoint `PATCH /api/documents/{id}/ocr` nhận JWT người dùng hoặc header nội bộ `X-Service-Token`.
 - `SERVICE_TOKEN` của OCRService phải khớp với `ServiceAuth:OcrServiceToken` của DocumentService.
 
@@ -122,7 +127,7 @@ Theo xác nhận mới ngày25/10: Admin tạo cả hai chiều; Văn thư chỉ
 
 GitHub Actions job test có PostgreSQL16 và Kafka3.7.2 riêng, truyền HAU_OCR_JOB_TEST_POSTGRES/HAU_OCR_JOB_TEST_KAFKA; mỗi testcase tạo/xóa schema riêng trên database fixture, không trỏ database ứng dụng. Chạy local cần tự đặt biến này tới database fixture trên localhost; khi không cấu hình, các integration case được báo skipped rõ ràng (kiểm tra định dạng trang vẫn chạy).
 
-## Kafka cho hàng đợi OCR Gemini (25/10/2026)
+## Kafka cho hàng đợi OCR LLM (25/10/2026)
 
 Luồng hiện tại: POST ocr-jobs → transaction PostgreSQL lưu Queued/lệnh chờ gửi → HTTP202 → OcrJobOutbox publish Kafka → OcrJobWorker consumer → HTTP nội bộ OCRService → transaction lưu kết quả/trạng thái/thông báo → commit Kafka offset. Worker không quét database để lấy tác vụ chạy; chỉ claim JobId nhận từ Kafka. PostgreSQL giữ trạng thái, lệnh chưa publish và chặn chạy trùng.
 
@@ -138,13 +143,13 @@ Hoàn tất OCR cũng cập nhật realtime cho những tài khoản đang mở 
 
 ## Bản Word OCR đã hiệu chỉnh (25/10/2026)
 
-`POST /api/documents/{id}/ocr-edited-file?expectedVersion=<guid>` nhận multipart file .docx tối đa50MB. Chỉ Admin/Văn thư đang hoạt động được gửi. Kiểm tra phiên bản, kết quả Gemini, nguồn tệp và tác vụ OCR đang chờ/chạy cả trước lưu object và trong transaction khóa công văn. DOCX phải là ZIP có word/document.xml đúng namespace; cấm DTD, macro, giới hạn số entry/dung lượng giải nén. Tên file tải lên giữ trong metadata; tên object do server tạo.
+`POST /api/documents/{id}/ocr-edited-file?expectedVersion=<guid>` nhận multipart file .docx tối đa50MB. Chỉ Admin/Văn thư đang hoạt động được gửi. Kiểm tra phiên bản, kết quả LLM, nguồn tệp và tác vụ OCR đang chờ/chạy cả trước lưu object và trong transaction khóa công văn. DOCX phải là ZIP có word/document.xml đúng namespace; cấm DTD, macro, giới hạn số entry/dung lượng giải nén. Tên file tải lên giữ trong metadata; tên object do server tạo.
 
 Bản Word nằm riêng trong MinIO, metadata editedDocument trong OcrDataRaw gồm ID, tên/đường dẫn tệp, SourcePath, người sửa, tên/role lấy từ DB, thời gian UTC và số lần sửa. Không đổi MinioPath/FileName của công văn, không sửa PDF/chữ ký/trạng thái luồng. Cập nhật OCR JSON/ConcurrencyVersion và lịch sử OcrEdited cùng transaction; trigger realtime hiện có cập nhật các tài khoản đang xem. Không thêm thông báo chưa đọc.
 
 `GET .../ocr-edited-file?revisionId=<guid>` trả đúng bytes Word/tên file hiện hành; cùng quyền Admin/Clerk như tải Word OCR trước đây, kiểm tra hồ sơ active/ID bản sửa/nguồn tệp còn khớp. Các role xem chỉ thấy trạng thái người sửa và bản OCR tự động để đối chiếu, không cấp thêm quyền xuất/chỉnh Word.
 
-Chạy lại Gemini trên cùng nguồn giữ bản Word do con người sửa; nguồn tệp mới làm bản sửa cũ hết hiệu lực. Metadata người sửa được server quản lý: endpoint PATCH OCR cũ và JSON từ AI không được tự khai editedDocument.
+Chạy lại LLM trên cùng nguồn giữ bản Word do con người sửa; nguồn tệp mới làm bản sửa cũ hết hiệu lực. Metadata người sửa được server quản lý: endpoint PATCH OCR cũ và JSON từ AI không được tự khai editedDocument.
 
 Bảng vận hành OcrEditedFileCleanup/trigger được khởi tạo idempotent sau migration. Thay bản Word, thay nguồn, hoặc purge sẽ xếp object cũ vào hàng chờ dọn. Worker thử lại mỗi30giây, khóa hồ sơ trước hàng cleanup, giữ tệp còn được tham chiếu (kể cả COMMIT đã thành công nhưng mất phản hồi); lỗi lưu sau upload xếp object chưa gắn vào hàng dọn. Không xóa tệp gốc. Audit giữ các lần sửa; chỉ giữ file Word hiện hành, không có kho file lịch sử mọi phiên bản.
 

@@ -77,11 +77,11 @@ async def get_gemini_api_key() -> str:
             headers={"X-OCR-Service-Token": settings.service_token},
         )
     if response.status_code == 404:
-        raise RuntimeError("Gemini API key chưa được Admin cấu hình.")
+        raise RuntimeError("API key LLM chưa được Admin cấu hình.")
     response.raise_for_status()
     api_key = response.json().get("apiKey", "")
     if not api_key:
-        raise RuntimeError("Gemini API key chưa được Admin cấu hình.")
+        raise RuntimeError("API key LLM chưa được Admin cấu hình.")
     return api_key
 
 
@@ -135,9 +135,9 @@ async def generate_layout(image, lines: list[dict], model_id: str, api_key: str)
             headers={"x-goog-api-key": api_key}, json=payload,
         )
     if response.status_code == 429:
-        raise GeminiRequestError(429, "Google AI Studio hết hạn mức cho model đã chọn. Hãy chọn model Gemini khác rồi thử lại.")
+        raise GeminiRequestError(429, "Google AI Studio hết hạn mức cho model đã chọn. Hãy chọn model LLM khác rồi thử lại.")
     if response.status_code == 503:
-        raise GeminiRequestError(503, "Model Gemini đang quá tải. Hãy chọn model khác hoặc thử lại sau.")
+        raise GeminiRequestError(503, "Model LLM đang quá tải. Hãy chọn model khác hoặc thử lại sau.")
     if response.status_code in (400, 401, 403):
         raise GeminiRequestError(response.status_code, "Google AI Studio từ chối yêu cầu. Kiểm tra API key, quyền và model đã chọn.")
     response.raise_for_status()
@@ -147,14 +147,14 @@ async def generate_layout(image, lines: list[dict], model_id: str, api_key: str)
         text = "".join(part.get("text", "") for part in parts if not part.get("thought"))
         layout = json.loads(text)
     except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
-        raise GeminiRequestError(502, "Gemini không trả về layout JSON hợp lệ.") from exc
+        raise GeminiRequestError(502, "LLM không trả về layout JSON hợp lệ.") from exc
     validate_layout(layout)
     return layout
 
 
 def validate_layout(layout: dict) -> None:
     if not isinstance(layout, dict) or not layout.get("blocks"):
-        raise GeminiRequestError(502, "Gemini trả về bố cục trống.")
+        raise GeminiRequestError(502, "LLM trả về bố cục trống.")
     for block in layout["blocks"]:
         kind = block.get("type")
         if kind == "table":
@@ -162,12 +162,12 @@ def validate_layout(layout: dict) -> None:
             widths = block.get("column_widths", [])
             rows = block.get("rows", [])
             if not headers or len(headers) != len(widths) or any(len(row) != len(headers) for row in rows):
-                raise GeminiRequestError(502, "Bảng Gemini trả về sai số cột; chưa xuất Word.")
+                raise GeminiRequestError(502, "Bảng LLM trả về sai số cột; chưa xuất Word.")
         elif kind == "columns":
             if len(block.get("widths", [])) != len(block.get("columns", [])):
-                raise GeminiRequestError(502, "Gemini trả về sai số cột bố cục; chưa xuất Word.")
+                raise GeminiRequestError(502, "LLM trả về sai số cột bố cục; chưa xuất Word.")
         elif kind != "paragraph":
-            raise GeminiRequestError(502, "Gemini trả về loại khối bố cục không hỗ trợ.")
+            raise GeminiRequestError(502, "LLM trả về loại khối bố cục không hỗ trợ.")
 
 
 class GeminiRequestError(Exception):
